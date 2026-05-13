@@ -4198,6 +4198,7 @@ renderRanking();
 initCompare();
 initSearch();
 sbLoadBrands();
+setTimeout(() => { const i = document.getElementById('search-free-input'); if(i) i.value=''; }, 50);
 
 // Inicializa sessão Supabase e carrega dados reais
 (async () => {
