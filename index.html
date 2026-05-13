@@ -3121,7 +3121,8 @@ async function doFreeSearch() {
   }
 
   const cacheKey = val.toLowerCase();
-  if (!fipeSugCache[cacheKey]) await searchFipeModels(val);
+  delete fipeSugCache[cacheKey]; // sempre busca fresco
+  await searchFipeModels(val);
   const results = fipeSugCache[cacheKey] || [];
   hideSuggestions();
 
