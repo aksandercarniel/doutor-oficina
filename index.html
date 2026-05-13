@@ -2756,103 +2756,32 @@ async function searchFipeModels(val, append = false) {
 
     for (const t of types) {
       if (allResults.length >= 6) break;
-      try {
-        // Busca todas as marcas
-        const brands = await fipeFetch(`${FIPE_V2}/${t.key}/brands`);
-        if (!Array.isArray(brands)) continue;
+      const brands = await fipeFetch(`${FIPE_V2}/${t.key}/brands`);
+      if (!Array.isArray(brands)) continue;
 
-        // Verifica marcas que batem com o termo
-        const brandHits = brands.filter(b =>
-          (b.name||b.nome||'').toLowerCase().includes(val.toLowerCase())
-        );
-        brandHits.slice(0,2).forEach(b => {
-          allResults.push({
-            brand: b.name||b.nome, model: '',
-            type: t.label, emoji: t.emoji,
-            label: b.name||b.nome
-          });
-        });
+      // Busca modelos de todas as marcas em paralelo
+      const modelSearches = brands.slice(0, 50).map(async brand => {
+        try {
+          const dm = await fipeFetch(`${FIPE_V2}/${t.key}/brands/${brand.code||brand.codigo}/models`);
+          const models = dm.models || dm.modelos || dm;
+          return (Array.isArray(models) ? models : [])
+            .filter(m => (m.name||m.nome||'').toLowerCase().includes(cacheKey))
+            .slice(0, 2)
+            .map(m => ({
+              brand: brand.name||brand.nome,
+              model: m.name||m.nome,
+              type: t.label, emoji: t.emoji,
+              label: `${brand.name||brand.nome} ${m.name||m.nome}`
+            }));
+        } catch(e) { return []; }
+      });
 
-        // Busca modelos nas marcas mais prováveis
-        // Honda para Civic/City/Fit, VW para Gol/Polo etc.
-        const toSearch = brands.slice(0, 30); // primeiras 30 marcas
-        for (const brand of toSearch) {
-          if (allResults.length >= 6) break;
-          try {
-            const dm = await fipeFetch(`${FIPE_V2}/${t.key}/brands/${brand.code||brand.codigo}/models`);
-            const models = dm.models || dm.modelos || dm;
-            const hits = (Array.isArray(models) ? models : [])
-              .filter(m => (m.name||m.nome||'').toLowerCase().includes(val.toLowerCase()))
-              .slice(0, 2);
-            hits.forEach(m => {
-              allResults.push({
-                brand: brand.name||brand.nome,
-                model: m.name||m.nome,
-                type: t.label, emoji: t.emoji,
-                label: `${brand.name||brand.nome} ${m.name||m.nome}`
-              });
-            });
-          } catch(e) {}
-          if (allResults.length >= 6) break;
-        }
-      } catch(e) {}
+      const modelResults = (await Promise.all(modelSearches)).flat();
+      allResults.push(...modelResults.slice(0, 6 - allResults.length));
     }
 
     fipeSugCache[cacheKey] = allResults;
     renderFipeSuggestions(val, allResults, append);
-
-  } catch(e) {
-    console.error('FIPE search erro:', e);
-  }
-}
-
-  if (fipeSugCache[val]) {
-    renderFipeSuggestions(val, fipeSugCache[val], append);
-    return;
-  }
-
-  try {
-    // Busca em carros, motos e caminhões em paralelo
-    const types = ['cars','motorcycles','trucks'];
-    const emojis = {'cars':'🚗','motorcycles':'🏍️','trucks':'🚚'};
-    const typeKeys = {'cars':'carros','motorcycles':'motos','trucks':'caminhoes'};
-
-    const results = await Promise.all(types.map(async t => {
-      try {
-        const d = await fipeFetch(`${FIPE_V2}/${t}/brands`);
-        return (Array.isArray(d) ? d : [])
-          .filter(b => (b.name||b.nome||'').toLowerCase().includes(val.toLowerCase()))
-          .slice(0,3)
-          .map(b => ({ brand: b.name||b.nome, brandCode: b.code||b.codigo, type: t, emoji: emojis[t], typeKey: typeKeys[t] }));
-      } catch(e) { return []; }
-    }));
-
-    const allBrands = results.flat().slice(0,5);
-
-    // Para cada marca encontrada, busca modelos
-    const modelResults = [];
-    for (const brand of allBrands.slice(0,2)) {
-      try {
-        const d = await fipeFetch(`${FIPE_V2}/${brand.type}/brands/${brand.brandCode}/models`);
-        const models = (d.models || d.modelos || d);
-        const filtered = (Array.isArray(models) ? models : [])
-          .filter(m => (m.name||m.nome||'').toLowerCase().includes(val.toLowerCase()))
-          .slice(0,3);
-        filtered.forEach(m => modelResults.push({
-          brand: brand.brand, model: m.name||m.nome,
-          brandCode: brand.brandCode, modelCode: m.code||m.codigo,
-          type: brand.typeKey, emoji: brand.emoji
-        }));
-      } catch(e) {}
-    }
-
-    // Se não achou modelo, mostra as marcas
-    const finalResults = modelResults.length > 0 ? modelResults : allBrands.map(b => ({
-      brand: b.brand, model: '', brandCode: b.brandCode, type: b.typeKey, emoji: b.emoji
-    }));
-
-    fipeSugCache[val] = finalResults;
-    renderFipeSuggestions(val, finalResults, append);
 
   } catch(e) {
     console.error('FIPE search erro:', e);
