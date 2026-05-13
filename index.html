@@ -2794,9 +2794,20 @@ function renderFipeSuggestions(val, results, append = false) {
   if (!box || !content) return;
 
   if (results.length === 0) {
-    if (!append) {
-      content.innerHTML = `<div class="sug-no-results">Nenhum resultado para "<strong>${val}</strong>"<br><span style="font-size:12px">Pressione Enter para buscar na plataforma</span></div>`;
-    }
+    content.innerHTML = `<div class="sug-no-results">Nenhum resultado para "<strong>${val}</strong>"</div>`;
+    box.style.display = 'block';
+    return;
+  }
+
+  // Se só tem 1 resultado, navega direto
+  if (results.length === 1 && !append) {
+    hideSuggestions();
+    const r = results[0];
+    const prevIdx = mockVehicles.findIndex(v => v.id === 'dynamic');
+    if (prevIdx > -1) mockVehicles.splice(prevIdx, 1);
+    const typeEmoji = {'carros':'🚗','motos':'🏍️','caminhoes':'🚚'}[r.type] || '🚗';
+    mockVehicles.push({ id:'dynamic', _dynamic:true, emoji:typeEmoji, brand:r.brand, name:r.model||r.brand, version:r.label, year:'—', rating:0, count:0, badge:'Novo', badgeClass:'badge-yellow', problems:[], fipePrice:null });
+    showVehicleProfile('dynamic');
     return;
   }
 
@@ -2804,7 +2815,7 @@ function renderFipeSuggestions(val, results, append = false) {
   if (append && html) html += '<div class="sug-divider"></div>';
   html += `<div class="sug-section">🚗 Modelos FIPE</div>`;
 
-  results.slice(0,5).forEach(r => {
+  results.slice(0,6).forEach(r => {
     const label = r.model ? `${r.brand} ${r.model}` : r.brand;
     sugItems.push({ action:'fipe', brand: r.brand, model: r.model, type: r.type, label });
     html += `<div class="sug-item" onclick="selectSuggestion(${sugItems.length-1})">
@@ -3027,7 +3038,7 @@ function startVoiceSearch() {
   recognition.start();
 }
 
-function doFreeSearch() {
+async function doFreeSearch() {
   const val = document.getElementById('search-free-input').value.trim();
   hideSuggestions();
   if (!val) { applySearchWithFilter('', quickFilter); return; }
@@ -3035,22 +3046,18 @@ function doFreeSearch() {
 
   const words = val.toLowerCase().split(/\s+/).filter(w => w.length > 2);
 
-  // Tenta match exato primeiro
+  // Tenta match no mock primeiro
   let found = mockVehicles.find(v =>
     v.name.toLowerCase().includes(val.toLowerCase()) ||
     v.brand.toLowerCase().includes(val.toLowerCase()) ||
     `${v.brand} ${v.name}`.toLowerCase().includes(val.toLowerCase())
   );
-
-  // Se não achou, tenta por qualquer palavra
   if (!found) {
     found = mockVehicles.find(v => {
       const vehicleText = `${v.brand} ${v.name} ${v.version}`.toLowerCase();
       return words.some(w => vehicleText.includes(w));
     });
   }
-
-  // Score: encontra o veículo com mais palavras matching
   if (!found && words.length > 1) {
     let bestScore = 0;
     mockVehicles.forEach(v => {
@@ -3062,7 +3069,21 @@ function doFreeSearch() {
   }
 
   if (found) { showVehicleProfile(found.id); return; }
-  applySearchWithFilter(val, quickFilter);
+
+  // Não achou no mock — busca na FIPE
+  const input = document.getElementById('search-free-input');
+  input.value = val;
+  const box = document.getElementById('smart-suggestions');
+  const content = document.getElementById('smart-suggestions-content');
+  if (box && content) {
+    content.innerHTML = `<div class="sug-section">🔍 Buscando na FIPE…</div>
+      <div style="padding:12px 16px;color:var(--muted);font-size:13px;display:flex;align-items:center;gap:8px">
+        <span class="ai-spinner" style="border-color:rgba(13,31,60,.15);border-top-color:var(--navy);width:14px;height:14px;border-width:2px"></span>
+        Buscando "${val}"…
+      </div>`;
+    box.style.display = 'block';
+  }
+  await searchFipeModels(val);
 }
 
 function renderSuggestions(val) { onSearchInput(val); }
