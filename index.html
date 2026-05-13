@@ -2879,9 +2879,21 @@ function hideSuggestions() {
 }
 
 function onSearchKeydown(e) {
+  if (e.key === 'Escape') { hideSuggestions(); return; }
+  if (e.key === 'Enter') {
+    const box = document.getElementById('smart-suggestions');
+    const items = box?.querySelectorAll('.sug-item, .sug-history');
+    if (selectedSugIndex >= 0 && items?.[selectedSugIndex]) {
+      items[selectedSugIndex].click();
+    } else {
+      hideSuggestions();
+      doFreeSearch();
+    }
+    return;
+  }
   const box = document.getElementById('smart-suggestions');
   const items = box?.querySelectorAll('.sug-item, .sug-history');
-  if (!items?.length) { if(e.key==='Enter') { hideSuggestions(); doFreeSearch(); } return; }
+  if (!items?.length) return;
   if (e.key === 'ArrowDown') {
     e.preventDefault();
     selectedSugIndex = Math.min(selectedSugIndex+1, items.length-1);
@@ -2890,11 +2902,6 @@ function onSearchKeydown(e) {
     e.preventDefault();
     selectedSugIndex = Math.max(selectedSugIndex-1, -1);
     items.forEach((el,i) => el.classList.toggle('selected', i===selectedSugIndex));
-  } else if (e.key === 'Enter') {
-    if (selectedSugIndex >= 0) items[selectedSugIndex]?.click();
-    else { hideSuggestions(); doFreeSearch(); }
-  } else if (e.key === 'Escape') {
-    hideSuggestions();
   }
 }
 
