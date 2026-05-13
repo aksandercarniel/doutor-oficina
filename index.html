@@ -905,6 +905,7 @@ footer{background:var(--navy);padding:36px 24px}
     <div class="nav-actions">
       <a class="nav-link" href="#" onclick="showPage('home')">Ranking</a>
       <a class="nav-link" href="#" onclick="showPage('compare')">Comparar</a>
+      <a class="nav-link" href="#" onclick="showPage('lawyers')">⚖️ Advogados</a>
       <div id="nav-auth-area">
         <a class="nav-link" href="#" onclick="openAuth('login')">Entrar</a>
         <button class="btn-nav-reclamar" onclick="requireAuth()">+ Reclamar</button>
@@ -946,6 +947,116 @@ footer{background:var(--navy);padding:36px 24px}
 
 <!-- ══ PAGE HOME ══ -->
 <!-- Página de resultados de busca -->
+<!-- Página Admin -->
+<div id="page-admin" style="display:none;max-width:1280px;margin:0 auto;padding:32px 24px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px">
+    <div>
+      <h2 style="font-family:var(--font);font-size:26px;font-weight:900;color:var(--navy)">⚖️ Painel de Mediações</h2>
+      <p style="color:var(--muted);font-size:14px;margin-top:4px">Gerencie as solicitações de mediação</p>
+    </div>
+    <button onclick="showPage('home')" style="background:none;border:1.5px solid var(--border2);border-radius:8px;padding:8px 16px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;color:var(--navy)">← Voltar</button>
+  </div>
+
+  <!-- Filtros -->
+  <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+    <button class="qf-btn active" onclick="adminFilterMediation(this,'pending')">⏳ Pendentes</button>
+    <button class="qf-btn" onclick="adminFilterMediation(this,'accepted')">✅ Aceitas</button>
+    <button class="qf-btn" onclick="adminFilterMediation(this,'discarded')">❌ Descartadas</button>
+    <button class="qf-btn" onclick="adminFilterMediation(this,'resolved')">🏆 Resolvidas</button>
+    <button class="qf-btn" onclick="adminFilterMediation(this,'all')">Todas</button>
+  </div>
+
+  <div id="admin-mediations-list" style="display:flex;flex-direction:column;gap:16px">
+    <div style="text-align:center;padding:40px;color:var(--muted)">Carregando mediações…</div>
+  </div>
+</div>
+
+<!-- Página Advogados -->
+<div id="page-lawyers" style="display:none;max-width:1280px;margin:0 auto;padding:32px 24px">
+  <div style="text-align:center;max-width:600px;margin:0 auto 40px">
+    <div style="font-size:56px;margin-bottom:16px">⚖️</div>
+    <h2 style="font-family:var(--font);font-size:32px;font-weight:900;color:var(--navy);margin-bottom:12px">Seja um advogado parceiro</h2>
+    <p style="font-size:16px;color:var(--muted);line-height:1.7">Receba casos de mediação veicular, ajude consumidores a resolver problemas com suas compras e ainda ganhe por isso. Como um Uber, mas para mediações jurídicas.</p>
+  </div>
+
+  <!-- Benefícios -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;margin-bottom:40px">
+    <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:24px;text-align:center">
+      <div style="font-size:32px;margin-bottom:12px">📱</div>
+      <div style="font-family:var(--font);font-weight:800;font-size:16px;color:var(--navy);margin-bottom:8px">Casos no celular</div>
+      <div style="font-size:13px;color:var(--muted)">Receba notificações de novos casos e aceite quando quiser</div>
+    </div>
+    <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:24px;text-align:center">
+      <div style="font-size:32px;margin-bottom:12px">💰</div>
+      <div style="font-family:var(--font);font-weight:800;font-size:16px;color:var(--navy);margin-bottom:8px">Ganhos flexíveis</div>
+      <div style="font-size:13px;color:var(--muted)">Trabalhe no seu tempo e receba por mediação concluída</div>
+    </div>
+    <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:24px;text-align:center">
+      <div style="font-size:32px;margin-bottom:12px">⭐</div>
+      <div style="font-family:var(--font);font-weight:800;font-size:16px;color:var(--navy);margin-bottom:8px">Construa reputação</div>
+      <div style="font-size:13px;color:var(--muted)">Avaliações dos clientes aumentam sua visibilidade na plataforma</div>
+    </div>
+    <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:24px;text-align:center">
+      <div style="font-size:32px;margin-bottom:12px">🎯</div>
+      <div style="font-family:var(--font);font-weight:800;font-size:16px;color:var(--navy);margin-bottom:8px">Especialidade</div>
+      <div style="font-size:13px;color:var(--muted)">Foco em direito do consumidor veicular — mercado enorme no Brasil</div>
+    </div>
+  </div>
+
+  <!-- Formulário de cadastro -->
+  <div style="background:var(--white);border:1.5px solid var(--border);border-radius:20px;padding:32px;max-width:600px;margin:0 auto">
+    <h3 style="font-family:var(--font);font-weight:900;font-size:20px;color:var(--navy);margin-bottom:24px;text-align:center">📋 Cadastre-se na lista de espera</h3>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Nome completo *</label>
+        <input type="text" class="form-input" id="law-name" placeholder="Dr. João Silva"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">OAB *</label>
+        <input type="text" class="form-input" id="law-oab" placeholder="Ex: SP 123456"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">E-mail *</label>
+        <input type="email" class="form-input" id="law-email" placeholder="seu@email.com"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">WhatsApp *</label>
+        <input type="text" class="form-input" id="law-whatsapp" placeholder="(11) 99999-9999"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Estado de atuação *</label>
+        <select class="form-select" id="law-state">
+          <option value="">Selecione…</option>
+          <option>SP</option><option>RJ</option><option>MG</option><option>RS</option>
+          <option>PR</option><option>SC</option><option>BA</option><option>GO</option>
+          <option>PE</option><option>CE</option><option>DF</option><option>Todos</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Anos de experiência</label>
+        <input type="number" class="form-input" id="law-exp" placeholder="Ex: 5" min="0"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Especialidades</label>
+      <input type="text" class="form-input" id="law-spec" placeholder="Ex: Direito do consumidor, Direito automotivo"/>
+    </div>
+    <button class="btn-primary" style="width:100%;justify-content:center;margin-top:8px" onclick="submitLawyerRegistration()">
+      ⚖️ Quero ser advogado parceiro
+    </button>
+    <p style="text-align:center;font-size:12px;color:var(--muted);margin-top:12px">Entraremos em contato assim que as vagas forem abertas</p>
+  </div>
+</div>
+
+<!-- Página Resolução Direta -->
+<div id="page-resolution" style="display:none;max-width:900px;margin:0 auto;padding:32px 24px">
+  <div id="resolution-content"></div>
+</div>
+
 <div id="page-search" style="display:none;max-width:1280px;margin:0 auto;padding:32px 24px">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
     <button onclick="showPage('home')" style="background:none;border:none;cursor:pointer;color:var(--red);font-family:var(--font);font-weight:700;font-size:14px">← Voltar</button>
@@ -1337,16 +1448,74 @@ footer{background:var(--navy);padding:36px 24px}
         <div class="confirm-summary" id="confirm-summary"></div>
         <div class="form-actions">
           <button class="btn-back" onclick="goStep(1)">← Voltar</button>
-          <button class="btn-submit" onclick="submitComplaint()">✅ Enviar reclamação</button>
+          <button class="btn-submit" onclick="goStep(3)">Próximo →</button>
+        </div>
+      </div>
+
+      <!-- STEP 4: Mediação -->
+      <div class="modal-step" id="step3">
+        <div style="text-align:center;margin-bottom:24px">
+          <div style="font-size:48px;margin-bottom:12px">⚖️</div>
+          <div style="font-family:var(--font);font-weight:900;font-size:20px;color:var(--navy);margin-bottom:8px">Deseja mediação com advogado?</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.6">Um advogado especialista pode intermediar sua reclamação com a empresa.<br><strong style="color:var(--green)">Gratuito durante o período de lançamento!</strong></div>
+        </div>
+
+        <div style="display:flex;gap:12px;margin-bottom:24px">
+          <button id="btn-mediation-yes" onclick="selectMediation(true)" style="flex:1;padding:16px;border:2px solid var(--border2);border-radius:12px;background:var(--white);cursor:pointer;font-family:var(--font);font-weight:700;font-size:15px;color:var(--navy);transition:all .2s">
+            ✅ Sim, quero mediação
+          </button>
+          <button id="btn-mediation-no" onclick="selectMediation(false)" style="flex:1;padding:16px;border:2px solid var(--border2);border-radius:12px;background:var(--white);cursor:pointer;font-family:var(--font);font-weight:700;font-size:15px;color:var(--muted);transition:all .2s">
+            ❌ Não, obrigado
+          </button>
+        </div>
+
+        <!-- Campos extras para mediação -->
+        <div id="mediation-fields" style="display:none">
+          <div style="font-family:var(--font);font-weight:800;font-size:13px;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid var(--border)">📋 Dados da empresa/concessionária</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Nome da empresa *</label>
+              <input type="text" class="form-input" id="med-company-name" placeholder="Ex: Honda Concessionária SP"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">CNPJ</label>
+              <input type="text" class="form-input" id="med-company-cnpj" placeholder="00.000.000/0001-00"/>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">E-mail da empresa</label>
+              <input type="email" class="form-input" id="med-company-email" placeholder="contato@empresa.com"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Telefone da empresa</label>
+              <input type="text" class="form-input" id="med-company-phone" placeholder="(11) 99999-9999"/>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Endereço da empresa</label>
+            <input type="text" class="form-input" id="med-company-address" placeholder="Rua, número, cidade - estado"/>
+          </div>
+          <div style="font-family:var(--font);font-weight:800;font-size:13px;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 16px;padding-bottom:8px;border-bottom:2px solid var(--border)">📱 Seu contato</div>
+          <div class="form-group">
+            <label class="form-label">Seu WhatsApp *</label>
+            <input type="text" class="form-input" id="med-whatsapp" placeholder="(11) 99999-9999"/>
+            <div class="form-hint">O advogado entrará em contato por aqui</div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn-back" onclick="goStep(2)">← Voltar</button>
+          <button class="btn-submit" id="btn-submit-final" onclick="submitComplaint()" disabled style="opacity:.5">✅ Enviar reclamação</button>
         </div>
       </div>
 
       <!-- SUCCESS -->
       <div class="modal-step" id="step-success">
         <div class="success-box">
-          <div class="success-icon">🎉</div>
-          <div class="success-title">Reclamação enviada!</div>
-          <div class="success-text">Obrigado por contribuir com a comunidade.<br>Sua reclamação já está visível e vai ajudar outros motoristas.</div>
+          <div class="success-icon" id="success-icon">🎉</div>
+          <div class="success-title" id="success-title">Reclamação enviada!</div>
+          <div class="success-text" id="success-text">Obrigado por contribuir com a comunidade.<br>Sua reclamação já está visível e vai ajudar outros motoristas.</div>
           <button class="btn-submit" style="margin-top:24px;max-width:220px;display:block;margin-left:auto;margin-right:auto" onclick="closeModal()">Fechar</button>
         </div>
       </div>
@@ -1533,37 +1702,113 @@ function logout() {
   document.getElementById('user-dropdown')?.classList.remove('open');
 }
 
-// ══ OVERRIDE: submitComplaint com Supabase ══
+// ══ MEDIAÇÃO ══
+let wantsMediation = false;
+
+function selectMediation(yes) {
+  wantsMediation = yes;
+  const btnYes = document.getElementById('btn-mediation-yes');
+  const btnNo  = document.getElementById('btn-mediation-no');
+  const fields = document.getElementById('mediation-fields');
+  const btnSubmit = document.getElementById('btn-submit-final');
+
+  if (yes) {
+    btnYes.style.borderColor = 'var(--green)';
+    btnYes.style.background  = 'rgba(0,168,120,.08)';
+    btnYes.style.color = 'var(--green)';
+    btnNo.style.borderColor  = 'var(--border2)';
+    btnNo.style.background   = 'var(--white)';
+    btnNo.style.color = 'var(--muted)';
+    fields.style.display = 'block';
+  } else {
+    btnNo.style.borderColor  = 'var(--red)';
+    btnNo.style.background   = 'rgba(232,24,74,.06)';
+    btnNo.style.color = 'var(--red)';
+    btnYes.style.borderColor = 'var(--border2)';
+    btnYes.style.background  = 'var(--white)';
+    btnYes.style.color = 'var(--navy)';
+    fields.style.display = 'none';
+  }
+  btnSubmit.disabled = false;
+  btnSubmit.style.opacity = '1';
+}
+
+
 async function submitComplaint() {
   if (!currentUser) { closeModal(); openAuth('login'); return; }
   const brandEl = document.getElementById('sel-brand');
   const modelEl = document.getElementById('sel-model');
   const yearEl  = document.getElementById('sel-year');
   const typeBtn = document.querySelector('.vtype-btn.active');
+
+  // Valida mediação
+  if (wantsMediation) {
+    const compName = document.getElementById('med-company-name').value.trim();
+    const whatsapp = document.getElementById('med-whatsapp').value.trim();
+    if (!compName) { alert('Informe o nome da empresa para a mediação.'); return; }
+    if (!whatsapp) { alert('Informe seu WhatsApp para a mediação.'); return; }
+  }
+
   const complaint = {
     user_id: currentUser.id,
     vehicle_brand: brandEl.options[brandEl.selectedIndex]?.text || '—',
     vehicle_model: modelEl.options[modelEl.selectedIndex]?.text || '—',
     vehicle_year:  yearEl.options[yearEl.selectedIndex]?.text || '',
     vehicle_type:  typeBtn?.getAttribute('onclick')?.includes('motos') ? 'moto' : typeBtn?.getAttribute('onclick')?.includes('caminhoes') ? 'caminhao' : 'carro',
-    plate_hash:    plateData?.plate ? btoa(plateData.plate.replace('-','').toUpperCase()) : null, // placa em base64, nunca exibida
+    plate_hash:    plateData?.plate ? btoa(plateData.plate.replace('-','').toUpperCase()) : null,
     category:  selectedCatVal || 'Outro',
     title:     document.getElementById('inp-title').value || 'Reclamação',
     description: document.getElementById('inp-desc').value || '',
     rating:    selectedRating || 3,
     state:     document.getElementById('sel-state').value || null,
     km:        document.getElementById('inp-km').value || null,
-    status:    'open'
+    status:    'open',
+    wants_mediation: wantsMediation,
+    company_name:    wantsMediation ? document.getElementById('med-company-name').value.trim() : null,
+    company_cnpj:    wantsMediation ? document.getElementById('med-company-cnpj').value.trim() : null,
+    company_email:   wantsMediation ? document.getElementById('med-company-email').value.trim() : null,
+    company_phone:   wantsMediation ? document.getElementById('med-company-phone').value.trim() : null,
+    company_address: wantsMediation ? document.getElementById('med-company-address').value.trim() : null,
+    client_whatsapp: wantsMediation ? document.getElementById('med-whatsapp').value.trim() : null,
   };
+
   try {
-    await sbSaveComplaint(complaint);
+    const saved = await sbSaveComplaint(complaint);
+
+    // Se pediu mediação, salva na tabela de mediações
+    if (wantsMediation && saved?.id) {
+      await sb.from('mediations').insert([{
+        complaint_id:    saved.id,
+        client_id:       currentUser.id,
+        client_name:     currentUser.name,
+        client_whatsapp: document.getElementById('med-whatsapp').value.trim(),
+        company_name:    document.getElementById('med-company-name').value.trim(),
+        company_cnpj:    document.getElementById('med-company-cnpj').value.trim(),
+        company_email:   document.getElementById('med-company-email').value.trim(),
+        company_phone:   document.getElementById('med-company-phone').value.trim(),
+        company_address: document.getElementById('med-company-address').value.trim(),
+        status: 'pending'
+      }]);
+    }
+
+    // Mostra success personalizado
     document.querySelectorAll('.modal-step').forEach(s => s.classList.remove('active'));
     document.getElementById('step-success').classList.add('active');
-    // Recarrega lista
-    sbLoadComplaints().then(data => {
-      if (data.length) renderComplaintsList(data);
-    });
+    if (wantsMediation) {
+      document.getElementById('success-icon').textContent = '⚖️';
+      document.getElementById('success-title').textContent = 'Reclamação e mediação enviadas!';
+      document.getElementById('success-text').innerHTML = 'Sua reclamação foi registrada com sucesso.<br>Um advogado entrará em contato pelo WhatsApp em breve.<br><strong style="color:var(--green)">Mediação gratuita ativada! ✅</strong>';
+    } else {
+      document.getElementById('success-icon').textContent = '🎉';
+      document.getElementById('success-title').textContent = 'Reclamação enviada!';
+      document.getElementById('success-text').innerHTML = 'Obrigado por contribuir com a comunidade.<br>Sua reclamação já está visível e vai ajudar outros motoristas.';
+    }
+
+    // Reset
+    wantsMediation = false;
+    sbLoadComplaints().then(data => { if (data.length) renderComplaintsList(data); });
   } catch(e) {
+    console.error(e);
     alert('Erro ao salvar reclamação. Tente novamente.');
   }
 }
@@ -2421,14 +2666,98 @@ Retorne entre 3 e 5 resultados relevantes. Foque em problemas reais e recentes.`
 }
 
 // ══ ROUTING ══
+// ══ ADMIN ══
+const ADMIN_EMAIL = 'aksandercarniel@gmail.com';
+
+async function loadAdminMediations(status = 'pending') {
+  const list = document.getElementById('admin-mediations-list');
+  if (!list) return;
+  list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Carregando…</div>';
+  try {
+    let query = sb.from('mediations').select('*').order('created_at', { ascending: false });
+    if (status !== 'all') query = query.eq('status', status);
+    const { data, error } = await query;
+    if (error || !data?.length) {
+      list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Nenhuma mediação encontrada.</div>';
+      return;
+    }
+    list.innerHTML = data.map(m => `
+      <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:24px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+          <div>
+            <div style="font-family:var(--font);font-weight:900;font-size:17px;color:var(--navy)">${m.client_name||'Cliente'}</div>
+            <div style="font-size:13px;color:var(--muted);margin-top:4px">📱 ${m.client_whatsapp||'—'} · ${new Date(m.created_at).toLocaleDateString('pt-BR')}</div>
+          </div>
+          <span style="font-size:11px;font-weight:800;padding:4px 12px;border-radius:20px;${m.status==='pending'?'background:#fff8e1;color:#f59e0b':m.status==='accepted'?'background:#e8f5e9;color:#16a34a':m.status==='discarded'?'background:#fef2f2;color:#dc2626':'background:#e8f4fd;color:#2563eb'}">${m.status==='pending'?'⏳ Pendente':m.status==='accepted'?'✅ Aceita':m.status==='discarded'?'❌ Descartada':'🏆 Resolvida'}</span>
+        </div>
+        <div style="background:var(--bg);border-radius:10px;padding:14px;margin-bottom:16px">
+          <div style="font-size:12px;font-weight:800;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">🏢 Empresa</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">
+            <div><span style="color:var(--muted)">Nome:</span> <strong>${m.company_name||'—'}</strong></div>
+            <div><span style="color:var(--muted)">CNPJ:</span> <strong>${m.company_cnpj||'—'}</strong></div>
+            <div><span style="color:var(--muted)">E-mail:</span> <strong>${m.company_email||'—'}</strong></div>
+            <div><span style="color:var(--muted)">Tel:</span> <strong>${m.company_phone||'—'}</strong></div>
+            <div style="grid-column:1/-1"><span style="color:var(--muted)">Endereço:</span> <strong>${m.company_address||'—'}</strong></div>
+          </div>
+        </div>
+        ${m.status==='pending'?`
+        <div style="display:flex;gap:10px">
+          <button onclick="updateMediation('${m.id}','accepted')" style="flex:1;padding:12px;background:var(--green);color:#fff;border:none;border-radius:10px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px">✅ Aceitar mediação</button>
+          <button onclick="updateMediation('${m.id}','discarded')" style="flex:1;padding:12px;background:var(--bg);color:var(--muted);border:1.5px solid var(--border2);border-radius:10px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px">❌ Descartar</button>
+        </div>`:m.status==='accepted'?`
+        <div style="display:flex;gap:10px">
+          <a href="https://wa.me/55${(m.client_whatsapp||'').replace(/\D/g,'')}" target="_blank" style="flex:1;padding:12px;background:#25D366;color:#fff;border:none;border-radius:10px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px;text-align:center;text-decoration:none">📱 WhatsApp</a>
+          <button onclick="updateMediation('${m.id}','resolved')" style="flex:1;padding:12px;background:var(--navy);color:#fff;border:none;border-radius:10px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px">🏆 Resolvida</button>
+        </div>`:''}
+      </div>`).join('');
+  } catch(e) {
+    list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)">Erro ao carregar mediações.</div>';
+  }
+}
+
+async function updateMediation(id, status) {
+  await sb.from('mediations').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
+  const btn = document.querySelector('#page-admin .qf-btn.active');
+  const s = btn?.getAttribute('onclick')?.match(/'(\w+)'/)?.[1] || 'pending';
+  loadAdminMediations(s);
+}
+
+function adminFilterMediation(btn, status) {
+  document.querySelectorAll('#page-admin .qf-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadAdminMediations(status);
+}
+
+async function submitLawyerRegistration() {
+  const name     = document.getElementById('law-name').value.trim();
+  const oab      = document.getElementById('law-oab').value.trim();
+  const email    = document.getElementById('law-email').value.trim();
+  const whatsapp = document.getElementById('law-whatsapp').value.trim();
+  const state    = document.getElementById('law-state').value;
+  if (!name || !oab || !email || !whatsapp || !state) {
+    alert('Preencha todos os campos obrigatórios (*)'); return;
+  }
+  try {
+    await sb.from('lawyers_waitlist').insert([{
+      name, oab, email, whatsapp, state,
+      experience_years: parseInt(document.getElementById('law-exp').value) || 0,
+      specialties: document.getElementById('law-spec').value.trim(),
+      status: 'waitlist'
+    }]);
+  } catch(e) {}
+  alert('✅ Interesse registrado!\nEntraremos em contato em breve pelo e-mail informado.');
+  showPage('home');
+}
+
 function showPage(page){
-  ['home','vehicle','profile','compare','search'].forEach(p=>{
+  ['home','vehicle','profile','compare','search','admin','lawyers','resolution'].forEach(p=>{
     const el=document.getElementById('page-'+p);
     if(el) el.style.display=p===page?'block':'none';
   });
   window.scrollTo({top:0,behavior:'smooth'});
   if(page==='profile') renderProfile();
   if(page==='compare') initCompare();
+  if(page==='admin') loadAdminMediations('pending');
 }
 
 // ══ PLACA ══
@@ -3485,6 +3814,7 @@ function updateNavAuth() {
           <div class="udrop-divider"></div>
           <button class="udrop-item" onclick="requireAuth()">🚨 Nova reclamação</button>
           <div class="udrop-divider"></div>
+          ${currentUser?.email === ADMIN_EMAIL ? `<button class="udrop-item" onclick="showPage('admin')" style="color:var(--navy);font-weight:800">🛡️ Painel Admin</button><div class="udrop-divider"></div>` : ''}
           <button class="udrop-item" onclick="logout()">🚪 Sair</button>
         </div>
       </div>`;
