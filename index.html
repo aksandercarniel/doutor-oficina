@@ -2881,7 +2881,7 @@ function hideSuggestions() {
 function onSearchKeydown(e) {
   const box = document.getElementById('smart-suggestions');
   const items = box?.querySelectorAll('.sug-item, .sug-history');
-  if (!items?.length) { if(e.key==='Enter') doFreeSearch(); return; }
+  if (!items?.length) { if(e.key==='Enter') { hideSuggestions(); doFreeSearch(); } return; }
   if (e.key === 'ArrowDown') {
     e.preventDefault();
     selectedSugIndex = Math.min(selectedSugIndex+1, items.length-1);
@@ -2892,8 +2892,7 @@ function onSearchKeydown(e) {
     items.forEach((el,i) => el.classList.toggle('selected', i===selectedSugIndex));
   } else if (e.key === 'Enter') {
     if (selectedSugIndex >= 0) items[selectedSugIndex]?.click();
-    else doFreeSearch();
-    hideSuggestions();
+    else { hideSuggestions(); doFreeSearch(); }
   } else if (e.key === 'Escape') {
     hideSuggestions();
   }
