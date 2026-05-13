@@ -2774,13 +2774,12 @@ async function searchFipeModels(val, append = false) {
       if (!Array.isArray(brands)) continue;
 
       // Busca modelos de todas as marcas em paralelo
-      const modelSearches = brands.slice(0, 50).map(async brand => {
+      const modelSearches = brands.map(async brand => {
         try {
           const dm = await fipeFetch(`${FIPE_V2}/${t.key}/brands/${brand.code||brand.codigo}/models`);
           const models = dm.models || dm.modelos || dm;
           return (Array.isArray(models) ? models : [])
             .filter(m => (m.name||m.nome||'').toLowerCase().includes(cacheKey))
-            .slice(0, 2)
             .map(m => ({
               brand: brand.name||brand.nome,
               model: m.name||m.nome,
@@ -2791,7 +2790,7 @@ async function searchFipeModels(val, append = false) {
       });
 
       const modelResults = (await Promise.all(modelSearches)).flat();
-      allResults.push(...modelResults.slice(0, 20 - allResults.length));
+      allResults.push(...modelResults);
     }
 
     fipeSugCache[cacheKey] = allResults;
