@@ -1237,7 +1237,10 @@ footer{background:var(--navy);padding:36px 24px}
         <div class="auth-error" id="register-error">E-mail já cadastrado.</div>
         <div class="auth-group"><label class="auth-label">Nome completo</label><input type="text" class="auth-input" id="reg-name" placeholder="Seu nome"/></div>
         <div class="auth-group"><label class="auth-label">E-mail</label><input type="email" class="auth-input" id="reg-email" placeholder="seu@email.com"/></div>
+        <div class="auth-group"><label class="auth-label">CPF</label><input type="text" class="auth-input" id="reg-cpf" placeholder="000.000.000-00" maxlength="14" oninput="maskCPF(this)"/></div>
+        <div class="auth-group"><label class="auth-label">Telefone / WhatsApp</label><input type="text" class="auth-input" id="reg-phone" placeholder="(11) 99999-9999" maxlength="15" oninput="maskPhone(this)"/></div>
         <div class="auth-group"><label class="auth-label">Senha</label><input type="password" class="auth-input" id="reg-pass" placeholder="Mínimo 6 caracteres" onkeydown="if(event.key==='Enter')doRegister()"/></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:-8px;margin-bottom:4px">🔒 Seu CPF é usado apenas para verificação de identidade e nunca será exibido publicamente (LGPD)</div>
         <button class="auth-btn" onclick="doRegister()">Criar conta →</button>
       </div>
     </div>
@@ -1531,7 +1534,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ══ SUPABASE AUTH ══
-async function sbSignUp(name, email, password) {
+async function sbSignUp(name, email, password, cpfHash = null, phone = null) {
   const { data, error } = await sb.auth.signUp({
     email, password,
     options: { data: { name } }
@@ -1679,15 +1682,22 @@ async function doLogin() {
 async function doRegister() {
   const name  = document.getElementById('reg-name').value.trim();
   const email = document.getElementById('reg-email').value.trim();
+  const cpf   = document.getElementById('reg-cpf').value.trim();
   const pass  = document.getElementById('reg-pass').value;
   const errEl = document.getElementById('register-error');
   errEl.classList.remove('show');
-  if (!name || !email || pass.length < 6) {
+  const phone = document.getElementById('reg-phone').value.trim();
+  if (!name || !email || !cpf || !phone || pass.length < 6) {
     errEl.textContent = 'Preencha todos os campos (senha mín. 6 caracteres).';
     errEl.classList.add('show'); return;
   }
+  if (!validateCPF(cpf)) {
+    errEl.textContent = 'CPF inválido. Verifique e tente novamente.';
+    errEl.classList.add('show'); return;
+  }
   try {
-    await sbSignUp(name, email, pass);
+    const cpfHash = btoa(cpf.replace(/[^\d]/g, ''));
+    const data = await sbSignUp(name, email, pass, cpfHash, phone);
     currentUser = { id: null, name, email };
     loginSuccess(currentUser);
   } catch(e) {
@@ -1700,6 +1710,39 @@ async function doRegister() {
 function logout() {
   sbSignOut();
   document.getElementById('user-dropdown')?.classList.remove('open');
+}
+
+
+// ══ CPF ══
+function maskPhone(input) {
+  let v = input.value.replace(/\D/g, '').slice(0, 11);
+  if (v.length > 10) v = v.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+  else if (v.length > 6) v = v.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
+  else if (v.length > 2) v = v.replace(/(\d{2})(\d{0,5})/, '($1) $2');
+  input.value = v;
+}
+
+function maskCPF(input) {
+  let v = input.value.replace(/\D/g, '').slice(0, 11);
+  if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+  else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+  else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+  input.value = v;
+}
+
+function validateCPF(cpf) {
+  cpf = cpf.replace(/[^\d]/g, '');
+  if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+  let sum = 0, rem;
+  for (let i = 1; i <= 9; i++) sum += parseInt(cpf[i-1]) * (11 - i);
+  rem = (sum * 10) % 11;
+  if (rem === 10 || rem === 11) rem = 0;
+  if (rem !== parseInt(cpf[9])) return false;
+  sum = 0;
+  for (let i = 1; i <= 10; i++) sum += parseInt(cpf[i-1]) * (12 - i);
+  rem = (sum * 10) % 11;
+  if (rem === 10 || rem === 11) rem = 0;
+  return rem === parseInt(cpf[10]);
 }
 
 // ══ MEDIAÇÃO ══
