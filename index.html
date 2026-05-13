@@ -893,9 +893,14 @@ footer{background:var(--navy);padding:36px 24px}
           onkeydown="onSearchKeydown(event)"
           onfocus="onSearchFocus()"
           autocomplete="off"
-          style="flex:1;height:40px;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.15);border-right:none;border-radius:8px 0 0 8px;color:#fff;font-family:var(--font-body);font-size:14px;padding:0 14px;outline:none;"/>
-        <button onclick="startVoiceSearch()" id="voice-btn" title="Buscar por voz"
-          style="height:38px;width:38px;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.15);border-left:none;border-right:none;border-radius:0 8px 8px 0;cursor:pointer;color:#fff;font-size:15px;flex-shrink:0">🎤</button>
+          style="flex:1;height:38px;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.15);border-right:none;border-radius:8px 0 0 8px;color:#fff;font-family:var(--font-body);font-size:14px;padding:0 14px;outline:none;"/>
+        <button onclick="startVoiceSearch()" id="voice-btn" title="Buscar por voz" style="height:38px;width:38px;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.15);border-left:none;border-right:none;cursor:pointer;color:#fff;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        </button>
+        <button onclick="startImageSearch()" id="image-btn" title="Buscar por foto" style="height:38px;width:38px;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.15);border-left:none;border-radius:0 8px 8px 0;cursor:pointer;color:#fff;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </button>
+        <input type="file" id="image-input" accept="image/*" capture="environment" style="display:none" onchange="handleImageUpload(event)"/>
       </div>
       <div class="smart-suggestions nav-smart-suggestions" id="smart-suggestions" style="display:none">
         <div id="smart-suggestions-content"></div>
@@ -2764,7 +2769,103 @@ document.addEventListener('click', e => {
 // ══ BUSCA POR VOZ ══
 let recognition = null;
 
-function startVoiceSearch() {
+function startImageSearch() {
+  document.getElementById('image-input').click();
+}
+
+async function handleImageUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const btn = document.getElementById('image-btn');
+  btn.style.opacity = '0.5';
+  btn.style.pointerEvents = 'none';
+
+  // Mostra loading na busca
+  const input = document.getElementById('search-free-input');
+  const prev = input.value;
+  input.value = 'Identificando veículo…';
+
+  try {
+    // Converte imagem para base64
+    const base64 = await new Promise((res, rej) => {
+      const reader = new FileReader();
+      reader.onload = () => res(reader.result.split(',')[1]);
+      reader.onerror = rej;
+      reader.readAsDataURL(file);
+    });
+
+    const mediaType = file.type || 'image/jpeg';
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 300,
+        system: `Você é um especialista em veículos. Identifique o veículo na imagem e responda APENAS em JSON válido sem markdown:
+{"brand":"Honda","model":"Civic","year":"2021","type":"carros","found":true}
+Se não conseguir identificar: {"found":false}`,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+            { type: 'text', text: 'Qual é este veículo? Identifique marca, modelo e ano aproximado.' }
+          ]
+        }]
+      })
+    });
+
+    const data = await response.json();
+    const text = data.content.map(i => i.text || '').filter(Boolean).join('');
+    const clean = text.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(clean);
+
+    if (result.found) {
+      input.value = `${result.brand} ${result.model} ${result.year}`;
+
+      // Tenta encontrar nos mocks
+      const found = mockVehicles.find(v =>
+        v.name.toLowerCase().includes(result.model.toLowerCase()) ||
+        v.brand.toLowerCase().includes(result.brand.toLowerCase())
+      );
+
+      if (found) {
+        showVehicleProfile(found.id);
+      } else {
+        // Cria perfil dinâmico
+        const prevIdx = mockVehicles.findIndex(v => v.id === 'dynamic');
+        if (prevIdx > -1) mockVehicles.splice(prevIdx, 1);
+        const typeEmoji = {'carros':'🚗','motos':'🏍️','caminhoes':'🚚'}[result.type] || '🚗';
+        const dynamicVehicle = {
+          id: 'dynamic', _dynamic: true,
+          emoji: typeEmoji,
+          brand: result.brand,
+          name: result.model,
+          version: `${result.brand} ${result.model}`,
+          year: result.year,
+          rating: 0, count: 0,
+          badge: 'Novo', badgeClass: 'badge-yellow',
+          problems: [], fipePrice: null
+        };
+        mockVehicles.push(dynamicVehicle);
+        showVehicleProfile('dynamic');
+      }
+    } else {
+      input.value = prev;
+      alert('Não foi possível identificar o veículo. Tente uma foto mais clara.');
+    }
+
+  } catch(e) {
+    console.error('Erro na busca por imagem:', e);
+    input.value = prev;
+    alert('Erro ao processar a imagem. Tente novamente.');
+  } finally {
+    btn.style.opacity = '1';
+    btn.style.pointerEvents = 'auto';
+    event.target.value = ''; // Reset input file
+  }
+}
   const btn = document.getElementById('voice-btn');
   const input = document.getElementById('search-free-input');
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
