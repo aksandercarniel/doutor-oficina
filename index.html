@@ -2764,7 +2764,7 @@ async function searchFipeModels(val, append = false) {
     ];
 
     for (const t of types) {
-      if (allResults.length >= 6) break;
+      if (allResults.length >= 20) break;
       const brands = await fipeFetch(`${FIPE_V2}/${t.key}/brands`);
       if (!Array.isArray(brands)) continue;
 
@@ -2786,7 +2786,7 @@ async function searchFipeModels(val, append = false) {
       });
 
       const modelResults = (await Promise.all(modelSearches)).flat();
-      allResults.push(...modelResults.slice(0, 6 - allResults.length));
+      allResults.push(...modelResults.slice(0, 20 - allResults.length));
     }
 
     fipeSugCache[cacheKey] = allResults;
@@ -2824,7 +2824,7 @@ function renderFipeSuggestions(val, results, append = false) {
   if (append && html) html += '<div class="sug-divider"></div>';
   html += `<div class="sug-section">🚗 Modelos FIPE</div>`;
 
-  results.slice(0,6).forEach(r => {
+  results.forEach(r => {
     const label = r.model ? `${r.brand} ${r.model}` : r.brand;
     sugItems.push({ action:'fipe', brand: r.brand, model: r.model, type: r.type, label });
     html += `<div class="sug-item" onclick="selectSuggestion(${sugItems.length-1})">
@@ -2845,6 +2845,7 @@ function selectSuggestion(idx) {
   const item = sugItems[idx];
   if (!item) return;
   hideSuggestions();
+  document.getElementById('search-free-input').value = '';
   if (item.action === 'vehicle') {
     showVehicleProfile(item.id);
   } else if (item.action === 'fipe') {
@@ -3055,6 +3056,7 @@ function startVoiceSearch() {
 
 function showSearchResults(val, results) {
   showPage('search');
+  document.getElementById('search-free-input').value = '';
   document.getElementById('search-results-title').textContent = `${results.length} resultado${results.length !== 1 ? 's' : ''} para "${val}"`;
   const grid = document.getElementById('search-results-grid');
   grid.innerHTML = results.map(r => {
