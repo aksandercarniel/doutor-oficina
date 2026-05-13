@@ -1226,8 +1226,8 @@ footer{background:var(--navy);padding:36px 24px}
       <!-- LOGIN -->
       <div class="auth-panel active" id="panel-login">
         <div class="auth-error" id="login-error">E-mail ou senha incorretos.</div>
-        <div class="auth-group"><label class="auth-label">E-mail</label><input type="email" class="auth-input" id="login-email" placeholder="seu@email.com"/></div>
-        <div class="auth-group"><label class="auth-label">Senha</label><input type="password" class="auth-input" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+        <div class="auth-group"><label class="auth-label">E-mail</label><input type="email" class="auth-input" id="login-email" placeholder="seu@email.com" oninput="document.getElementById('login-pass').removeAttribute('readonly')"/></div>
+        <div class="auth-group"><label class="auth-label">Senha</label><input type="password" class="auth-input" id="login-pass" placeholder="••••••••" readonly onfocus="this.removeAttribute('readonly')" onkeydown="if(event.key==='Enter')doLogin()"/></div>
         <button class="auth-btn" onclick="doLogin()">Entrar →</button>
         <div class="auth-divider">ou continue com</div>
         <div class="auth-social">
