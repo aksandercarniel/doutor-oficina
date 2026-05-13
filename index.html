@@ -2642,8 +2642,11 @@ function applySearchWithFilter(query, filter) {
 }
 
 function onSearchInput(val) {
-  fipeSugCache = {}; // limpa cache ao digitar novo termo
+  fipeSugCache = {};
   sugItems = [];
+  // Remove veículo dinâmico para não interferir na próxima busca
+  const dynIdx = mockVehicles.findIndex(v => v.id === 'dynamic');
+  if (dynIdx > -1) mockVehicles.splice(dynIdx, 1);
   clearTimeout(searchDebounceTimer);
   searchDebounceTimer = setTimeout(() => showSmartSuggestions(val), 150);
 }
