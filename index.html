@@ -2430,9 +2430,6 @@ function showPage(page){
     const el=document.getElementById('page-'+p);
     if(el) el.style.display=p===page?'block':'none';
   });
-  // Esconde barra de busca fora da home
-  const searchBar = document.querySelector('.search-bar-wrap');
-  if (searchBar) searchBar.style.display = page==='home' ? '' : 'none';
   window.scrollTo({top:0,behavior:'smooth'});
   if(page==='profile') renderProfile();
   if(page==='compare') initCompare();
