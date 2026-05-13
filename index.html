@@ -887,7 +887,7 @@ footer{background:var(--navy);padding:36px 24px}
     </a>
     <div class="nav-search" style="position:relative">
       <div style="display:flex;align-items:center;width:100%">
-        <input type="text" id="search-free-input"
+        <input type="search" id="search-free-input" name="site-search"
           placeholder="Buscar marca, modelo, problema…"
           oninput="onSearchInput(this.value)"
           onkeydown="onSearchKeydown(event)"
@@ -3978,7 +3978,8 @@ function loginSuccess(user) {
   currentUser = user;
   closeAuth();
   updateNavAuth();
-  // Se tinha pendente uma reclamação, abre o modal
+  const si = document.getElementById('search-free-input');
+  if (si) si.value = '';
   if (pendingComplaint) { pendingComplaint = false; openModal(); }
 }
 
