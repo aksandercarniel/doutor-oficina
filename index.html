@@ -2895,11 +2895,36 @@ function doFreeSearch() {
   hideSuggestions();
   if (!val) { applySearchWithFilter('', quickFilter); return; }
   addToHistory(val);
-  const found = mockVehicles.find(v =>
+
+  const words = val.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+
+  // Tenta match exato primeiro
+  let found = mockVehicles.find(v =>
     v.name.toLowerCase().includes(val.toLowerCase()) ||
-    v.brand.toLowerCase().includes(val.toLowerCase())
+    v.brand.toLowerCase().includes(val.toLowerCase()) ||
+    `${v.brand} ${v.name}`.toLowerCase().includes(val.toLowerCase())
   );
-  if (found && val.length > 3) { showVehicleProfile(found.id); return; }
+
+  // Se não achou, tenta por qualquer palavra
+  if (!found) {
+    found = mockVehicles.find(v => {
+      const vehicleText = `${v.brand} ${v.name} ${v.version}`.toLowerCase();
+      return words.some(w => vehicleText.includes(w));
+    });
+  }
+
+  // Score: encontra o veículo com mais palavras matching
+  if (!found && words.length > 1) {
+    let bestScore = 0;
+    mockVehicles.forEach(v => {
+      const vehicleText = `${v.brand} ${v.name} ${v.version}`.toLowerCase();
+      const score = words.filter(w => vehicleText.includes(w)).length;
+      if (score > bestScore) { bestScore = score; found = v; }
+    });
+    if (bestScore === 0) found = null;
+  }
+
+  if (found) { showVehicleProfile(found.id); return; }
   applySearchWithFilter(val, quickFilter);
 }
 
