@@ -177,13 +177,6 @@ header{
   position:relative;
   z-index:10;
 }
-@media(min-width:901px){
-  .search-bar-wrap{
-    position:sticky;
-    top:120px;
-    z-index:190;
-  }
-}
 .search-bar-inner{max-width:1280px;margin:0 auto;padding:16px 24px 18px}
 .search-tabs{display:flex;gap:6px;margin-bottom:14px}
 /* ── BUSCA MELHORADA ── */
@@ -3010,8 +3003,8 @@ async function doFipeSearch() {
 
   // Se não encontrou no mock, busca preço FIPE e cria perfil dinâmico
   const res = document.getElementById('sb-fipe-result');
-  res.innerHTML = '<span style="color:var(--muted);font-size:13px">⏳ Buscando dados…</span>';
-  res.classList.add('show');
+  res.classList.remove('show');
+  res.innerHTML = '';
 
   try {
     // Pega código do ano com combustível
