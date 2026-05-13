@@ -2846,6 +2846,7 @@ function selectSuggestion(idx) {
   if (!item) return;
   hideSuggestions();
   document.getElementById('search-free-input').value = '';
+  fipeSugCache = {}; // limpa cache para próxima busca ser fresca
   if (item.action === 'vehicle') {
     showVehicleProfile(item.id);
   } else if (item.action === 'fipe') {
