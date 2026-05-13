@@ -2642,6 +2642,8 @@ function applySearchWithFilter(query, filter) {
 }
 
 function onSearchInput(val) {
+  fipeSugCache = {}; // limpa cache ao digitar novo termo
+  sugItems = [];
   clearTimeout(searchDebounceTimer);
   searchDebounceTimer = setTimeout(() => showSmartSuggestions(val), 150);
 }
