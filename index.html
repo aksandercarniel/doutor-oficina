@@ -890,8 +890,8 @@ footer{background:var(--navy);padding:36px 24px}
 <header>
   <div class="topbar">
   <div class="topbar-inner">
-    <a class="topbar-link" href="#" onclick="event.preventDefault();showPage('home')">Ranking</a>
-    <a class="topbar-link" href="#" onclick="event.preventDefault();showPage('compare')">Comparar</a>
+    <a class="topbar-link" href="#" onclick="event.preventDefault();showPage('home');setTimeout(()=>document.getElementById('ranking-section')?.scrollIntoView({behavior:'smooth'}),100)">Ranking de confiabilidade</a>
+    <a class="topbar-link" href="#" onclick="event.preventDefault();showPage('compare')">Comparar veículos</a>
     <a class="topbar-link" href="#" onclick="event.preventDefault();showPage('lawyers')">Advogados parceiros</a>
   </div>
 </div>
