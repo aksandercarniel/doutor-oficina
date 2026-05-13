@@ -2647,6 +2647,9 @@ function highlightMatch(text, query) {
   return text.replace(re, '<span class="sug-highlight">$1</span>');
 }
 
+let fipeSearchTimer = null;
+let fipeSugCache = {};
+
 function showSmartSuggestions(val) {
   const box = document.getElementById('smart-suggestions');
   const content = document.getElementById('smart-suggestions-content');
@@ -2674,43 +2677,150 @@ function showSmartSuggestions(val) {
         <span class="sug-item-badge ${v.badgeClass}">${v.badge}</span>
       </div>`;
     });
-  } else {
-    const vMatches = getSearchData().filter(s => s.type === 'vehicle' && s.label.toLowerCase().includes(val.toLowerCase())).slice(0,4);
-    const pMatches = getSearchData().filter(s => s.type === 'problem' && s.label.toLowerCase().includes(val.toLowerCase())).slice(0,3);
-
-    if (!vMatches.length && !pMatches.length) {
-      html += `<div class="sug-no-results">Nenhum resultado para "<strong>${val}</strong>"<br><span style="font-size:12px">Pressione Enter para buscar na plataforma</span></div>`;
-    } else {
-      if (vMatches.length) {
-        html += `<div class="sug-section">🚗 Veículos</div>`;
-        vMatches.forEach(v => {
-          sugItems.push({ action:'vehicle', id:v.id, label:v.label });
-          html += `<div class="sug-item" onclick="selectSuggestion(${sugItems.length-1})">
-            <div class="sug-item-icon">${v.emoji}</div>
-            <div class="sug-item-info">
-              <div class="sug-item-name">${highlightMatch(v.label, val)}</div>
-              <div class="sug-item-sub">${v.count?.toLocaleString('pt-BR')} reclamações · ${v.sub}</div>
-            </div>
-            <span class="sug-item-badge ${v.badgeClass}">${v.badge}</span>
-          </div>`;
-        });
-      }
-      if (pMatches.length) {
-        if (vMatches.length) html += '<div class="sug-divider"></div>';
-        html += `<div class="sug-section">⚠️ Problemas relatados</div>`;
-        pMatches.forEach(p => {
-          sugItems.push({ action:'search', label:p.label });
-          html += `<div class="sug-item" onclick="selectSuggestion(${sugItems.length-1})">
-            <div class="sug-item-icon">${p.emoji}</div>
-            <div class="sug-item-info">
-              <div class="sug-item-name">${highlightMatch(p.label, val)}</div>
-              <div class="sug-item-sub">${p.sub}</div>
-            </div>
-          </div>`;
-        });
-      }
-    }
+    content.innerHTML = html;
+    box.style.display = 'block';
+    return;
   }
+
+  // Filtra mock local
+  const vMatches = getSearchData().filter(s => s.type === 'vehicle' && s.label.toLowerCase().includes(val.toLowerCase())).slice(0,4);
+  const pMatches = getSearchData().filter(s => s.type === 'problem' && s.label.toLowerCase().includes(val.toLowerCase())).slice(0,3);
+
+  if (vMatches.length) {
+    html += `<div class="sug-section">🚗 Veículos</div>`;
+    vMatches.forEach(v => {
+      sugItems.push({ action:'vehicle', id:v.id, label:v.label });
+      html += `<div class="sug-item" onclick="selectSuggestion(${sugItems.length-1})">
+        <div class="sug-item-icon">${v.emoji}</div>
+        <div class="sug-item-info">
+          <div class="sug-item-name">${highlightMatch(v.label, val)}</div>
+          <div class="sug-item-sub">${v.count?.toLocaleString('pt-BR')} reclamações · ${v.sub}</div>
+        </div>
+        <span class="sug-item-badge ${v.badgeClass}">${v.badge}</span>
+      </div>`;
+    });
+  }
+
+  if (pMatches.length) {
+    if (vMatches.length) html += '<div class="sug-divider"></div>';
+    html += `<div class="sug-section">⚠️ Problemas relatados</div>`;
+    pMatches.forEach(p => {
+      sugItems.push({ action:'search', label:p.label });
+      html += `<div class="sug-item" onclick="selectSuggestion(${sugItems.length-1})">
+        <div class="sug-item-icon">${p.emoji}</div>
+        <div class="sug-item-info">
+          <div class="sug-item-name">${highlightMatch(p.label, val)}</div>
+          <div class="sug-item-sub">${p.sub}</div>
+        </div>
+      </div>`;
+    });
+  }
+
+  // Se não tem resultado local, mostra loading e busca na FIPE
+  if (!vMatches.length && !pMatches.length) {
+    html += `<div class="sug-section">🔍 Buscando na FIPE…</div>
+      <div style="padding:12px 16px;color:var(--muted);font-size:13px;display:flex;align-items:center;gap:8px">
+        <span class="ai-spinner" style="border-color:rgba(13,31,60,.15);border-top-color:var(--navy);width:14px;height:14px;border-width:2px"></span>
+        Buscando modelos…
+      </div>`;
+    content.innerHTML = html;
+    box.style.display = 'block';
+    searchFipeModels(val);
+    return;
+  }
+
+  // Se tem resultado local mas pouco, busca FIPE em paralelo
+  if (vMatches.length < 3 && val.length >= 3) {
+    searchFipeModels(val, true);
+  }
+
+  content.innerHTML = html;
+  box.style.display = 'block';
+  selectedSugIndex = -1;
+}
+
+async function searchFipeModels(val, append = false) {
+  if (val.length < 2) return;
+  if (fipeSugCache[val]) {
+    renderFipeSuggestions(val, fipeSugCache[val], append);
+    return;
+  }
+
+  try {
+    // Busca em carros, motos e caminhões em paralelo
+    const types = ['cars','motorcycles','trucks'];
+    const emojis = {'cars':'🚗','motorcycles':'🏍️','trucks':'🚚'};
+    const typeKeys = {'cars':'carros','motorcycles':'motos','trucks':'caminhoes'};
+
+    const results = await Promise.all(types.map(async t => {
+      try {
+        const d = await fipeFetch(`${FIPE_V2}/${t}/brands`);
+        return (Array.isArray(d) ? d : [])
+          .filter(b => (b.name||b.nome||'').toLowerCase().includes(val.toLowerCase()))
+          .slice(0,3)
+          .map(b => ({ brand: b.name||b.nome, brandCode: b.code||b.codigo, type: t, emoji: emojis[t], typeKey: typeKeys[t] }));
+      } catch(e) { return []; }
+    }));
+
+    const allBrands = results.flat().slice(0,5);
+
+    // Para cada marca encontrada, busca modelos
+    const modelResults = [];
+    for (const brand of allBrands.slice(0,2)) {
+      try {
+        const d = await fipeFetch(`${FIPE_V2}/${brand.type}/brands/${brand.brandCode}/models`);
+        const models = (d.models || d.modelos || d);
+        const filtered = (Array.isArray(models) ? models : [])
+          .filter(m => (m.name||m.nome||'').toLowerCase().includes(val.toLowerCase()))
+          .slice(0,3);
+        filtered.forEach(m => modelResults.push({
+          brand: brand.brand, model: m.name||m.nome,
+          brandCode: brand.brandCode, modelCode: m.code||m.codigo,
+          type: brand.typeKey, emoji: brand.emoji
+        }));
+      } catch(e) {}
+    }
+
+    // Se não achou modelo, mostra as marcas
+    const finalResults = modelResults.length > 0 ? modelResults : allBrands.map(b => ({
+      brand: b.brand, model: '', brandCode: b.brandCode, type: b.typeKey, emoji: b.emoji
+    }));
+
+    fipeSugCache[val] = finalResults;
+    renderFipeSuggestions(val, finalResults, append);
+
+  } catch(e) {
+    console.error('FIPE search erro:', e);
+  }
+}
+
+function renderFipeSuggestions(val, results, append = false) {
+  const box = document.getElementById('smart-suggestions');
+  const content = document.getElementById('smart-suggestions-content');
+  if (!box || !content) return;
+
+  if (results.length === 0) {
+    if (!append) {
+      content.innerHTML = `<div class="sug-no-results">Nenhum resultado para "<strong>${val}</strong>"<br><span style="font-size:12px">Pressione Enter para buscar na plataforma</span></div>`;
+    }
+    return;
+  }
+
+  let html = append ? content.innerHTML : '';
+  if (append && html) html += '<div class="sug-divider"></div>';
+  html += `<div class="sug-section">🚗 Modelos FIPE</div>`;
+
+  results.slice(0,5).forEach(r => {
+    const label = r.model ? `${r.brand} ${r.model}` : r.brand;
+    sugItems.push({ action:'fipe', brand: r.brand, model: r.model, type: r.type, label });
+    html += `<div class="sug-item" onclick="selectSuggestion(${sugItems.length-1})">
+      <div class="sug-item-icon">${r.emoji}</div>
+      <div class="sug-item-info">
+        <div class="sug-item-name">${highlightMatch(label, val)}</div>
+        <div class="sug-item-sub">${r.type === 'carros' ? 'Carro' : r.type === 'motos' ? 'Moto' : 'Caminhão'} · Tabela FIPE</div>
+      </div>
+    </div>`;
+  });
 
   content.innerHTML = html;
   box.style.display = 'block';
@@ -2721,8 +2831,28 @@ function selectSuggestion(idx) {
   const item = sugItems[idx];
   if (!item) return;
   hideSuggestions();
-  if (item.action === 'vehicle') showVehicleProfile(item.id);
-  else { document.getElementById('search-free-input').value = item.label; doFreeSearch(); }
+  if (item.action === 'vehicle') {
+    showVehicleProfile(item.id);
+  } else if (item.action === 'fipe') {
+    // Navega para perfil dinâmico com dados da FIPE
+    const prevIdx = mockVehicles.findIndex(v => v.id === 'dynamic');
+    if (prevIdx > -1) mockVehicles.splice(prevIdx, 1);
+    const typeEmoji = {'carros':'🚗','motos':'🏍️','caminhoes':'🚚'}[item.type] || '🚗';
+    mockVehicles.push({
+      id:'dynamic', _dynamic:true,
+      emoji: typeEmoji,
+      brand: item.brand,
+      name: item.model || item.brand,
+      version: item.label,
+      year: '—', rating:0, count:0,
+      badge:'Novo', badgeClass:'badge-yellow',
+      problems:[], fipePrice:null
+    });
+    showVehicleProfile('dynamic');
+  } else {
+    document.getElementById('search-free-input').value = item.label;
+    doFreeSearch();
+  }
   addToHistory(item.label);
 }
 
