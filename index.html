@@ -2741,6 +2741,71 @@ function showSmartSuggestions(val) {
 
 async function searchFipeModels(val, append = false) {
   if (val.length < 2) return;
+  const cacheKey = val.toLowerCase();
+  if (fipeSugCache[cacheKey]) {
+    renderFipeSuggestions(val, fipeSugCache[cacheKey], append);
+    return;
+  }
+
+  try {
+    const allResults = [];
+    const types = [
+      { key: 'cars', label: 'carros', emoji: '🚗' },
+      { key: 'motorcycles', label: 'motos', emoji: '🏍️' },
+    ];
+
+    for (const t of types) {
+      if (allResults.length >= 6) break;
+      try {
+        // Busca todas as marcas
+        const brands = await fipeFetch(`${FIPE_V2}/${t.key}/brands`);
+        if (!Array.isArray(brands)) continue;
+
+        // Verifica marcas que batem com o termo
+        const brandHits = brands.filter(b =>
+          (b.name||b.nome||'').toLowerCase().includes(val.toLowerCase())
+        );
+        brandHits.slice(0,2).forEach(b => {
+          allResults.push({
+            brand: b.name||b.nome, model: '',
+            type: t.label, emoji: t.emoji,
+            label: b.name||b.nome
+          });
+        });
+
+        // Busca modelos nas marcas mais prováveis
+        // Honda para Civic/City/Fit, VW para Gol/Polo etc.
+        const toSearch = brands.slice(0, 30); // primeiras 30 marcas
+        for (const brand of toSearch) {
+          if (allResults.length >= 6) break;
+          try {
+            const dm = await fipeFetch(`${FIPE_V2}/${t.key}/brands/${brand.code||brand.codigo}/models`);
+            const models = dm.models || dm.modelos || dm;
+            const hits = (Array.isArray(models) ? models : [])
+              .filter(m => (m.name||m.nome||'').toLowerCase().includes(val.toLowerCase()))
+              .slice(0, 2);
+            hits.forEach(m => {
+              allResults.push({
+                brand: brand.name||brand.nome,
+                model: m.name||m.nome,
+                type: t.label, emoji: t.emoji,
+                label: `${brand.name||brand.nome} ${m.name||m.nome}`
+              });
+            });
+          } catch(e) {}
+          if (allResults.length >= 6) break;
+        }
+      } catch(e) {}
+    }
+
+    fipeSugCache[cacheKey] = allResults;
+    renderFipeSuggestions(val, allResults, append);
+
+  } catch(e) {
+    console.error('FIPE search erro:', e);
+  }
+}
+
   if (fipeSugCache[val]) {
     renderFipeSuggestions(val, fipeSugCache[val], append);
     return;
