@@ -2564,15 +2564,21 @@ function goStep1WithPlate() {
 
 
 // ══ BUSCA INTELIGENTE ══
-const searchData = [
-  ...mockVehicles.map(v => ({ type:'vehicle', label:`${v.brand} ${v.name}`, sub:`${v.version} · ${v.year}`, emoji:v.emoji, badge:v.badge, badgeClass:v.badgeClass, id:v.id, count:v.count })),
-  { type:'problem', label:'Problema no motor', sub:'315 reclamações', emoji:'⚙️' },
-  { type:'problem', label:'Câmbio com solavanco', sub:'287 reclamações', emoji:'⚡' },
-  { type:'problem', label:'Ar-condicionado não gela', sub:'198 reclamações', emoji:'❄️' },
-  { type:'problem', label:'Suspensão barulhenta', sub:'176 reclamações', emoji:'🔧' },
-  { type:'problem', label:'Elétrica com falha', sub:'234 reclamações', emoji:'⚡' },
-  { type:'problem', label:'Freios com ruído', sub:'142 reclamações', emoji:'🛑' },
-];
+let searchData = [];
+function getSearchData() {
+  if (searchData.length === 0) {
+    searchData = [
+      ...mockVehicles.map(v => ({ type:'vehicle', label:`${v.brand} ${v.name}`, sub:`${v.version} · ${v.year}`, emoji:v.emoji, badge:v.badge, badgeClass:v.badgeClass, id:v.id, count:v.count })),
+      { type:'problem', label:'Problema no motor', sub:'315 reclamações', emoji:'⚙️' },
+      { type:'problem', label:'Câmbio com solavanco', sub:'287 reclamações', emoji:'⚡' },
+      { type:'problem', label:'Ar-condicionado não gela', sub:'198 reclamações', emoji:'❄️' },
+      { type:'problem', label:'Suspensão barulhenta', sub:'176 reclamações', emoji:'🔧' },
+      { type:'problem', label:'Elétrica com falha', sub:'234 reclamações', emoji:'⚡' },
+      { type:'problem', label:'Freios com ruído', sub:'142 reclamações', emoji:'🛑' },
+    ];
+  }
+  return searchData;
+}
 
 const trending = ['HB20','Onix','Compass','Motor','Câmbio','Suspensão','Corolla'];
 let searchHistory = JSON.parse(localStorage.getItem('do_search_history') || '[]');
@@ -2669,8 +2675,8 @@ function showSmartSuggestions(val) {
       </div>`;
     });
   } else {
-    const vMatches = searchData.filter(s => s.type === 'vehicle' && s.label.toLowerCase().includes(val.toLowerCase())).slice(0,4);
-    const pMatches = searchData.filter(s => s.type === 'problem' && s.label.toLowerCase().includes(val.toLowerCase())).slice(0,3);
+    const vMatches = getSearchData().filter(s => s.type === 'vehicle' && s.label.toLowerCase().includes(val.toLowerCase())).slice(0,4);
+    const pMatches = getSearchData().filter(s => s.type === 'problem' && s.label.toLowerCase().includes(val.toLowerCase())).slice(0,3);
 
     if (!vMatches.length && !pMatches.length) {
       html += `<div class="sug-no-results">Nenhum resultado para "<strong>${val}</strong>"<br><span style="font-size:12px">Pressione Enter para buscar na plataforma</span></div>`;
