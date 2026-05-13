@@ -890,7 +890,7 @@ footer{background:var(--navy);padding:36px 24px}
 <header>
   <div class="topbar">
   <div class="topbar-inner">
-    <a class="topbar-link" href="#" onclick="event.preventDefault();showPage('home');setTimeout(()=>document.getElementById('ranking-section')?.scrollIntoView({behavior:'smooth'}),100)">Ranking de confiabilidade</a>
+    <a class="topbar-link" href="#" onclick="event.preventDefault();showPage('home');setTimeout(()=>{const el=document.getElementById('ranking-section');if(el){const header=document.querySelector('header');const offset=header?header.offsetHeight:0;window.scrollTo({top:el.getBoundingClientRect().top+window.scrollY-offset-8,behavior:'smooth'})}},100)">Ranking de confiabilidade</a>
     <a class="topbar-link" href="#" onclick="event.preventDefault();showPage('compare')">Comparar veículos</a>
     <a class="topbar-link" href="#" onclick="event.preventDefault();showPage('lawyers')">Advogados parceiros</a>
   </div>
