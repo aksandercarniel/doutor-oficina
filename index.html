@@ -3227,9 +3227,9 @@ function applySearchWithFilter(query, filter) {
 
 function onSearchInput(val) {
   sugItems = [];
-  // Remove veículo dinâmico apenas se não estiver na página de perfil
-  const profilePage = document.getElementById('page-profile');
-  if (!profilePage || profilePage.style.display === 'none') {
+  // Remove veículo dinâmico apenas se não estiver na página de perfil do veículo
+  const vehiclePage = document.getElementById('page-vehicle');
+  if (!vehiclePage || vehiclePage.style.display === 'none') {
     const dynIdx = mockVehicles.findIndex(v => v.id === 'dynamic');
     if (dynIdx > -1) mockVehicles.splice(dynIdx, 1);
   }
