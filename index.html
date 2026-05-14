@@ -3227,9 +3227,12 @@ function applySearchWithFilter(query, filter) {
 
 function onSearchInput(val) {
   sugItems = [];
-  // Remove veículo dinâmico para não interferir na próxima busca
-  const dynIdx = mockVehicles.findIndex(v => v.id === 'dynamic');
-  if (dynIdx > -1) mockVehicles.splice(dynIdx, 1);
+  // Remove veículo dinâmico apenas se não estiver na página de perfil
+  const profilePage = document.getElementById('page-profile');
+  if (!profilePage || profilePage.style.display === 'none') {
+    const dynIdx = mockVehicles.findIndex(v => v.id === 'dynamic');
+    if (dynIdx > -1) mockVehicles.splice(dynIdx, 1);
+  }
   clearTimeout(searchDebounceTimer);
   searchDebounceTimer = setTimeout(() => showSmartSuggestions(val), 150);
 }
