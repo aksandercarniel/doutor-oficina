@@ -4148,23 +4148,22 @@ async function sbShowPrice() {
 }
 
 async function doFipeSearch() {
-  // Captura valores no momento exato da chamada
   const sbType  = document.getElementById('sb-type');
   const sbBrand = document.getElementById('sb-brand');
   const sbModel = document.getElementById('sb-model');
   const sbYear  = document.getElementById('sb-year');
 
-  const type     = sbType.value;
-  const brand    = sbBrand.value;
-  const model    = sbModel.value;
-  const year     = sbYear.value;
-  const brandTxt = sbBrand.options[sbBrand.selectedIndex]?.text || '';
-  const modelTxt = sbModel.options[sbModel.selectedIndex]?.text || '';
+  const type     = sbType?.value || 'carros';
+  const brand    = sbBrand?.value;
+  const model    = sbModel?.value;
+  const year     = sbYear?.options[sbYear.selectedIndex]?.text?.split(' ')[0] || '';
+  const brandTxt = sbBrand?.options[sbBrand.selectedIndex]?.text || '';
+  const modelTxt = sbModel?.options[sbModel.selectedIndex]?.text || '';
   const typeEmoji = {'carros':'🚗','motos':'🏍️','caminhoes':'🚚'}[type] || '🚗';
 
-  if (!brand) { alert('Selecione ao menos a marca.'); return; }
+  if (!brand || !model) return;
 
-  // Remove veículo dinâmico anterior se existir
+  // Remove veículo dinâmico anterior
   const prevIdx = mockVehicles.findIndex(v => v.id === 'dynamic');
   if (prevIdx > -1) mockVehicles.splice(prevIdx, 1);
 
@@ -4176,20 +4175,12 @@ async function doFipeSearch() {
     v.name.toLowerCase().includes(modelTxt.split(' ')[0].toLowerCase())
   );
 
-  if (found) {
-    showVehicleProfile(found.id);
-    return;
-  }
+  if (found) { showVehicleProfile(found.id); return; }
 
-  // Se não encontrou no mock, busca preço FIPE e cria perfil dinâmico
-  const res = document.getElementById('sb-fipe-result');
-  res.classList.remove('show');
-  res.innerHTML = '';
-
+  // Busca preço FIPE
+  let fipeData = null;
   try {
-    // Pega código do ano com combustível
-    let fipeData = null;
-    if (year) {
+    if (year && model) {
       const anos = await fipeFetch(fipeUrl(type, 'brands', brand, 'models', model, 'years'));
       const anoMatch = (Array.isArray(anos) ? anos : []).find(a =>
         (a.name||a.nome||'').split(' ')[0] === year
@@ -4199,33 +4190,26 @@ async function doFipeSearch() {
         fipeData = await fipeFetch(fipeUrl(type, 'brands', brand, 'models', model, 'years', yearCode));
       }
     }
+  } catch(e) { console.error('FIPE price error:', e); }
 
-    // Cria veículo dinâmico e navega para o perfil
-    const dynamicVehicle = {
-      id: 'dynamic',
-      _dynamic: true,
-      emoji: typeEmoji,
-      brand: brandTxt,
-      name: modelTxt.split(' ')[0],
-      version: modelTxt,
-      year: year || (fipeData?.modelYear || '—'),
-      rating: 0,
-      count: 0,
-      badge: 'Novo',
-      badgeClass: 'badge-yellow',
-      problems: [],
-      fipePrice: fipeData?.price || fipeData?.Valor || null,
-      fipeData: fipeData
-    };
+  // Cria veículo dinâmico e navega para o perfil
+  const dynamicVehicle = {
+    id: 'dynamic', _dynamic: true,
+    emoji: typeEmoji,
+    brand: brandTxt,
+    name: modelTxt.split(' ')[0],
+    version: modelTxt,
+    year: year || '—',
+    rating: 0, count: 0,
+    badge: 'Novo', badgeClass: 'badge-yellow',
+    problems: [],
+    fipePrice: fipeData?.price || fipeData?.Valor || null,
+    fipeData: fipeData
+  };
 
-    // Adiciona temporariamente e mostra o perfil
-    mockVehicles.push(dynamicVehicle);
-    fipePrices['dynamic'] = dynamicVehicle.fipePrice || '—';
-    showVehicleProfile('dynamic');
-
-  } catch(e) {
-    res.innerHTML = '<span style="color:var(--red)">Erro ao buscar. Tente novamente.</span>';
-  }
+  mockVehicles.push(dynamicVehicle);
+  fipePrices['dynamic'] = dynamicVehicle.fipePrice || '—';
+  showVehicleProfile('dynamic');
 }
 
 // ══ AUTH SYSTEM ══
