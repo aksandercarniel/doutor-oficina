@@ -2479,6 +2479,10 @@ Responda APENAS em JSON válido sem markdown:
 
 
 function renderVehicleProfileFull(v, id) {
+  if (!v) return;
+  v.problems = v.problems || [];
+  v.rating = v.rating || 0;
+  v.count = v.count || 0;
   const probBars=v.problems.map((p,i)=>{
     const pcts=[85,62,41];const colors=['bar-red','bar-orange','bar-yellow'];
     const counts=[v.count,Math.floor(v.count*.73),Math.floor(v.count*.48)];
