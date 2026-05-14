@@ -1072,12 +1072,21 @@ footer{background:var(--navy);padding:36px 24px}
   <div id="resolution-content"></div>
 </div>
 
-<div id="page-search" style="display:none;max-width:1280px;margin:0 auto;padding:32px 24px">
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
-    <button onclick="showPage('home')" style="background:none;border:none;cursor:pointer;color:var(--red);font-family:var(--font);font-weight:700;font-size:14px">← Voltar</button>
-    <h2 id="search-results-title" style="font-family:var(--font);font-size:22px;font-weight:900;color:var(--navy)"></h2>
+<div id="page-search" style="display:none;max-width:860px;margin:0 auto;padding:24px 24px">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+    <button onclick="showPage('home')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body)">← Voltar</button>
+    <h2 id="search-results-title" style="font-family:var(--font-body);font-size:14px;font-weight:400;color:var(--muted);margin:0"></h2>
   </div>
-  <div id="search-results-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px"></div>
+
+  <!-- Abas de filtro -->
+  <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:24px">
+    <button id="tab-all" onclick="filterSearchResults('all',this)" style="background:none;border:none;border-bottom:2px solid var(--navy);margin-bottom:-2px;padding:8px 20px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;color:var(--navy)">Tudo</button>
+    <button id="tab-vehicles" onclick="filterSearchResults('vehicles',this)" style="background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;padding:8px 20px;cursor:pointer;font-family:var(--font);font-weight:600;font-size:13px;color:var(--muted)">🚗 Veículos <span id="tab-vehicles-count"></span></button>
+    <button id="tab-companies" onclick="filterSearchResults('companies',this)" style="background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;padding:8px 20px;cursor:pointer;font-family:var(--font);font-weight:600;font-size:13px;color:var(--muted)">🏢 Empresas <span id="tab-companies-count"></span></button>
+    <button id="tab-complaints" onclick="filterSearchResults('complaints',this)" style="background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;padding:8px 20px;cursor:pointer;font-family:var(--font);font-weight:600;font-size:13px;color:var(--muted)">📋 Reclamações <span id="tab-complaints-count"></span></button>
+  </div>
+
+  <div id="search-results-grid"></div>
 </div>
 
 <div id="page-home">
@@ -3592,64 +3601,182 @@ function startVoiceSearch() {
   recognition.start();
 }
 
-function showSearchResults(val, fipeResults, complaintResults, mockResults) {
-  showPage('search');
-  document.getElementById('search-free-input').value = '';
-  const total = (fipeResults?.length||0) + (complaintResults?.length||0) + (mockResults?.length||0);
-  document.getElementById('search-results-title').textContent = `${total} resultado${total !== 1 ? 's' : ''} para "${val}"`;
-  const grid = document.getElementById('search-results-grid');
-  let html = '';
+// Armazena resultados para filtrar por aba
+let _searchResults = { val:'', fipe:[], complaints:[], mock:[], companies:[] };
 
-  // Seção: Veículos
-  const allVehicles = [
-    ...(mockResults||[]).map(v => ({ _mock:true, ...v })),
-    ...(fipeResults||[])
-  ];
-  if (allVehicles.length) {
-    html += `<div style="grid-column:1/-1;font-family:var(--font);font-weight:900;font-size:16px;color:var(--navy);margin-top:8px;padding-bottom:8px;border-bottom:2px solid var(--border)">🚗 Veículos</div>`;
+function filterSearchResults(tab, btn) {
+  ['all','vehicles','companies','complaints'].forEach(t => {
+    const b = document.getElementById('tab-'+t);
+    if (b) {
+      b.style.borderBottomColor = t===tab ? 'var(--navy)' : 'transparent';
+      b.style.color = t===tab ? 'var(--navy)' : 'var(--muted)';
+    }
+  });
+  renderSearchList(tab);
+}
+
+function renderSearchList(tab) {
+  const grid = document.getElementById('search-results-grid');
+  const { val, fipe, complaints, mock, companies } = _searchResults;
+  sugItems = [];
+  let html = '';
+  const allVehicles = [...mock.map(v => ({ _mock:true, ...v })), ...fipe];
+
+  // Veículos
+  if (tab === 'all' || tab === 'vehicles') {
+    if (tab === 'all' && allVehicles.length) html += `<div style="font-family:var(--font);font-weight:900;font-size:12px;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;padding:4px 0 10px;border-bottom:1px solid var(--border)">🚗 Veículos</div>`;
     allVehicles.forEach(r => {
       const idx = sugItems.length;
-      if (r._mock) {
-        sugItems.push({ action:'vehicle', id:r.id, label:`${r.brand} ${r.name}` });
-      } else {
-        sugItems.push({ action:'fipe', brand:r.brand, model:r.model, type:r.type, label:r.label });
-      }
-      html += `<div onclick="selectSuggestion(${idx})" style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:20px;cursor:pointer;transition:all .2s;box-shadow:0 2px 8px rgba(13,31,60,.06)" onmouseover="this.style.borderColor='var(--navy)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform=''">
-        <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
-          <div style="width:48px;height:48px;background:var(--bg2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px">${r.emoji||'🚗'}</div>
-          <div>
-            <div style="font-size:11px;font-weight:800;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px">${r.brand}</div>
-            <div style="font-family:var(--font);font-weight:900;font-size:16px;color:var(--navy);line-height:1.2">${r.model||r.name||r.brand}</div>
-          </div>
+      if (r._mock) sugItems.push({ action:'vehicle', id:r.id, label:`${r.brand} ${r.name}` });
+      else sugItems.push({ action:'fipe', brand:r.brand, model:r.model, type:r.type, label:r.label });
+      const name = r.model||r.name||r.brand;
+      const type = r._mock?(r.emoji==='🏍️'?'Moto':r.emoji==='🚚'?'Caminhão':'Carro'):(r.type==='carros'?'Carro':r.type==='motos'?'Moto':'Caminhão');
+      html += `<div onclick="selectSuggestion(${idx})" style="padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer;display:flex;gap:14px;align-items:flex-start" onmouseover="this.querySelector('.sr-title').style.textDecoration='underline'" onmouseout="this.querySelector('.sr-title').style.textDecoration='none'">
+        <div style="width:40px;height:40px;background:var(--bg2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${r.emoji||'🚗'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${r.brand} · ${type}</div>
+          <div class="sr-title" style="font-family:var(--font);font-weight:700;font-size:16px;color:var(--navy);margin-bottom:4px">${name}</div>
+          <div style="font-size:13px;color:var(--muted)">${r._mock?`${r.version||''} · ${r.year||''}`:'Tabela FIPE'}</div>
         </div>
-        <div style="font-size:12px;color:var(--muted);border-top:1px solid var(--border);padding-top:10px;display:flex;justify-content:space-between">
-          <span>${r._mock?(r.emoji==='🏍️'?'🏍️ Moto':r.emoji==='🚚'?'🚚 Caminhão':'🚗 Carro'):(r.type==='carros'?'🚗 Carro':r.type==='motos'?'🏍️ Moto':'🚚 Caminhão')}</span>
-          <span style="color:var(--navy);font-weight:700;font-size:11px">Ver perfil →</span>
-        </div>
+        <div style="font-size:12px;color:var(--muted);flex-shrink:0;padding-top:4px">Ver perfil →</div>
       </div>`;
     });
   }
 
-  // Seção: Reclamações
-  if (complaintResults?.length) {
-    html += `<div style="grid-column:1/-1;font-family:var(--font);font-weight:900;font-size:16px;color:var(--navy);margin-top:24px;padding-bottom:8px;border-bottom:2px solid var(--border)">📋 Reclamações (${complaintResults.length})</div>`;
-    complaintResults.slice(0,6).forEach(c => {
-      html += `<div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:20px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='var(--navy)'" onmouseout="this.style.borderColor='var(--border)'">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
-          <div style="font-family:var(--font);font-weight:800;font-size:14px;color:var(--navy)">${c.title||'Reclamação'}</div>
-          <span class="cc-status ${c.status||'s-open'}" style="font-size:10px;flex-shrink:0;margin-left:8px">${c.status==='s-resolved'?'Resolvido':c.status==='s-progress'?'Em análise':'Aberto'}</span>
+  // Empresas
+  if (tab === 'all' || tab === 'companies') {
+    if (tab === 'all' && companies.length) html += `<div style="font-family:var(--font);font-weight:900;font-size:12px;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;padding:20px 0 10px;border-bottom:1px solid var(--border)">🏢 Empresas</div>`;
+    companies.forEach(c => {
+      html += `<div style="padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer;display:flex;gap:14px;align-items:flex-start" onmouseover="this.querySelector('.sr-title').style.textDecoration='underline'" onmouseout="this.querySelector('.sr-title').style.textDecoration='none'">
+        <div style="width:40px;height:40px;background:var(--bg2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🏢</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:2px">CNPJ: ${c.cnpj||'—'}</div>
+          <div class="sr-title" style="font-family:var(--font);font-weight:700;font-size:16px;color:var(--navy);margin-bottom:4px">${c.name}</div>
+          <div style="font-size:13px;color:var(--muted)">${c.address||''} ${c.phone?'· '+c.phone:''}</div>
         </div>
-        <div style="font-size:12px;color:var(--muted2);margin-bottom:8px;font-weight:700">${c.brand||''} ${c.model||''} ${c.year||''}</div>
-        <div style="font-size:13px;color:var(--text2);line-height:1.5">${(c.description||'').slice(0,100)}${(c.description||'').length>100?'…':''}</div>
       </div>`;
     });
+    if (tab === 'companies' && !companies.length) {
+      html += `<div style="text-align:center;padding:60px 0;color:var(--muted)">Nenhuma empresa encontrada para "<strong>${val}</strong>"</div>`;
+    }
   }
 
-  if (!allVehicles.length && !complaintResults?.length) {
-    html += `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Nenhum resultado encontrado para "<strong>${val}</strong>"</div>`;
+  // Reclamações
+  if (tab === 'all' || tab === 'complaints') {
+    if (tab === 'all' && complaints.length) html += `<div style="font-family:var(--font);font-weight:900;font-size:12px;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;padding:20px 0 10px;border-bottom:1px solid var(--border)">📋 Reclamações</div>`;
+    complaints.slice(0,10).forEach(c => {
+      html += `<div style="padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.querySelector('.sr-title').style.textDecoration='underline'" onmouseout="this.querySelector('.sr-title').style.textDecoration='none'">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${c.brand||''} ${c.model||''} ${c.year||''} · <span class="cc-status ${c.status||'s-open'}" style="font-size:10px">${c.status==='s-resolved'?'Resolvido':c.status==='s-progress'?'Em análise':'Aberto'}</span></div>
+        <div class="sr-title" style="font-family:var(--font);font-weight:700;font-size:15px;color:var(--navy);margin-bottom:4px">${c.title||'Reclamação'}</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.5">${(c.description||'').slice(0,120)}${(c.description||'').length>120?'…':''}</div>
+      </div>`;
+    });
+    if (tab === 'complaints' && !complaints.length) {
+      html += `<div style="text-align:center;padding:60px 0;color:var(--muted)">Nenhuma reclamação encontrada para "<strong>${val}</strong>"</div>`;
+    }
   }
 
+  if (!html) {
+    html = `<div style="text-align:center;padding:60px 0;color:var(--muted)">Nenhum resultado para "<strong>${val}</strong>"</div>`;
+  }
   grid.innerHTML = html;
+}
+
+async function showSearchResults(val, fipeResults, complaintResults, mockResults) {
+  // Busca empresas no Supabase
+  let companyResults = [];
+  try {
+    const { data } = await sb.from('companies').select('*').ilike('name', `%${val}%`).limit(10);
+    companyResults = data || [];
+  } catch(e) {}
+
+  _searchResults = { val, fipe:fipeResults||[], complaints:complaintResults||[], mock:mockResults||[], companies:companyResults };
+  showPage('search');
+  document.getElementById('search-free-input').value = '';
+  const total = (fipeResults?.length||0)+(complaintResults?.length||0)+(mockResults?.length||0)+companyResults.length;
+  document.getElementById('search-results-title').textContent = `${total} resultado${total!==1?'s':''} para "${val}"`;
+  const vc = (fipeResults?.length||0)+(mockResults?.length||0);
+  const cc = companyResults.length;
+  const rc = complaintResults?.length||0;
+  const vt = document.getElementById('tab-vehicles-count');
+  const ct = document.getElementById('tab-companies-count');
+  const crt = document.getElementById('tab-complaints-count');
+  if (vt) vt.textContent = vc?`(${vc})`:'';
+  if (ct) ct.textContent = cc?`(${cc})`:'';
+  if (crt) crt.textContent = rc?`(${rc})`:'';
+  filterSearchResults('all', null);
+}
+
+function filterSearchResults(tab, btn) {
+  ['all','vehicles','complaints'].forEach(t => {
+    const b = document.getElementById('tab-'+t);
+    if (b) {
+      b.style.borderBottomColor = t===tab ? 'var(--navy)' : 'transparent';
+      b.style.color = t===tab ? 'var(--navy)' : 'var(--muted)';
+    }
+  });
+  renderSearchList(tab);
+}
+
+function renderSearchList(tab) {
+  const grid = document.getElementById('search-results-grid');
+  const { val, fipe, complaints, mock } = _searchResults;
+  sugItems = [];
+  let html = '';
+  const allVehicles = [...mock.map(v => ({ _mock:true, ...v })), ...fipe];
+
+  if (tab === 'all' || tab === 'vehicles') {
+    allVehicles.forEach(r => {
+      const idx = sugItems.length;
+      if (r._mock) sugItems.push({ action:'vehicle', id:r.id, label:`${r.brand} ${r.name}` });
+      else sugItems.push({ action:'fipe', brand:r.brand, model:r.model, type:r.type, label:r.label });
+      const name = r.model||r.name||r.brand;
+      const type = r._mock?(r.emoji==='🏍️'?'Moto':r.emoji==='🚚'?'Caminhão':'Carro'):(r.type==='carros'?'Carro':r.type==='motos'?'Moto':'Caminhão');
+      html += `<div onclick="selectSuggestion(${idx})" style="padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer;display:flex;gap:14px;align-items:flex-start" onmouseover="this.querySelector('.sr-title').style.textDecoration='underline'" onmouseout="this.querySelector('.sr-title').style.textDecoration='none'">
+        <div style="width:40px;height:40px;background:var(--bg2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${r.emoji||'🚗'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${r.brand} · ${type}</div>
+          <div class="sr-title" style="font-family:var(--font);font-weight:700;font-size:16px;color:var(--navy);margin-bottom:4px">${name}</div>
+          <div style="font-size:13px;color:var(--muted)">${r._mock?`${r.version||''} · ${r.year||''}`:'Tabela FIPE'}</div>
+        </div>
+        <div style="font-size:12px;color:var(--muted);flex-shrink:0;padding-top:4px">Ver perfil →</div>
+      </div>`;
+    });
+  }
+
+  if (tab === 'all' && complaints.length) {
+    html += `<div style="font-family:var(--font);font-weight:900;font-size:13px;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;padding:20px 0 10px;border-bottom:1px solid var(--border)">📋 Reclamações</div>`;
+  }
+
+  if (tab === 'all' || tab === 'complaints') {
+    complaints.slice(0,10).forEach(c => {
+      html += `<div style="padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.querySelector('.sr-title').style.textDecoration='underline'" onmouseout="this.querySelector('.sr-title').style.textDecoration='none'">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${c.brand||''} ${c.model||''} ${c.year||''} · <span class="cc-status ${c.status||'s-open'}" style="font-size:10px">${c.status==='s-resolved'?'Resolvido':c.status==='s-progress'?'Em análise':'Aberto'}</span></div>
+        <div class="sr-title" style="font-family:var(--font);font-weight:700;font-size:15px;color:var(--navy);margin-bottom:4px">${c.title||'Reclamação'}</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.5">${(c.description||'').slice(0,120)}${(c.description||'').length>120?'…':''}</div>
+      </div>`;
+    });
+  }
+
+  if (!html) {
+    html = `<div style="text-align:center;padding:60px 0;color:var(--muted)">Nenhum resultado nesta categoria para "<strong>${val}</strong>"</div>`;
+  }
+  grid.innerHTML = html;
+}
+
+function showSearchResults(val, fipeResults, complaintResults, mockResults) {
+  _searchResults = { val, fipe:fipeResults||[], complaints:complaintResults||[], mock:mockResults||[] };
+  showPage('search');
+  document.getElementById('search-free-input').value = '';
+  const total = (fipeResults?.length||0)+(complaintResults?.length||0)+(mockResults?.length||0);
+  document.getElementById('search-results-title').textContent = `${total} resultado${total!==1?'s':''} para "${val}"`;
+  const vc = (fipeResults?.length||0)+(mockResults?.length||0);
+  const cc = complaintResults?.length||0;
+  const vt = document.getElementById('tab-vehicles-count');
+  const ct = document.getElementById('tab-complaints-count');
+  if (vt) vt.textContent = vc?`(${vc})`:'';
+  if (ct) ct.textContent = cc?`(${cc})`:'';
+  filterSearchResults('all', null);
 }
 
 async function doFreeSearch() {
@@ -3705,7 +3832,7 @@ async function doFreeSearch() {
     return;
   }
 
-  showSearchResults(val, fipeResults, complaintResults, mockResults);
+  await showSearchResults(val, fipeResults, complaintResults, mockResults);
 }
 
 
