@@ -2253,15 +2253,13 @@ function renderRanking(){
 }
 
 // ══ VEHICLE PROFILE ══
-async function showVehicleProfile(id){
-  const v=mockVehicles.find(x=>x.id===id)||mockVehicles[0];
+async function showVehicleProfile(id, vehicleData){
+  const v = vehicleData || mockVehicles.find(x=>x.id===id) || mockVehicles[0];
   showPage('vehicle');
 
   if (id === 'dynamic' || v._dynamic) {
-    // Gera dados estimados imediatamente baseados no nome do veículo
     const estimated = estimateVehicleData(v);
     renderVehicleProfileFull({...v, ...estimated}, id);
-    // IA atualiza em segundo plano silenciosamente
     enrichVehicleWithAI(v);
     return;
   }
@@ -3812,8 +3810,9 @@ async function doFreeSearch() {
       const prevIdx = mockVehicles.findIndex(v => v.id === 'dynamic');
       if (prevIdx > -1) mockVehicles.splice(prevIdx, 1);
       const typeEmoji = {'carros':'🚗','motos':'🏍️','caminhoes':'🚚'}[r.type]||'🚗';
-      mockVehicles.push({ id:'dynamic', _dynamic:true, emoji:typeEmoji, brand:r.brand, name:r.model||r.brand, version:r.label, year:'—', rating:0, count:0, badge:'Novo', badgeClass:'badge-yellow', problems:[], fipePrice:null });
-      showVehicleProfile('dynamic');
+      const dynV = { id:'dynamic', _dynamic:true, emoji:typeEmoji, brand:r.brand, name:r.model||r.brand, version:r.label, year:'—', rating:0, count:0, badge:'Novo', badgeClass:'badge-yellow', problems:[], fipePrice:null };
+      mockVehicles.push(dynV);
+      showVehicleProfile('dynamic', dynV);
     }
     return;
   }
@@ -4204,7 +4203,7 @@ async function doFipeSearchFromBar() {
 
   mockVehicles.push(dynamicVehicle);
   fipePrices['dynamic'] = dynamicVehicle.fipePrice || '—';
-  showVehicleProfile('dynamic');
+  showVehicleProfile('dynamic', dynamicVehicle);
 }
 
 async function doFipeSearch() {
