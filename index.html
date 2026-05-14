@@ -907,12 +907,16 @@ footer{background:var(--navy);padding:36px 24px;margin-top:auto}
     </a>
     <div class="nav-search" style="position:relative">
       <div style="display:flex;align-items:center;width:100%">
-        <input type="search" id="search-free-input" name="site-search"
+        <input type="text" style="display:none" aria-hidden="true"/>
+        <input type="search" id="search-free-input" name="q"
           placeholder="Buscar veículo ou problema…"
           oninput="onSearchInput(this.value)"
           onkeydown="onSearchKeydown(event)"
           onfocus="onSearchFocus()"
           autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          role="searchbox"
           style="flex:1;height:38px;background:#fff;border:1.5px solid rgba(255,255,255,.3);border-right:none;border-radius:8px 0 0 8px;color:var(--navy);font-family:var(--font-body);font-size:14px;padding:0 14px;outline:none;"/>
         <button onclick="startVoiceSearch()" id="voice-btn" title="Buscar por voz" style="height:38px;width:38px;background:#f1f3f5;border:1.5px solid rgba(255,255,255,.3);border-left:none;border-radius:0 8px 8px 0;cursor:pointer;color:var(--navy);flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
