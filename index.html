@@ -1072,12 +1072,18 @@ footer{background:var(--navy);padding:36px 24px}
   <div id="resolution-content"></div>
 </div>
 
-<div id="page-search" style="display:none;max-width:1280px;margin:0 auto;padding:32px 24px">
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
-    <button onclick="showPage('home')" style="background:none;border:none;cursor:pointer;color:var(--red);font-family:var(--font);font-weight:700;font-size:14px">← Voltar</button>
-    <h2 id="search-results-title" style="font-family:var(--font);font-size:22px;font-weight:900;color:var(--navy)"></h2>
+<div id="page-search" style="display:none;max-width:860px;margin:0 auto;padding:24px 24px">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+    <button onclick="showPage('home')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body)">← Voltar</button>
+    <h2 id="search-results-title" style="font-family:var(--font-body);font-size:14px;font-weight:400;color:var(--muted);margin:0"></h2>
   </div>
-  <div id="search-results-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px"></div>
+  <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:24px">
+    <button id="tab-all" onclick="filterSearchResults('all',this)" style="background:none;border:none;border-bottom:2px solid var(--navy);margin-bottom:-2px;padding:8px 20px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;color:var(--navy)">Tudo</button>
+    <button id="tab-complaints" onclick="filterSearchResults('complaints',this)" style="background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;padding:8px 20px;cursor:pointer;font-family:var(--font);font-weight:600;font-size:13px;color:var(--muted)">📋 Reclamações <span id="tab-complaints-count"></span></button>
+    <button id="tab-companies" onclick="filterSearchResults('companies',this)" style="background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;padding:8px 20px;cursor:pointer;font-family:var(--font);font-weight:600;font-size:13px;color:var(--muted)">🏢 Empresas <span id="tab-companies-count"></span></button>
+    <button id="tab-vehicles" onclick="filterSearchResults('vehicles',this)" style="background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;padding:8px 20px;cursor:pointer;font-family:var(--font);font-weight:600;font-size:13px;color:var(--muted)">🚗 Veículos <span id="tab-vehicles-count"></span></button>
+  </div>
+  <div id="search-results-grid"></div>
 </div>
 
 <div id="page-home">
@@ -2090,6 +2096,21 @@ const mockVehicles=[
   {id:'10',emoji:'🚚',brand:'Mercedes-Benz',name:'Actros',version:'2651 6x4',year:'2021',rating:3.8,count:124,badge:'Moderado',badgeClass:'badge-yellow',problems:['Elétrica','Freios']},
   {id:'11',emoji:'🚚',brand:'Scania',name:'R 450',version:'A6x2 NB Highline',year:'2023',rating:4.0,count:87,badge:'Confiável',badgeClass:'badge-green',problems:['Suspensão','Freios']},
 ];
+const mockCompanies=[
+  {id:'c1',name:'Hyundai Caoa Maringá',cnpj:'12.345.678/0001-90',phone:'(44) 3333-1111',address:'Av. Brasil, 1500 - Maringá, PR'},
+  {id:'c2',name:'Hyundai Caoa São Paulo Centro',cnpj:'23.456.789/0001-01',phone:'(11) 4444-2222',address:'Av. Paulista, 2000 - São Paulo, SP'},
+  {id:'c3',name:'Hyundai Caoa Rio de Janeiro',cnpj:'34.567.890/0001-12',phone:'(21) 5555-3333',address:'Av. das Américas, 500 - Rio de Janeiro, RJ'},
+  {id:'c4',name:'Hyundai Prime Curitiba',cnpj:'45.678.901/0001-23',phone:'(41) 6666-4444',address:'Rua XV de Novembro, 800 - Curitiba, PR'},
+  {id:'c5',name:'Hyundai Caoa Belo Horizonte',cnpj:'56.789.012/0001-34',phone:'(31) 7777-5555',address:'Av. Contorno, 1200 - Belo Horizonte, MG'},
+  {id:'c6',name:'Hyundai Sul Porto Alegre',cnpj:'67.890.123/0001-45',phone:'(51) 8888-6666',address:'Av. Ipiranga, 3000 - Porto Alegre, RS'},
+  {id:'c7',name:'Hyundai Caoa Brasília',cnpj:'78.901.234/0001-56',phone:'(61) 9999-7777',address:'SGAS 915, Bloco B - Brasília, DF'},
+  {id:'c8',name:'Hyundai Caoa Salvador',cnpj:'89.012.345/0001-67',phone:'(71) 3232-8888',address:'Av. Paralela, 4000 - Salvador, BA'},
+  {id:'c9',name:'Hyundai Motor Star Recife',cnpj:'90.123.456/0001-78',phone:'(81) 3434-9999',address:'Av. Agamenon Magalhães, 2500 - Recife, PE'},
+  {id:'c10',name:'Hyundai Caoa Fortaleza',cnpj:'01.234.567/0001-89',phone:'(85) 3535-0000',address:'Av. Washington Soares, 1800 - Fortaleza, CE'},
+  {id:'c11',name:'Hyundai Caoa Goiânia',cnpj:'11.234.567/0001-90',phone:'(62) 3636-1111',address:'Av. T-63, 1000 - Goiânia, GO'},
+  {id:'c12',name:'Hyundai Caoa Manaus',cnpj:'22.345.678/0001-01',phone:'(92) 3737-2222',address:'Av. Djalma Batista, 600 - Manaus, AM'},
+];
+
 const mockComplaints=[
   {emoji:'🚗',brand:'Hyundai',model:'HB20 2023',title:'Motor para sem aviso na estrada',text:'Com apenas 8.000 km o carro simplesmente desligou na rodovia. O reboque demorou 4 horas e a concessionária demorou 2 semanas para dar retorno.',status:'s-open',statusLabel:'Aberto',date:'há 2 dias',tags:['Motor','Garantia','SP'],votes:47},
   {emoji:'🚗',brand:'Chevrolet',model:'Onix 2022',title:'Câmbio automático com solavanco frequente',text:'Desde os 15.000 km o câmbio dá solavanco na troca de 2ª para 3ª marcha. Já levei 3x na concessionária e o problema persiste.',status:'s-progress',statusLabel:'Em análise',date:'há 5 dias',tags:['Câmbio','RJ'],votes:89},
@@ -3592,29 +3613,104 @@ function startVoiceSearch() {
   recognition.start();
 }
 
-function showSearchResults(val, results) {
+// ── BUSCA ESTILO BUSCADOR ──
+let _searchResults = { val:'', fipe:[], complaints:[], mock:[], companies:[] };
+
+function filterSearchResults(tab) {
+  ['all','vehicles','companies','complaints'].forEach(t => {
+    const b = document.getElementById('tab-'+t);
+    if (b) {
+      b.style.borderBottomColor = t===tab ? 'var(--navy)' : 'transparent';
+      b.style.color = t===tab ? 'var(--navy)' : 'var(--muted)';
+    }
+  });
+  renderSearchList(tab);
+}
+
+function renderSearchList(tab) {
+  const grid = document.getElementById('search-results-grid');
+  const { val, fipe, complaints, mock, companies } = _searchResults;
+  sugItems = [];
+  let html = '';
+  const allVehicles = [...mock.map(v => ({ _mock:true, ...v })), ...fipe];
+
+  // Reclamações
+  if (tab === 'all' || tab === 'complaints') {
+    if (tab === 'all' && complaints.length) html += `<div style="font-family:var(--font);font-weight:900;font-size:12px;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;padding:4px 0 10px;border-bottom:1px solid var(--border)">📋 Reclamações</div>`;
+    complaints.slice(0,10).forEach(c => {
+      html += `<div style="padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.querySelector('.sr-title').style.textDecoration='underline'" onmouseout="this.querySelector('.sr-title').style.textDecoration='none'">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${c.brand||''} ${c.model||''} · <span style="background:${c.status==='s-resolved'?'#e8f5e9':c.status==='s-progress'?'#fff8e1':'#fef2f2'};color:${c.status==='s-resolved'?'#16a34a':c.status==='s-progress'?'#f59e0b':'#dc2626'};padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700">${c.status==='s-resolved'?'Resolvido':c.status==='s-progress'?'Em análise':'Aberto'}</span></div>
+        <div class="sr-title" style="font-family:var(--font);font-weight:700;font-size:15px;color:var(--navy);margin-bottom:4px">${c.title||'Reclamação'}</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.5">${(c.description||c.text||'').slice(0,120)}${(c.description||c.text||'').length>120?'…':''}</div>
+      </div>`;
+    });
+    if (tab === 'complaints' && !complaints.length) html += `<div style="text-align:center;padding:60px 0;color:var(--muted)">Nenhuma reclamação para "<strong>${val}</strong>"</div>`;
+  }
+
+  // Empresas
+  if (tab === 'all' || tab === 'companies') {
+    if (tab === 'all' && companies.length) html += `<div style="font-family:var(--font);font-weight:900;font-size:12px;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;padding:20px 0 10px;border-bottom:1px solid var(--border)">🏢 Empresas</div>`;
+    companies.forEach(c => {
+      html += `<div style="padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer;display:flex;gap:14px;align-items:flex-start" onmouseover="this.querySelector('.sr-title').style.textDecoration='underline'" onmouseout="this.querySelector('.sr-title').style.textDecoration='none'">
+        <div style="width:40px;height:40px;background:var(--bg2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🏢</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:2px">CNPJ: ${c.cnpj||'—'}</div>
+          <div class="sr-title" style="font-family:var(--font);font-weight:700;font-size:16px;color:var(--navy);margin-bottom:4px">${c.name}</div>
+          <div style="font-size:13px;color:var(--muted)">${c.address||''} ${c.phone?'· '+c.phone:''}</div>
+        </div>
+      </div>`;
+    });
+    if (tab === 'companies' && !companies.length) html += `<div style="text-align:center;padding:60px 0;color:var(--muted)">Nenhuma empresa para "<strong>${val}</strong>"</div>`;
+  }
+
+  // Veículos
+  if (tab === 'all' || tab === 'vehicles') {
+    if (tab === 'all' && allVehicles.length) html += `<div style="font-family:var(--font);font-weight:900;font-size:12px;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;padding:20px 0 10px;border-bottom:1px solid var(--border)">🚗 Veículos</div>`;
+    allVehicles.forEach(r => {
+      const idx = sugItems.length;
+      if (r._mock) sugItems.push({ action:'vehicle', id:r.id, label:`${r.brand} ${r.name}` });
+      else sugItems.push({ action:'fipe', brand:r.brand, model:r.model, type:r.type, label:r.label });
+      const name = r.model||r.name||r.brand;
+      const type = r._mock?(r.emoji==='🏍️'?'Moto':r.emoji==='🚚'?'Caminhão':'Carro'):(r.type==='carros'?'Carro':r.type==='motos'?'Moto':'Caminhão');
+      html += `<div onclick="selectSuggestion(${idx})" style="padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer;display:flex;gap:14px;align-items:flex-start" onmouseover="this.querySelector('.sr-title').style.textDecoration='underline'" onmouseout="this.querySelector('.sr-title').style.textDecoration='none'">
+        <div style="width:40px;height:40px;background:var(--bg2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${r.emoji||'🚗'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${r.brand} · ${type}</div>
+          <div class="sr-title" style="font-family:var(--font);font-weight:700;font-size:16px;color:var(--navy);margin-bottom:4px">${name}</div>
+          <div style="font-size:13px;color:var(--muted)">${r._mock?`${r.version||''} · ${r.year||''}`:'Tabela FIPE'}</div>
+        </div>
+        <div style="font-size:12px;color:var(--muted);flex-shrink:0;padding-top:4px">Ver perfil →</div>
+      </div>`;
+    });
+    if (tab === 'vehicles' && !allVehicles.length) html += `<div style="text-align:center;padding:60px 0;color:var(--muted)">Nenhum veículo para "<strong>${val}</strong>"</div>`;
+  }
+
+  if (!html) html = `<div style="text-align:center;padding:60px 0;color:var(--muted)">Nenhum resultado para "<strong>${val}</strong>"</div>`;
+  grid.innerHTML = html;
+}
+
+async function showSearchResults(val, fipeResults, complaintResults, mockResults) {
+  const valLower = val.toLowerCase();
+  let companyResults = [];
+  try {
+    const { data } = await sb.from('companies').select('*').ilike('name', `%${val}%`).limit(10);
+    companyResults = data || [];
+  } catch(e) {}
+  const mockCompanyResults = mockCompanies.filter(c => c.name.toLowerCase().includes(valLower));
+  const allCompanies = [...mockCompanyResults, ...companyResults];
+
+  _searchResults = { val, fipe:fipeResults||[], complaints:complaintResults||[], mock:mockResults||[], companies:allCompanies };
   showPage('search');
   document.getElementById('search-free-input').value = '';
-  document.getElementById('search-results-title').textContent = `${results.length} resultado${results.length !== 1 ? 's' : ''} para "${val}"`;
-  const grid = document.getElementById('search-results-grid');
-  grid.innerHTML = results.map(r => {
-    const idx = sugItems.length;
-    sugItems.push({ action:'fipe', brand:r.brand, model:r.model, type:r.type, label:r.label });
-    return `
-    <div onclick="selectSuggestion(${idx})" style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:20px;cursor:pointer;transition:all .2s;box-shadow:0 2px 8px rgba(13,31,60,.06)" onmouseover="this.style.borderColor='var(--navy)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform=''">
-      <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
-        <div style="width:48px;height:48px;background:var(--bg2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px">${r.emoji}</div>
-        <div>
-          <div style="font-size:11px;font-weight:800;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px">${r.brand}</div>
-          <div style="font-family:var(--font);font-weight:900;font-size:18px;color:var(--navy);line-height:1.2">${r.model || r.brand}</div>
-        </div>
-      </div>
-      <div style="font-size:12px;color:var(--muted);border-top:1px solid var(--border);padding-top:10px;display:flex;justify-content:space-between;align-items:center">
-        <span>${r.type === 'carros' ? '🚗 Carro' : r.type === 'motos' ? '🏍️ Moto' : '🚚 Caminhão'}</span>
-        <span style="color:var(--navy);font-weight:700;font-size:11px">Ver perfil →</span>
-      </div>
-    </div>`;
-  }).join('');
+  const total = (fipeResults?.length||0)+(complaintResults?.length||0)+(mockResults?.length||0)+allCompanies.length;
+  document.getElementById('search-results-title').textContent = `${total} resultado${total!==1?'s':''} para "${val}"`;
+  const vt = document.getElementById('tab-vehicles-count');
+  const ct = document.getElementById('tab-companies-count');
+  const crt = document.getElementById('tab-complaints-count');
+  if (vt) vt.textContent = ((fipeResults?.length||0)+(mockResults?.length||0)) ? `(${(fipeResults?.length||0)+(mockResults?.length||0)})` : '';
+  if (ct) ct.textContent = allCompanies.length ? `(${allCompanies.length})` : '';
+  if (crt) crt.textContent = (complaintResults?.length||0) ? `(${complaintResults.length})` : '';
+  filterSearchResults('all');
 }
 
 async function doFreeSearch() {
@@ -3623,31 +3719,10 @@ async function doFreeSearch() {
   if (!val) { applySearchWithFilter('', quickFilter); return; }
   addToHistory(val);
 
-  const words = val.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+  const valLower = val.toLowerCase();
+  const words = valLower.split(/\s+/).filter(w => w.length > 2);
 
-  let found = mockVehicles.find(v =>
-    v.name.toLowerCase().includes(val.toLowerCase()) ||
-    v.brand.toLowerCase().includes(val.toLowerCase()) ||
-    `${v.brand} ${v.name}`.toLowerCase().includes(val.toLowerCase())
-  );
-  if (!found) {
-    found = mockVehicles.find(v => {
-      const t = `${v.brand} ${v.name} ${v.version}`.toLowerCase();
-      return words.some(w => t.includes(w));
-    });
-  }
-  if (!found && words.length > 1) {
-    let best = 0;
-    mockVehicles.forEach(v => {
-      const t = `${v.brand} ${v.name} ${v.version}`.toLowerCase();
-      const s = words.filter(w => t.includes(w)).length;
-      if (s > best) { best = s; found = v; }
-    });
-    if (best === 0) found = null;
-  }
-  if (found) { showVehicleProfile(found.id); return; }
-
-  // Busca na FIPE e mostra página de resultados
+  // Loading
   const box = document.getElementById('smart-suggestions');
   const content = document.getElementById('smart-suggestions-content');
   if (box && content) {
@@ -3655,26 +3730,41 @@ async function doFreeSearch() {
     box.style.display = 'block';
   }
 
-  const cacheKey = val.toLowerCase();
-  delete fipeSugCache[cacheKey]; // sempre busca fresco
+  // 1. Veículos locais (mock)
+  const mockResults = mockVehicles.filter(v => {
+    const t = `${v.brand} ${v.name} ${v.version}`.toLowerCase();
+    return t.includes(valLower) || words.some(w => t.includes(w));
+  });
+
+  // 2. Reclamações locais
+  const complaintResults = mockComplaints.filter(c => {
+    const t = `${c.brand||''} ${c.model||''} ${c.title||''} ${(c.tags||[]).join(' ')}`.toLowerCase();
+    return t.includes(valLower) || words.some(w => t.includes(w));
+  });
+
+  // 3. FIPE
+  const cacheKey = valLower;
+  delete fipeSugCache[cacheKey];
   await searchFipeModels(val);
-  const results = fipeSugCache[cacheKey] || [];
+  const fipeResults = fipeSugCache[cacheKey] || [];
+
   hideSuggestions();
 
-  if (results.length === 0) {
-    alert(`Nenhum resultado encontrado para "${val}"`);
-  } else if (results.length === 1) {
-    const r = results[0];
+  // 1 único veículo e sem reclamações → vai direto pro perfil
+  const totalVehicles = mockResults.length + fipeResults.length;
+  if (totalVehicles === 1 && !complaintResults.length) {
+    if (mockResults.length === 1) { showVehicleProfile(mockResults[0].id); return; }
+    const r = fipeResults[0];
     const prevIdx = mockVehicles.findIndex(v => v.id === 'dynamic');
     if (prevIdx > -1) mockVehicles.splice(prevIdx, 1);
-    const typeEmoji = {'carros':'🚗','motos':'🏍️','caminhoes':'🚚'}[r.type] || '🚗';
+    const typeEmoji = {'carros':'🚗','motos':'🏍️','caminhoes':'🚚'}[r.type]||'🚗';
     mockVehicles.push({ id:'dynamic', _dynamic:true, emoji:typeEmoji, brand:r.brand, name:r.model||r.brand, version:r.label, year:'—', rating:0, count:0, badge:'Novo', badgeClass:'badge-yellow', problems:[], fipePrice:null });
     showVehicleProfile('dynamic');
-  } else {
-    showSearchResults(val, results);
+    return;
   }
-}
 
+  await showSearchResults(val, fipeResults, complaintResults, mockResults);
+}
 
 function renderSuggestions(val) { onSearchInput(val); }
 
