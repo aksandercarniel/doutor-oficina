@@ -5081,6 +5081,145 @@ function renderVehicleProfileFull(v, id) {
   `;
 }
 
+
+// API FIPE v2
+const FIPE_V2 = 'https://fipe.parallelum.com.br/api/v2';
+const FIPE_TYPE = { carros: 'cars', motos: 'motorcycles', caminhoes: 'trucks' };
+
+async function fipeFetch(url) {
+  try {
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' }, mode: 'cors' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch(e) {
+    try {
+      const proxy = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+      const res2 = await fetch(proxy, { headers: { 'Accept': 'application/json' } });
+      if (!res2.ok) throw new Error(`Proxy HTTP ${res2.status}`);
+      return await res2.json();
+    } catch(e2) { throw new Error('FIPE indisponível: ' + e2.message); }
+  }
+}
+
+function fipeUrl(type, ...parts) {
+  return [FIPE_V2, FIPE_TYPE[type] || type, ...parts].join('/');
+}
+
+async function sbLoadBrands() {
+  const type = document.getElementById('sb-type').value;
+  const bSel = document.getElementById('sb-brand');
+  const ySel = document.getElementById('sb-year');
+  const mSel = document.getElementById('sb-model');
+  bSel.innerHTML = '<option>⏳ Carregando marcas…</option>'; bSel.disabled = true;
+  ySel.innerHTML = '<option>Selecione a marca</option>'; ySel.disabled = true;
+  mSel.innerHTML = '<option>Selecione o ano</option>'; mSel.disabled = true;
+  document.getElementById('sb-fipe-result').classList.remove('show');
+  try {
+    const d = await fipeFetch(fipeUrl(type, 'brands'));
+    bSel.innerHTML = '<option value="">Selecione a marca</option>' +
+      d.map(m => `<option value="${m.code||m.codigo}">${m.name||m.nome}</option>`).join('');
+    bSel.disabled = false;
+  } catch(e) {
+    bSel.innerHTML = '<option value="">⚠️ Tentar novamente</option>';
+    bSel.disabled = false;
+    bSel.onchange = () => { bSel.onchange = null; sbLoadBrands(); };
+  }
+}
+
+async function sbLoadYearsFromBrand() {
+  const type = document.getElementById('sb-type').value;
+  const brand = document.getElementById('sb-brand').value;
+  const ySel = document.getElementById('sb-year');
+  const mSel = document.getElementById('sb-model');
+  if (!brand) return;
+  ySel.innerHTML = '<option>⏳ Carregando anos…</option>'; ySel.disabled = true;
+  mSel.innerHTML = '<option>Selecione o ano</option>'; mSel.disabled = true;
+  document.getElementById('sb-fipe-result').classList.remove('show');
+  try {
+    const d = await fipeFetch(fipeUrl(type, 'brands', brand, 'models'));
+    const modelos = d.models || d.modelos || d;
+    if (modelos.length > 0) {
+      // Busca anos únicos de todos os modelos
+      const anosSet = new Map();
+      const anos = await fipeFetch(fipeUrl(type, 'brands', brand, 'models', modelos[0].code||modelos[0].codigo, 'years'));
+      (Array.isArray(anos)?anos:[]).forEach(a => {
+        const yr = (a.name||a.nome||'').split(' ')[0];
+        if (!anosSet.has(yr)) anosSet.set(yr, a.code||a.codigo);
+      });
+      ySel._anoMap = anosSet;
+      ySel._allModels = modelos;
+      ySel._brandCode = brand;
+      const sorted = [...anosSet.entries()].sort((a,b)=>b[0]-a[0]);
+      ySel.innerHTML = '<option value="">Selecione o ano</option>' +
+        sorted.map(([yr, code]) => `<option value="${yr}">${yr}</option>`).join('');
+      ySel.disabled = false;
+    }
+  } catch(e) {
+    ySel.innerHTML = '<option>⚠️ Erro ao carregar</option>';
+    ySel.disabled = false;
+  }
+}
+
+async function sbLoadModelsFromYear() {
+  const type = document.getElementById('sb-type').value;
+  const brand = document.getElementById('sb-brand').value;
+  const year = document.getElementById('sb-year').value;
+  const mSel = document.getElementById('sb-model');
+  const ySel = document.getElementById('sb-year');
+  if (!year) return;
+  mSel.innerHTML = '<option>⏳ Carregando modelos…</option>'; mSel.disabled = true;
+  document.getElementById('sb-fipe-result').classList.remove('show');
+  try {
+    const codes = (ySel._anoMap && ySel._anoMap.get(year)) ? [ySel._anoMap.get(year)] : [];
+    const modelMap = new Map();
+    if (codes.length > 0) {
+      await Promise.all(codes.map(async code => {
+        try {
+          const d = await fipeFetch(fipeUrl(type, 'brands', brand, 'years', code, 'models'));
+          (Array.isArray(d)?d:[]).forEach(m => {
+            const key = m.code||m.codigo;
+            if (!modelMap.has(key)) modelMap.set(key, m.name||m.nome);
+          });
+        } catch(e) {}
+      }));
+    }
+    if (modelMap.size > 0) {
+      mSel.innerHTML = '<option value="">Selecione o modelo</option>' +
+        [...modelMap.entries()].map(([code,name]) => `<option value="${code}">${name}</option>`).join('');
+    } else {
+      const allModels = ySel._allModels || [];
+      mSel.innerHTML = '<option value="">Selecione o modelo</option>' +
+        allModels.map(m => `<option value="${m.code||m.codigo}">${m.name||m.nome}</option>`).join('');
+    }
+    mSel.disabled = false;
+  } catch(e) {
+    mSel.innerHTML = '<option>⚠️ Erro ao carregar</option>';
+    mSel.disabled = false;
+  }
+}
+
+async function sbShowPrice() {
+  const type = document.getElementById('sb-type').value;
+  const brand = document.getElementById('sb-brand').value;
+  const model = document.getElementById('sb-model').value;
+  const year = document.getElementById('sb-year').value;
+  if (!model || !year) return;
+  const res = document.getElementById('sb-fipe-result');
+  res.innerHTML = '<span style="color:var(--muted);font-size:13px">Carregando…</span>';
+  res.classList.add('show');
+  try {
+    const ySel = document.getElementById('sb-year');
+    const code = ySel._anoMap?.get(year);
+    if (!code) throw new Error('Código não encontrado');
+    const d = await fipeFetch(fipeUrl(type, 'brands', brand, 'models', model, 'years', code));
+    const brandTxt = document.getElementById('sb-brand').options[document.getElementById('sb-brand').selectedIndex]?.text || '';
+    const modelTxt = document.getElementById('sb-model').options[document.getElementById('sb-model').selectedIndex]?.text || '';
+    res.innerHTML = `<span style="font-size:13px;color:var(--green);font-weight:700">${brandTxt} ${modelTxt} ${year}: ${d.price||d.Valor||'—'}</span>`;
+  } catch(e) {
+    res.innerHTML = '<span style="color:var(--red)">Erro ao buscar preço.</span>';
+  }
+}
+
 </script>
 </body>
 </html>
