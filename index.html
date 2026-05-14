@@ -2098,12 +2098,40 @@ const mockVehicles=[
   {id:'9',emoji:'🚚',brand:'Volkswagen',name:'Constellation',version:'24.280 6x2',year:'2022',rating:3.4,count:198,badge:'Moderado',badgeClass:'badge-yellow',problems:['Motor','Transmissão','Suspensão']},
   {id:'10',emoji:'🚚',brand:'Mercedes-Benz',name:'Actros',version:'2651 6x4',year:'2021',rating:3.8,count:124,badge:'Moderado',badgeClass:'badge-yellow',problems:['Elétrica','Freios']},
   {id:'11',emoji:'🚚',brand:'Scania',name:'R 450',version:'A6x2 NB Highline',year:'2023',rating:4.0,count:87,badge:'Confiável',badgeClass:'badge-green',problems:['Suspensão','Freios']},
+  // Hyundai
+  {id:'h1',emoji:'🚗',brand:'Hyundai',name:'Creta',version:'2.0 16V Flex Prestige Plus AT',year:'2023',rating:3.6,count:412,badge:'Moderado',badgeClass:'badge-yellow',problems:['Câmbio','Elétrica','Ar-condicionado']},
+  {id:'h2',emoji:'🚗',brand:'Hyundai',name:'Tucson',version:'1.6 T-GDI GLS AT',year:'2022',rating:3.2,count:298,badge:'Moderado',badgeClass:'badge-yellow',problems:['Motor','Transmissão','Elétrica']},
+  {id:'h3',emoji:'🚗',brand:'Hyundai',name:'HB20S',version:'1.6 Flex Vision Plus AT',year:'2023',rating:3.0,count:356,badge:'Moderado',badgeClass:'badge-yellow',problems:['Câmbio','Freios','Motor']},
+  {id:'h4',emoji:'🚗',brand:'Hyundai',name:'Santa Fe',version:'3.5 V6 4WD AT',year:'2022',rating:2.9,count:187,badge:'Crítico',badgeClass:'badge-red',problems:['Suspensão','Elétrica','Motor']},
+  {id:'h5',emoji:'🚗',brand:'Hyundai',name:'Elantra',version:'2.0 16V Flex GLS AT',year:'2021',rating:3.8,count:143,badge:'Moderado',badgeClass:'badge-yellow',problems:['Elétrica','Ar-condicionado']},
+  {id:'h6',emoji:'🚗',brand:'Hyundai',name:'i30',version:'2.0 16V Flex Aut.',year:'2021',rating:4.0,count:98,badge:'Confiável',badgeClass:'badge-green',problems:['Freios','Elétrica']},
+];
+
+const mockCompanies=[
+  {id:'c1',name:'Hyundai Caoa Maringá',cnpj:'12.345.678/0001-90',phone:'(44) 3333-1111',address:'Av. Brasil, 1500 - Maringá, PR',email:'maringa@caoa.com.br'},
+  {id:'c2',name:'Hyundai Caoa São Paulo Centro',cnpj:'23.456.789/0001-01',phone:'(11) 4444-2222',address:'Av. Paulista, 2000 - São Paulo, SP',email:'sp@caoa.com.br'},
+  {id:'c3',name:'Hyundai Caoa Rio de Janeiro',cnpj:'34.567.890/0001-12',phone:'(21) 5555-3333',address:'Av. das Américas, 500 - Rio de Janeiro, RJ',email:'rj@caoa.com.br'},
+  {id:'c4',name:'Hyundai Prime Curitiba',cnpj:'45.678.901/0001-23',phone:'(41) 6666-4444',address:'Rua XV de Novembro, 800 - Curitiba, PR',email:'curitiba@prime.com.br'},
+  {id:'c5',name:'Hyundai Caoa Belo Horizonte',cnpj:'56.789.012/0001-34',phone:'(31) 7777-5555',address:'Av. Contorno, 1200 - Belo Horizonte, MG',email:'bh@caoa.com.br'},
+  {id:'c6',name:'Hyundai Sul Porto Alegre',cnpj:'67.890.123/0001-45',phone:'(51) 8888-6666',address:'Av. Ipiranga, 3000 - Porto Alegre, RS',email:'poa@hyundaisul.com.br'},
+  {id:'c7',name:'Hyundai Caoa Brasília',cnpj:'78.901.234/0001-56',phone:'(61) 9999-7777',address:'SGAS 915, Bloco B - Brasília, DF',email:'bsb@caoa.com.br'},
+  {id:'c8',name:'Hyundai Caoa Salvador',cnpj:'89.012.345/0001-67',phone:'(71) 3232-8888',address:'Av. Paralela, 4000 - Salvador, BA',email:'ssa@caoa.com.br'},
+  {id:'c9',name:'Hyundai Motor Star Recife',cnpj:'90.123.456/0001-78',phone:'(81) 3434-9999',address:'Av. Agamenon Magalhães, 2500 - Recife, PE',email:'recife@motorstar.com.br'},
+  {id:'c10',name:'Hyundai Caoa Fortaleza',cnpj:'01.234.567/0001-89',phone:'(85) 3535-0000',address:'Av. Washington Soares, 1800 - Fortaleza, CE',email:'fortaleza@caoa.com.br'},
+  {id:'c11',name:'Hyundai Caoa Goiânia',cnpj:'11.234.567/0001-90',phone:'(62) 3636-1111',address:'Av. T-63, 1000 - Goiânia, GO',email:'goiania@caoa.com.br'},
+  {id:'c12',name:'Hyundai Caoa Manaus',cnpj:'22.345.678/0001-01',phone:'(92) 3737-2222',address:'Av. Djalma Batista, 600 - Manaus, AM',email:'manaus@caoa.com.br'},
 ];
 const mockComplaints=[
-  {emoji:'🚗',brand:'Hyundai',model:'HB20 2023',title:'Motor para sem aviso na estrada',text:'Com apenas 8.000 km o carro simplesmente desligou na rodovia. O reboque demorou 4 horas e a concessionária demorou 2 semanas para dar retorno.',status:'s-open',statusLabel:'Aberto',date:'há 2 dias',tags:['Motor','Garantia','SP'],votes:47},
-  {emoji:'🚗',brand:'Chevrolet',model:'Onix 2022',title:'Câmbio automático com solavanco frequente',text:'Desde os 15.000 km o câmbio dá solavanco na troca de 2ª para 3ª marcha. Já levei 3x na concessionária e o problema persiste.',status:'s-progress',statusLabel:'Em análise',date:'há 5 dias',tags:['Câmbio','RJ'],votes:89},
-  {emoji:'🚗',brand:'Jeep',model:'Compass 2022',title:'Transmissão com ruído metálico acima de 80 km/h',text:'Barulho começou com 22.000 km. Custo estimado pela concessionária: R$ 8.400 fora da garantia.',status:'s-open',statusLabel:'Aberto',date:'há 1 semana',tags:['Transmissão','MG'],votes:134},
-  {emoji:'🏍️',brand:'Honda',model:'CB 500 2021',title:'Farol LED apagando intermitentemente',text:'Problema elétrico no farol que apaga à noite. Situação de risco. Peça está em falta há 60 dias.',status:'s-resolved',statusLabel:'Resolvido',date:'há 2 semanas',tags:['Elétrica','Segurança','PR'],votes:56},
+  {emoji:'🚗',brand:'Hyundai',model:'HB20 2023',title:'Motor para sem aviso na estrada',description:'Com apenas 8.000 km o carro simplesmente desligou na rodovia. O reboque demorou 4 horas e a concessionária demorou 2 semanas para dar retorno.',status:'s-open',statusLabel:'Aberto',date:'há 2 dias',tags:['Motor','Garantia','SP'],votes:47},
+  {emoji:'🚗',brand:'Chevrolet',model:'Onix 2022',title:'Câmbio automático com solavanco frequente',description:'Desde os 15.000 km o câmbio dá solavanco na troca de 2ª para 3ª marcha. Já levei 3x na concessionária e o problema persiste.',status:'s-progress',statusLabel:'Em análise',date:'há 5 dias',tags:['Câmbio','RJ'],votes:89},
+  {emoji:'🚗',brand:'Jeep',model:'Compass 2022',title:'Transmissão com ruído metálico acima de 80 km/h',description:'Barulho começou com 22.000 km. Custo estimado pela concessionária: R$ 8.400 fora da garantia.',status:'s-open',statusLabel:'Aberto',date:'há 1 semana',tags:['Transmissão','MG'],votes:134},
+  {emoji:'🏍️',brand:'Honda',model:'CB 500 2021',title:'Farol LED apagando intermitentemente',description:'Problema elétrico no farol que apaga à noite. Situação de risco. Peça está em falta há 60 dias.',status:'s-resolved',statusLabel:'Resolvido',date:'há 2 semanas',tags:['Elétrica','Segurança','PR'],votes:56},
+  {emoji:'🚗',brand:'Hyundai',model:'Creta 2023',title:'Ar-condicionado para de funcionar com calor',description:'Com temperatura acima de 35°C o ar-condicionado simplesmente desliga sozinho. Concessionária diz que é "comportamento normal" mas o manual não menciona isso.',status:'s-open',statusLabel:'Aberto',date:'há 3 dias',tags:['Ar-condicionado','Garantia','RJ'],votes:78},
+  {emoji:'🚗',brand:'Hyundai',model:'Tucson 2022',title:'Vibração no volante em alta velocidade',description:'A partir de 110 km/h o volante vibra intensamente. Já fiz balanceamento 3 vezes e o problema persiste. Concessionária não encontra a causa.',status:'s-progress',statusLabel:'Em análise',date:'há 4 dias',tags:['Suspensão','Segurança','SP'],votes:62},
+  {emoji:'🚗',brand:'Hyundai',model:'HB20S 2023',title:'Câmbio automático engasgando no trânsito',description:'Em trânsito lento o câmbio fica dando tranco ao soltar o freio. Problema relatado por vários donos do modelo mas a Hyundai não emitiu recall.',status:'s-open',statusLabel:'Aberto',date:'há 1 semana',tags:['Câmbio','MG'],votes:93},
+  {emoji:'🚗',brand:'Hyundai',model:'Santa Fe 2022',title:'Sistema elétrico com falhas frequentes',description:'Painel apagando, sensores disparando sem motivo e vidros elétricos travando. O carro foi ao serviço autorizado 4 vezes e o problema retorna.',status:'s-progress',statusLabel:'Em análise',date:'há 6 dias',tags:['Elétrica','Garantia','PR'],votes:41},
+  {emoji:'🚗',brand:'Hyundai',model:'HB20 2022',title:'Concessionária recusa garantia por item de fábrica',description:'Peça do sistema de freios quebrou com 12.000 km. A concessionária Hyundai Caoa alega que foi por "mau uso" e nega a garantia. Absurdo para um carro novo.',status:'s-open',statusLabel:'Aberto',date:'há 2 semanas',tags:['Freios','Garantia','Concessionária','RS'],votes:115},
+  {emoji:'🚗',brand:'Hyundai',model:'Elantra 2021',title:'Recall não resolveu problema de motor',description:'Participei do recall do Elantra mas o problema de consumo excessivo de óleo continua. A concessionária diz que o carro está dentro dos parâmetros.',status:'s-resolved',statusLabel:'Resolvido',date:'há 1 mês',tags:['Motor','Recall','SC'],votes:88},
 ];
 const rankingData=[
   {pos:1,emoji:'🏍️',brand:'Honda',name:'CG 160',score:4.5},
@@ -3683,6 +3711,8 @@ function renderSearchList(tab) {
 }
 
 async function showSearchResults(val, fipeResults, complaintResults, mockResults) {
+  const valLower = val.toLowerCase();
+
   // Busca empresas no Supabase
   let companyResults = [];
   try {
@@ -3690,13 +3720,22 @@ async function showSearchResults(val, fipeResults, complaintResults, mockResults
     companyResults = data || [];
   } catch(e) {}
 
-  _searchResults = { val, fipe:fipeResults||[], complaints:complaintResults||[], mock:mockResults||[], companies:companyResults };
+  // Adiciona empresas do mock que batem com a busca
+  const mockCompanyResults = mockCompanies.filter(c =>
+    c.name.toLowerCase().includes(valLower) ||
+    c.address?.toLowerCase().includes(valLower)
+  );
+
+  // Une empresas do mock + Supabase sem repetir
+  const allCompanies = [...mockCompanyResults, ...companyResults];
+
+  _searchResults = { val, fipe:fipeResults||[], complaints:complaintResults||[], mock:mockResults||[], companies:allCompanies };
   showPage('search');
   document.getElementById('search-free-input').value = '';
-  const total = (fipeResults?.length||0)+(complaintResults?.length||0)+(mockResults?.length||0)+companyResults.length;
+  const total = (fipeResults?.length||0)+(complaintResults?.length||0)+(mockResults?.length||0)+allCompanies.length;
   document.getElementById('search-results-title').textContent = `${total} resultado${total!==1?'s':''} para "${val}"`;
   const vc = (fipeResults?.length||0)+(mockResults?.length||0);
-  const cc = companyResults.length;
+  const cc = allCompanies.length;
   const rc = complaintResults?.length||0;
   const vt = document.getElementById('tab-vehicles-count');
   const ct = document.getElementById('tab-companies-count');
@@ -3704,78 +3743,6 @@ async function showSearchResults(val, fipeResults, complaintResults, mockResults
   if (vt) vt.textContent = vc?`(${vc})`:'';
   if (ct) ct.textContent = cc?`(${cc})`:'';
   if (crt) crt.textContent = rc?`(${rc})`:'';
-  filterSearchResults('all', null);
-}
-
-function filterSearchResults(tab, btn) {
-  ['all','vehicles','complaints'].forEach(t => {
-    const b = document.getElementById('tab-'+t);
-    if (b) {
-      b.style.borderBottomColor = t===tab ? 'var(--navy)' : 'transparent';
-      b.style.color = t===tab ? 'var(--navy)' : 'var(--muted)';
-    }
-  });
-  renderSearchList(tab);
-}
-
-function renderSearchList(tab) {
-  const grid = document.getElementById('search-results-grid');
-  const { val, fipe, complaints, mock } = _searchResults;
-  sugItems = [];
-  let html = '';
-  const allVehicles = [...mock.map(v => ({ _mock:true, ...v })), ...fipe];
-
-  if (tab === 'all' || tab === 'vehicles') {
-    allVehicles.forEach(r => {
-      const idx = sugItems.length;
-      if (r._mock) sugItems.push({ action:'vehicle', id:r.id, label:`${r.brand} ${r.name}` });
-      else sugItems.push({ action:'fipe', brand:r.brand, model:r.model, type:r.type, label:r.label });
-      const name = r.model||r.name||r.brand;
-      const type = r._mock?(r.emoji==='🏍️'?'Moto':r.emoji==='🚚'?'Caminhão':'Carro'):(r.type==='carros'?'Carro':r.type==='motos'?'Moto':'Caminhão');
-      html += `<div onclick="selectSuggestion(${idx})" style="padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer;display:flex;gap:14px;align-items:flex-start" onmouseover="this.querySelector('.sr-title').style.textDecoration='underline'" onmouseout="this.querySelector('.sr-title').style.textDecoration='none'">
-        <div style="width:40px;height:40px;background:var(--bg2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${r.emoji||'🚗'}</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${r.brand} · ${type}</div>
-          <div class="sr-title" style="font-family:var(--font);font-weight:700;font-size:16px;color:var(--navy);margin-bottom:4px">${name}</div>
-          <div style="font-size:13px;color:var(--muted)">${r._mock?`${r.version||''} · ${r.year||''}`:'Tabela FIPE'}</div>
-        </div>
-        <div style="font-size:12px;color:var(--muted);flex-shrink:0;padding-top:4px">Ver perfil →</div>
-      </div>`;
-    });
-  }
-
-  if (tab === 'all' && complaints.length) {
-    html += `<div style="font-family:var(--font);font-weight:900;font-size:13px;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;padding:20px 0 10px;border-bottom:1px solid var(--border)">📋 Reclamações</div>`;
-  }
-
-  if (tab === 'all' || tab === 'complaints') {
-    complaints.slice(0,10).forEach(c => {
-      html += `<div style="padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.querySelector('.sr-title').style.textDecoration='underline'" onmouseout="this.querySelector('.sr-title').style.textDecoration='none'">
-        <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${c.brand||''} ${c.model||''} ${c.year||''} · <span class="cc-status ${c.status||'s-open'}" style="font-size:10px">${c.status==='s-resolved'?'Resolvido':c.status==='s-progress'?'Em análise':'Aberto'}</span></div>
-        <div class="sr-title" style="font-family:var(--font);font-weight:700;font-size:15px;color:var(--navy);margin-bottom:4px">${c.title||'Reclamação'}</div>
-        <div style="font-size:13px;color:var(--text2);line-height:1.5">${(c.description||'').slice(0,120)}${(c.description||'').length>120?'…':''}</div>
-      </div>`;
-    });
-  }
-
-  if (!html) {
-    html = `<div style="text-align:center;padding:60px 0;color:var(--muted)">Nenhum resultado nesta categoria para "<strong>${val}</strong>"</div>`;
-  }
-  grid.innerHTML = html;
-}
-
-function showSearchResults(val, fipeResults, complaintResults, mockResults) {
-  _searchResults = { val, fipe:fipeResults||[], complaints:complaintResults||[], mock:mockResults||[] };
-  showPage('search');
-  document.getElementById('search-free-input').value = '';
-  const total = (fipeResults?.length||0)+(complaintResults?.length||0)+(mockResults?.length||0);
-  document.getElementById('search-results-title').textContent = `${total} resultado${total!==1?'s':''} para "${val}"`;
-  const vc = (fipeResults?.length||0)+(mockResults?.length||0);
-  const cc = complaintResults?.length||0;
-  const vt = document.getElementById('tab-vehicles-count');
-  const ct = document.getElementById('tab-complaints-count');
-  if (vt) vt.textContent = vc?`(${vc})`:'';
-  if (ct) ct.textContent = cc?`(${cc})`:'';
   filterSearchResults('all', null);
 }
 
