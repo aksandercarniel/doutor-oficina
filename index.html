@@ -3592,29 +3592,64 @@ function startVoiceSearch() {
   recognition.start();
 }
 
-function showSearchResults(val, results) {
+function showSearchResults(val, fipeResults, complaintResults, mockResults) {
   showPage('search');
   document.getElementById('search-free-input').value = '';
-  document.getElementById('search-results-title').textContent = `${results.length} resultado${results.length !== 1 ? 's' : ''} para "${val}"`;
+  const total = (fipeResults?.length||0) + (complaintResults?.length||0) + (mockResults?.length||0);
+  document.getElementById('search-results-title').textContent = `${total} resultado${total !== 1 ? 's' : ''} para "${val}"`;
   const grid = document.getElementById('search-results-grid');
-  grid.innerHTML = results.map(r => {
-    const idx = sugItems.length;
-    sugItems.push({ action:'fipe', brand:r.brand, model:r.model, type:r.type, label:r.label });
-    return `
-    <div onclick="selectSuggestion(${idx})" style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:20px;cursor:pointer;transition:all .2s;box-shadow:0 2px 8px rgba(13,31,60,.06)" onmouseover="this.style.borderColor='var(--navy)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform=''">
-      <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
-        <div style="width:48px;height:48px;background:var(--bg2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px">${r.emoji}</div>
-        <div>
-          <div style="font-size:11px;font-weight:800;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px">${r.brand}</div>
-          <div style="font-family:var(--font);font-weight:900;font-size:18px;color:var(--navy);line-height:1.2">${r.model || r.brand}</div>
+  let html = '';
+
+  // Seção: Veículos
+  const allVehicles = [
+    ...(mockResults||[]).map(v => ({ _mock:true, ...v })),
+    ...(fipeResults||[])
+  ];
+  if (allVehicles.length) {
+    html += `<div style="grid-column:1/-1;font-family:var(--font);font-weight:900;font-size:16px;color:var(--navy);margin-top:8px;padding-bottom:8px;border-bottom:2px solid var(--border)">🚗 Veículos</div>`;
+    allVehicles.forEach(r => {
+      const idx = sugItems.length;
+      if (r._mock) {
+        sugItems.push({ action:'vehicle', id:r.id, label:`${r.brand} ${r.name}` });
+      } else {
+        sugItems.push({ action:'fipe', brand:r.brand, model:r.model, type:r.type, label:r.label });
+      }
+      html += `<div onclick="selectSuggestion(${idx})" style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:20px;cursor:pointer;transition:all .2s;box-shadow:0 2px 8px rgba(13,31,60,.06)" onmouseover="this.style.borderColor='var(--navy)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='var(--border)';this.style.transform=''">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
+          <div style="width:48px;height:48px;background:var(--bg2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px">${r.emoji||'🚗'}</div>
+          <div>
+            <div style="font-size:11px;font-weight:800;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px">${r.brand}</div>
+            <div style="font-family:var(--font);font-weight:900;font-size:16px;color:var(--navy);line-height:1.2">${r.model||r.name||r.brand}</div>
+          </div>
         </div>
-      </div>
-      <div style="font-size:12px;color:var(--muted);border-top:1px solid var(--border);padding-top:10px;display:flex;justify-content:space-between;align-items:center">
-        <span>${r.type === 'carros' ? '🚗 Carro' : r.type === 'motos' ? '🏍️ Moto' : '🚚 Caminhão'}</span>
-        <span style="color:var(--navy);font-weight:700;font-size:11px">Ver perfil →</span>
-      </div>
-    </div>`;
-  }).join('');
+        <div style="font-size:12px;color:var(--muted);border-top:1px solid var(--border);padding-top:10px;display:flex;justify-content:space-between">
+          <span>${r._mock?(r.emoji==='🏍️'?'🏍️ Moto':r.emoji==='🚚'?'🚚 Caminhão':'🚗 Carro'):(r.type==='carros'?'🚗 Carro':r.type==='motos'?'🏍️ Moto':'🚚 Caminhão')}</span>
+          <span style="color:var(--navy);font-weight:700;font-size:11px">Ver perfil →</span>
+        </div>
+      </div>`;
+    });
+  }
+
+  // Seção: Reclamações
+  if (complaintResults?.length) {
+    html += `<div style="grid-column:1/-1;font-family:var(--font);font-weight:900;font-size:16px;color:var(--navy);margin-top:24px;padding-bottom:8px;border-bottom:2px solid var(--border)">📋 Reclamações (${complaintResults.length})</div>`;
+    complaintResults.slice(0,6).forEach(c => {
+      html += `<div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:20px;cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='var(--navy)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+          <div style="font-family:var(--font);font-weight:800;font-size:14px;color:var(--navy)">${c.title||'Reclamação'}</div>
+          <span class="cc-status ${c.status||'s-open'}" style="font-size:10px;flex-shrink:0;margin-left:8px">${c.status==='s-resolved'?'Resolvido':c.status==='s-progress'?'Em análise':'Aberto'}</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted2);margin-bottom:8px;font-weight:700">${c.brand||''} ${c.model||''} ${c.year||''}</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.5">${(c.description||'').slice(0,100)}${(c.description||'').length>100?'…':''}</div>
+      </div>`;
+    });
+  }
+
+  if (!allVehicles.length && !complaintResults?.length) {
+    html += `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Nenhum resultado encontrado para "<strong>${val}</strong>"</div>`;
+  }
+
+  grid.innerHTML = html;
 }
 
 async function doFreeSearch() {
@@ -3623,31 +3658,10 @@ async function doFreeSearch() {
   if (!val) { applySearchWithFilter('', quickFilter); return; }
   addToHistory(val);
 
-  const words = val.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+  const valLower = val.toLowerCase();
+  const words = valLower.split(/\s+/).filter(w => w.length > 2);
 
-  let found = mockVehicles.find(v =>
-    v.name.toLowerCase().includes(val.toLowerCase()) ||
-    v.brand.toLowerCase().includes(val.toLowerCase()) ||
-    `${v.brand} ${v.name}`.toLowerCase().includes(val.toLowerCase())
-  );
-  if (!found) {
-    found = mockVehicles.find(v => {
-      const t = `${v.brand} ${v.name} ${v.version}`.toLowerCase();
-      return words.some(w => t.includes(w));
-    });
-  }
-  if (!found && words.length > 1) {
-    let best = 0;
-    mockVehicles.forEach(v => {
-      const t = `${v.brand} ${v.name} ${v.version}`.toLowerCase();
-      const s = words.filter(w => t.includes(w)).length;
-      if (s > best) { best = s; found = v; }
-    });
-    if (best === 0) found = null;
-  }
-  if (found) { showVehicleProfile(found.id); return; }
-
-  // Busca na FIPE e mostra página de resultados
+  // Loading
   const box = document.getElementById('smart-suggestions');
   const content = document.getElementById('smart-suggestions-content');
   if (box && content) {
@@ -3655,24 +3669,43 @@ async function doFreeSearch() {
     box.style.display = 'block';
   }
 
-  const cacheKey = val.toLowerCase();
-  delete fipeSugCache[cacheKey]; // sempre busca fresco
+  // 1. Veículos locais
+  const mockResults = mockVehicles.filter(v => {
+    const t = `${v.brand} ${v.name} ${v.version}`.toLowerCase();
+    return t.includes(valLower) || words.some(w => t.includes(w));
+  });
+
+  // 2. Reclamações locais
+  const complaintResults = mockComplaints.filter(c => {
+    const t = `${c.brand||''} ${c.model||''} ${c.title||''} ${(c.tags||[]).join(' ')}`.toLowerCase();
+    return t.includes(valLower) || words.some(w => t.includes(w));
+  });
+
+  // 3. FIPE
+  const cacheKey = valLower;
+  delete fipeSugCache[cacheKey];
   await searchFipeModels(val);
-  const results = fipeSugCache[cacheKey] || [];
+  const fipeResults = fipeSugCache[cacheKey] || [];
+
   hideSuggestions();
 
-  if (results.length === 0) {
-    alert(`Nenhum resultado encontrado para "${val}"`);
-  } else if (results.length === 1) {
-    const r = results[0];
-    const prevIdx = mockVehicles.findIndex(v => v.id === 'dynamic');
-    if (prevIdx > -1) mockVehicles.splice(prevIdx, 1);
-    const typeEmoji = {'carros':'🚗','motos':'🏍️','caminhoes':'🚚'}[r.type] || '🚗';
-    mockVehicles.push({ id:'dynamic', _dynamic:true, emoji:typeEmoji, brand:r.brand, name:r.model||r.brand, version:r.label, year:'—', rating:0, count:0, badge:'Novo', badgeClass:'badge-yellow', problems:[], fipePrice:null });
-    showVehicleProfile('dynamic');
-  } else {
-    showSearchResults(val, results);
+  // 1 único veículo e sem reclamações → vai direto pro perfil
+  const totalVehicles = mockResults.length + fipeResults.length;
+  if (totalVehicles === 1 && !complaintResults.length) {
+    if (mockResults.length === 1) {
+      showVehicleProfile(mockResults[0].id);
+    } else {
+      const r = fipeResults[0];
+      const prevIdx = mockVehicles.findIndex(v => v.id === 'dynamic');
+      if (prevIdx > -1) mockVehicles.splice(prevIdx, 1);
+      const typeEmoji = {'carros':'🚗','motos':'🏍️','caminhoes':'🚚'}[r.type]||'🚗';
+      mockVehicles.push({ id:'dynamic', _dynamic:true, emoji:typeEmoji, brand:r.brand, name:r.model||r.brand, version:r.label, year:'—', rating:0, count:0, badge:'Novo', badgeClass:'badge-yellow', problems:[], fipePrice:null });
+      showVehicleProfile('dynamic');
+    }
+    return;
   }
+
+  showSearchResults(val, fipeResults, complaintResults, mockResults);
 }
 
 
