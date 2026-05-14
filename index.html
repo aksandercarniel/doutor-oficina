@@ -2255,7 +2255,6 @@ function renderRanking(){
 // ══ VEHICLE PROFILE ══
 async function showVehicleProfile(id, vehicleData){
   const v = vehicleData || mockVehicles.find(x=>x.id===id) || mockVehicles[0];
-  console.log('showVehicleProfile:', id, v);
   showPage('vehicle');
 
   if (id === 'dynamic' || v._dynamic) {
@@ -2482,13 +2481,12 @@ Responda APENAS em JSON válido sem markdown:
 
 
 function renderVehicleProfileFull(v, id) {
-  if (!v) { console.error('renderVehicleProfileFull: v is null'); return; }
-  console.log('renderVehicleProfileFull:', v.brand, v.name);
+  if (!v) return;
   v.problems = v.problems || [];
   v.rating = v.rating || 0;
   v.count = v.count || 0;
   const el = document.getElementById('vehicle-profile-content');
-  if (!el) { console.error('vehicle-profile-content not found'); return; }
+  if (!el) return;
   const probBars=v.problems.map((p,i)=>{
     const counts=[v.count,Math.floor(v.count*.73),Math.floor(v.count*.48)];
     return`<div class="problem-item">
@@ -4768,7 +4766,6 @@ function renderRanking(){
 // ══ VEHICLE PROFILE ══
 async function showVehicleProfile(id, vehicleData){
   const v = vehicleData || mockVehicles.find(x=>x.id===id) || mockVehicles[0];
-  console.log('showVehicleProfile:', id, v);
   showPage('vehicle');
 
   if (id === 'dynamic' || v._dynamic) {
@@ -4995,13 +4992,12 @@ Responda APENAS em JSON válido sem markdown:
 
 
 function renderVehicleProfileFull(v, id) {
-  if (!v) { console.error('renderVehicleProfileFull: v is null'); return; }
-  console.log('renderVehicleProfileFull:', v.brand, v.name);
+  if (!v) return;
   v.problems = v.problems || [];
   v.rating = v.rating || 0;
   v.count = v.count || 0;
   const el = document.getElementById('vehicle-profile-content');
-  if (!el) { console.error('vehicle-profile-content not found'); return; }
+  if (!el) return;
   const probBars=v.problems.map((p,i)=>{
     const counts=[v.count,Math.floor(v.count*.73),Math.floor(v.count*.48)];
     return`<div class="problem-item">
@@ -5024,4 +5020,67 @@ function renderVehicleProfileFull(v, id) {
     ?`<strong>Atenção.</strong> ${v.name} apresenta reclamações relevantes. Exija garantia estendida.`
     :`<strong>Alerta alto.</strong> ${v.name} concentra muitas reclamações graves. Considere alternativas.`;
 
-  el.innerHTML=`el.innerHTML=`
+  el.innerHTML=`
+    <div class="profile-hero">
+      <div class="profile-left">
+        <span class="profile-emoji">${v.emoji}</span>
+        <div class="profile-brand-label">${v.brand}</div>
+        <div class="profile-name">${v.name}</div>
+        <div class="profile-sub">${v.version} · ${v.year} · ${v.emoji==='🏍️'?'Moto':v.emoji==='🚚'?'Caminhão':'Automóvel'}</div>
+        <div class="profile-rating">
+          <span class="big-stars">${starsHtml(v.rating)}</span>
+          <span class="big-score">${v.rating.toFixed(1)}</span>
+          <span class="profile-rcount">(${v.count.toLocaleString('pt-BR')} avaliações)</span>
+        </div>
+        <div class="profile-tags">
+          <span class="ptag">${v.badge}</span>
+          ${v.problems.map(p=>`<span class="ptag">${p}</span>`).join('')}
+        </div>
+      </div>
+      <div class="profile-right">
+        <div class="info-card">
+          <div class="info-card-label">💰 TABELA FIPE</div>
+          <div class="info-card-price" id="fipe-price-display">
+            ${v.fipePrice ? `R$ ${v.fipePrice}` : 'R$ —'}
+          </div>
+          <div class="info-card-ref">Referência maio/2025</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-label">📋 RECLAMAÇÕES</div>
+          <div class="info-card-complaints">${v.count.toLocaleString('pt-BR')}</div>
+          <div class="info-card-ref">68% resolvidas</div>
+        </div>
+        <button class="btn-primary profile-cta" onclick="requireAuth()">
+          🚨 Reclamar deste veículo
+        </button>
+      </div>
+    </div>
+
+    <div class="profile-sections">
+      <div class="profile-card">
+        <div class="section-title"><span class="dot red"></span>Problemas mais relatados</div>
+        ${probBars || '<div style="color:var(--muted);font-size:14px;padding:12px 0">Nenhum problema relatado ainda.</div>'}
+      </div>
+      <div class="profile-card">
+        <div class="section-title"><span class="dot red"></span>Distribuição de notas</div>
+        ${distBars}
+      </div>
+    </div>
+
+    <div class="profile-card" style="margin-top:20px">
+      <div class="section-title"><span class="dot red"></span>Reclamações recentes</div>
+      <div id="vehicle-complaints-list">
+        <div style="text-align:center;padding:32px;color:var(--muted)">Nenhuma reclamação registrada ainda. <a href="#" onclick="requireAuth()" style="color:var(--red);font-weight:700">Seja o primeiro!</a></div>
+      </div>
+    </div>
+
+    <div class="verdict-card ${vClass}" style="margin-top:20px">
+      <div class="verdict-icon">${vIcon}</div>
+      <div class="verdict-text">${vText}</div>
+    </div>
+  `;
+}
+
+</script>
+</body>
+</html>
