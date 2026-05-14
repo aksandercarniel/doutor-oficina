@@ -964,7 +964,7 @@ footer{background:var(--navy);padding:36px 24px;margin-top:auto}
         </select>
       </div>
       <div class="sfipe-group">
-        <select class="sfipe-select" id="sb-model" onchange="if(this.value){ doFipeSearch(); }" disabled>
+        <select class="sfipe-select" id="sb-model" onchange="if(this.value){ doFipeSearchFromBar(); }" disabled>
           <option>Selecione o ano</option>
         </select>
       </div>
@@ -4145,6 +4145,66 @@ async function sbShowPrice() {
     console.error('sbShowPrice erro:', e);
     res.innerHTML = '<span style="color:var(--red)">Erro ao buscar preço. Tente outro modelo ou ano.</span>';
   }
+}
+
+async function doFipeSearchFromBar() {
+  const sbType  = document.getElementById('sb-type');
+  const sbBrand = document.getElementById('sb-brand');
+  const sbModel = document.getElementById('sb-model');
+  const sbYear  = document.getElementById('sb-year');
+
+  const type     = sbType?.value || 'carros';
+  const brand    = sbBrand?.value;
+  const model    = sbModel?.value;
+  const yearVal  = sbYear?.value; // ex: "2021"
+  const brandTxt = sbBrand?.options[sbBrand.selectedIndex]?.text || '';
+  const modelTxt = sbModel?.options[sbModel.selectedIndex]?.text || '';
+  const typeEmoji = {'carros':'🚗','motos':'🏍️','caminhoes':'🚚'}[type] || '🚗';
+
+  if (!brand || !model) return;
+
+  // Remove veículo dinâmico anterior
+  const prevIdx = mockVehicles.findIndex(v => v.id === 'dynamic');
+  if (prevIdx > -1) mockVehicles.splice(prevIdx, 1);
+
+  // Tenta encontrar nos dados mock primeiro
+  const found = mockVehicles.find(v =>
+    v.name.toLowerCase().includes(modelTxt.split(' ')[0].toLowerCase()) &&
+    v.brand.toLowerCase().includes(brandTxt.split(' ')[0].toLowerCase())
+  );
+  if (found) { showVehicleProfile(found.id); return; }
+
+  // Busca preço FIPE usando o endpoint correto (via year code do _anoMap)
+  let fipeData = null;
+  try {
+    const ySel = document.getElementById('sb-year');
+    const codes = (ySel._anoMap && ySel._anoMap.get(yearVal)) || [];
+    if (codes.length > 0) {
+      // Usa o primeiro código de combustível disponível
+      const d = await fipeFetch(fipeUrl(type, 'brands', brand, 'years', codes[0], 'models'));
+      // Busca o preço pelo código do modelo selecionado
+      const priceUrl = `${FIPE_V2}/${type === 'carros' ? 'cars' : type === 'motos' ? 'motorcycles' : 'trucks'}/brands/${brand}/models/${model}/years/${codes[0]}`;
+      fipeData = await fipeFetch(priceUrl);
+    }
+  } catch(e) { console.error('FIPE bar search error:', e); }
+
+  const dynamicVehicle = {
+    id: 'dynamic', _dynamic: true,
+    emoji: typeEmoji,
+    brand: brandTxt,
+    name: modelTxt.split(' ')[0],
+    version: modelTxt,
+    year: yearVal || '—',
+    rating: 0, count: 0,
+    badge: 'Novo', badgeClass: 'badge-yellow',
+    problems: [],
+    fipePrice: fipeData?.price || fipeData?.Valor || null,
+    fipeData: fipeData
+  };
+
+  mockVehicles.push(dynamicVehicle);
+  fipePrices['dynamic'] = dynamicVehicle.fipePrice || '—';
+  showVehicleProfile('dynamic');
 }
 
 async function doFipeSearch() {
