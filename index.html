@@ -1952,8 +1952,11 @@ async function doRegister() {
 }
 
 // ══ OVERRIDE: logout com Supabase ══
-function logout() {
-  sbSignOut();
+async function logout() {
+  await sbSignOut();
+  currentUser = null;
+  updateNavAuth();
+  showPage('home');
   document.getElementById('user-dropdown')?.classList.remove('open');
 }
 
@@ -3040,11 +3043,6 @@ function updateSummary(){
       <div><span style="color:var(--muted);font-weight:600">Título:</span> <strong style="color:var(--navy)">${title}</strong></div>
       <div><span style="color:var(--muted);font-weight:600">Nota:</span> <strong>${'⭐'.repeat(selectedRating)||'—'}</strong></div>
     </div>`;
-}
-
-function submitComplaint(){
-  document.querySelectorAll('.modal-step').forEach(s=>s.classList.remove('active'));
-  document.getElementById('step-success').classList.add('active');
 }
 
 // ══ BUSCA WEB COM IA ══
@@ -4706,13 +4704,6 @@ function loginSuccess(user) {
   if (pendingComplaint) { pendingComplaint = false; openModal(); }
 }
 
-function logout() {
-  currentUser = null;
-  updateNavAuth();
-  showPage('home');
-  document.getElementById('user-dropdown').classList.remove('open');
-}
-
 function updateNavAuth() {
   const area = document.getElementById('nav-auth-area');
   const mobileLoginBtn = document.getElementById('nav-mobile-login-btn');
@@ -4762,21 +4753,11 @@ function requireAuth() {
 // ══ PERFIL ══
 
 // ══ FILTROS ══
-function applyFilters() {
-  const status = document.getElementById('filter-status').value;
-  const brand = document.getElementById('filter-brand').value;
-  const state = document.getElementById('filter-state').value;
-  let filtered = [...mockComplaints, ...myComplaints];
-  if (status) filtered = filtered.filter(c => c.status === status);
-  if (brand) filtered = filtered.filter(c => c.brand === brand);
-  if (state) filtered = filtered.filter(c => c.tags.includes(state));
-  renderComplaintsList(filtered);
-}
 function clearFilters() {
   document.getElementById('filter-status').value = '';
   document.getElementById('filter-brand').value = '';
   document.getElementById('filter-state').value = '';
-  renderComplaintsList(mockComplaints);
+  applyFilters();
 }
 
 function renderComplaintsList(list) {
@@ -4801,22 +4782,6 @@ function renderComplaintsList(list) {
         </button>
       </div>
     </div>`).join('');
-}
-
-// ══ VOTOS ══
-function toggleVote(btn, id, current) {
-  if (!currentUser) { openAuth('login'); return; }
-  const span = btn.querySelector('span');
-  if (votedIds.includes(id)) {
-    votedIds = votedIds.filter(v => v !== id);
-    btn.classList.remove('voted');
-    span.textContent = parseInt(span.textContent) - 1;
-  } else {
-    votedIds.push(id);
-    btn.classList.add('voted');
-    span.textContent = parseInt(span.textContent) + 1;
-  }
-  saveData();
 }
 
 // ══ COMPARADOR ══
@@ -4857,34 +4822,6 @@ function renderComparison() {
           ${v.id === winner.id ? `<div class="cmp-winner">✅ Melhor avaliado entre os dois</div>` : ''}
         </div>`).join('')}
     </div>`;
-}
-
-// ══ OVERRIDE submitComplaint para salvar ══
-const _origSubmit = submitComplaint;
-function submitComplaint() {
-  if (!currentUser) { closeModal(); openAuth('login'); return; }
-  // Salva a reclamação do usuário
-  const brandEl = document.getElementById('sel-brand');
-  const modelEl = document.getElementById('sel-model');
-  const yearEl  = document.getElementById('sel-year');
-  const complaint = {
-    id: 'uc_' + Date.now(),
-    userId: currentUser.id,
-    emoji: '🚗',
-    brand: brandEl.options[brandEl.selectedIndex]?.text || '—',
-    model: modelEl.options[modelEl.selectedIndex]?.text || '—',
-    year:  yearEl.options[yearEl.selectedIndex]?.text || '—',
-    title: document.getElementById('inp-title').value || 'Reclamação',
-    text:  document.getElementById('inp-desc').value || '',
-    status: 's-open', statusLabel: 'Aberto',
-    date: 'agora mesmo',
-    tags: [document.getElementById('sel-state').value || 'BR'],
-    votes: 0
-  };
-  myComplaints.unshift(complaint);
-  saveData();
-  document.querySelectorAll('.modal-step').forEach(s => s.classList.remove('active'));
-  document.getElementById('step-success').classList.add('active');
 }
 
 // ══ INIT ══
