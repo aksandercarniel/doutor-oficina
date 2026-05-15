@@ -4275,56 +4275,60 @@ async function loadCompanyRanking() {
 // PERFIL DO USUÁRIO
 // ══════════════════════════════════════════
 async function renderProfile() {
-  const el = document.getElementById('profile-content');
-  if (!el || !currentUser) return;
-  el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Carregando perfil…</div>';
+  if (!currentUser) return;
+
+  // Preenche nome e email
+  const nameEl = document.getElementById('profile-name-big');
+  const emailEl = document.getElementById('profile-email-big');
+  const avatarEl = document.getElementById('profile-avatar-big');
+  if (nameEl) nameEl.textContent = currentUser.name || 'Usuário';
+  if (emailEl) emailEl.textContent = currentUser.email || '';
+  if (avatarEl) avatarEl.textContent = (currentUser.name || 'U')[0].toUpperCase();
+
+  // Busca reclamações do usuário
   try {
-    const { data: complaints } = await sb.from('complaints').select('*').eq('user_id', currentUser.id).order('created_at', { ascending:false });
+    const { data: complaints, error } = await sb
+      .from('complaints')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .order('created_at', { ascending: false });
+
+    if (error) { console.error('Erro ao buscar reclamações:', error); return; }
     const list = complaints || [];
-    el.innerHTML = `
-      <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:20px">
-        <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
-          <div style="width:56px;height:56px;background:var(--navy);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font);font-weight:900;font-size:22px;color:#fff;flex-shrink:0">${(currentUser.name||'U')[0].toUpperCase()}</div>
+
+    // Atualiza contadores
+    const countEl = document.getElementById('profile-count');
+    const resolvedEl = document.getElementById('profile-resolved');
+    const votesEl = document.getElementById('profile-votes-total');
+    if (countEl) countEl.textContent = list.length;
+    if (resolvedEl) resolvedEl.textContent = list.filter(c => c.status === 'resolved').length;
+    if (votesEl) votesEl.textContent = list.reduce((sum, c) => sum + (c.votes_count || 0), 0);
+
+    // Renderiza lista de reclamações
+    const listEl = document.getElementById('my-complaints-list');
+    if (!listEl) return;
+    if (list.length === 0) {
+      listEl.innerHTML = '<div style="color:var(--muted);font-size:14px;padding:12px 0">Você ainda não fez nenhuma reclamação.</div>';
+      return;
+    }
+    listEl.innerHTML = list.map(c => `
+      <div onclick="showResolution('${c.id}')" style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:18px;margin-bottom:12px;cursor:pointer;transition:border-color .2s" onmouseover="this.style.borderColor='var(--navy)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:8px">
           <div>
-            <div style="font-family:var(--font);font-weight:900;font-size:20px;color:var(--navy)">${currentUser.name||'Usuário'}</div>
-            <div style="font-size:13px;color:var(--muted)">${currentUser.email||''}</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:3px">${c.vehicle_brand || ''} ${c.vehicle_model || ''} ${c.vehicle_year || ''}</div>
+            <div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy)">${c.title || 'Reclamação'}</div>
           </div>
+          <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${c.status === 'resolved' ? '#e8f5e9' : c.status === 'progress' ? '#fff8e1' : '#fef2f2'};color:${c.status === 'resolved' ? '#16a34a' : c.status === 'progress' ? '#f59e0b' : '#dc2626'}">${c.status === 'resolved' ? 'Resolvido' : c.status === 'progress' ? 'Em análise' : 'Aberto'}</span>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center">
-          <div style="background:var(--bg);border-radius:10px;padding:12px">
-            <div style="font-family:var(--font);font-weight:900;font-size:22px;color:var(--navy)">${list.length}</div>
-            <div style="font-size:12px;color:var(--muted)">Reclamações</div>
-          </div>
-          <div style="background:var(--bg);border-radius:10px;padding:12px">
-            <div style="font-family:var(--font);font-weight:900;font-size:22px;color:var(--green)">${list.filter(c=>c.status==='resolved').length}</div>
-            <div style="font-size:12px;color:var(--muted)">Resolvidas</div>
-          </div>
-          <div style="background:var(--bg);border-radius:10px;padding:12px">
-            <div style="font-family:var(--font);font-weight:900;font-size:22px;color:var(--red)">${list.filter(c=>c.status==='open').length}</div>
-            <div style="font-size:12px;color:var(--muted)">Em aberto</div>
-          </div>
+        ${c.company_name ? `<div style="font-size:12px;color:var(--muted)">🏢 ${c.company_name}</div>` : ''}
+        <div style="font-size:12px;color:var(--muted);margin-top:6px;display:flex;justify-content:space-between">
+          <span>${c.created_at ? new Date(c.created_at).toLocaleDateString('pt-BR') : ''}</span>
+          <span style="color:var(--navy);font-weight:700">Ver detalhes →</span>
         </div>
       </div>
-
-      <div style="font-family:var(--font);font-weight:900;font-size:16px;color:var(--navy);margin-bottom:14px">📋 Minhas reclamações</div>
-      ${list.length === 0 ? `<div style="text-align:center;padding:40px;color:var(--muted);background:var(--white);border-radius:14px">Você ainda não registrou nenhuma reclamação.<br><a href="#" onclick="requireAuth()" style="color:var(--red);font-weight:700">Registrar agora →</a></div>` :
-      list.map(c => `
-        <div onclick="showResolution('${c.id}')" style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:18px;margin-bottom:12px;cursor:pointer" onmouseover="this.style.borderColor='var(--navy)'" onmouseout="this.style.borderColor='var(--border)'">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:8px">
-            <div>
-              <div style="font-size:12px;color:var(--muted);margin-bottom:3px">${c.vehicle_brand||''} ${c.vehicle_model||''} ${c.vehicle_year||''}</div>
-              <div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy)">${c.title}</div>
-            </div>
-            <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${c.status==='resolved'?'#e8f5e9':c.status==='progress'?'#fff8e1':'#fef2f2'};color:${c.status==='resolved'?'#16a34a':c.status==='progress'?'#f59e0b':'#dc2626'}">${c.status==='resolved'?'Resolvido':c.status==='progress'?'Em análise':'Aberto'}</span>
-          </div>
-          ${c.company_name?`<div style="font-size:12px;color:var(--muted)">🏢 ${c.company_name}</div>`:''}
-          <div style="font-size:12px;color:var(--muted);margin-top:6px;display:flex;justify-content:space-between">
-            <span>${new Date(c.created_at).toLocaleDateString('pt-BR')}</span>
-            <span style="color:var(--navy);font-weight:700">Ver resolução →</span>
-          </div>
-        </div>`).join('')}`;
+    `).join('');
   } catch(e) {
-    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)">Erro ao carregar perfil.</div>';
+    console.error('Erro em renderProfile:', e);
   }
 }
 
