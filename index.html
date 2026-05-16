@@ -4797,7 +4797,7 @@ function clearFilters() {
 
 function renderComplaintsList(list) {
   document.getElementById('complaints-list').innerHTML = list.map((c,i) => `
-    <div class="complaint-card">
+    <div class="complaint-card" style="cursor:pointer" onclick="if(!event.target.closest('.vote-btn') && '${c.id||''}' !== '') showResolution('${c.id||''}')">
       <div class="cc-top">
         <div class="cc-vehicle">
           <span class="cc-emoji">${c.emoji}</span>
