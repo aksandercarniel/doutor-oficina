@@ -2244,7 +2244,29 @@ async function submitComplaint() {
   const yearEl  = document.getElementById('sel-year');
   const typeBtn = document.querySelector('.vtype-btn.active');
 
-  // Valida mediação
+  // Lê marca/modelo/ano com validação — pega texto SÓ se um value real estiver selecionado
+  const getText = (sel) => {
+    if (!sel || !sel.value) return '';
+    const opt = sel.options[sel.selectedIndex];
+    return (opt && opt.text && !opt.text.toLowerCase().includes('selecione') && !opt.text.toLowerCase().includes('carregando')) ? opt.text.trim() : '';
+  };
+  const brandText = getText(brandEl);
+  const fullModelText = getText(modelEl);
+  const yearText = getText(yearEl);
+
+  // Valida marca e modelo (obrigatórios)
+  if (!brandText || !fullModelText) {
+    alert('Selecione marca e modelo do veículo antes de enviar.');
+    goStep(1);
+    return;
+  }
+
+  // Quebra o modelo da FIPE em nome + versão
+  // Ex: "CR-V EXL 2.0 16V 4WD/2.0 Flexone Aut." → nome: "CR-V", versão: "EXL 2.0 16V 4WD/2.0 Flexone Aut."
+  const parts = fullModelText.split(' ');
+  const modelName = parts[0] || fullModelText;
+  const modelVersion = parts.slice(1).join(' ') || null;
+
   // Valida empresa (obrigatório)
   const compName = document.getElementById('comp-name')?.value.trim();
   if (!compName) { 
@@ -2260,9 +2282,10 @@ async function submitComplaint() {
 
   const complaint = {
     user_id: currentUser.id,
-    vehicle_brand: brandEl.options[brandEl.selectedIndex]?.text || '—',
-    vehicle_model: modelEl.options[modelEl.selectedIndex]?.text || '—',
-    vehicle_year:  yearEl.options[yearEl.selectedIndex]?.text || '',
+    vehicle_brand: brandText,
+    vehicle_model: modelName,
+    vehicle_version: modelVersion,
+    vehicle_year:  yearText,
     vehicle_type:  typeBtn?.getAttribute('onclick')?.includes('motos') ? 'moto' : typeBtn?.getAttribute('onclick')?.includes('caminhoes') ? 'caminhao' : 'carro',
     plate_hash:    plateData?.plate ? btoa(plateData.plate.replace('-','').toUpperCase()) : null,
     category:  selectedCatVal || 'Outro',
@@ -4315,8 +4338,10 @@ async function renderProfile() {
       <div onclick="showResolution('${c.id}')" style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:18px;margin-bottom:12px;cursor:pointer;transition:border-color .2s" onmouseover="this.style.borderColor='var(--navy)'" onmouseout="this.style.borderColor='var(--border)'">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:8px">
           <div>
-            <div style="font-size:12px;color:var(--muted);margin-bottom:3px">${c.vehicle_brand || ''} ${c.vehicle_model || ''} ${c.vehicle_year || ''}</div>
-            <div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy)">${c.title || 'Reclamação'}</div>
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px">${c.vehicle_brand || ''} ${c.vehicle_year ? '· ' + c.vehicle_year : ''}</div>
+            <div style="font-family:var(--font);font-weight:900;font-size:16px;color:var(--navy);line-height:1.2">${c.vehicle_model || ''}</div>
+            ${c.vehicle_version ? `<div style="font-size:12px;color:var(--muted);font-style:italic;margin-top:2px">${c.vehicle_version}</div>` : ''}
+            <div style="font-family:var(--font);font-weight:800;font-size:14px;color:var(--text);margin-top:8px">${c.title || 'Reclamação'}</div>
           </div>
           <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${c.status === 'resolved' ? '#e8f5e9' : c.status === 'progress' ? '#fff8e1' : '#fef2f2'};color:${c.status === 'resolved' ? '#16a34a' : c.status === 'progress' ? '#f59e0b' : '#dc2626'}">${c.status === 'resolved' ? 'Resolvido' : c.status === 'progress' ? 'Em análise' : 'Aberto'}</span>
         </div>
