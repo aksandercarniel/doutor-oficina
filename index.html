@@ -1828,7 +1828,7 @@ async function sbSaveComplaint(complaint) {
 async function sbToggleVote(complaintId) {
   if (!currentUser) { openAuth('login'); return; }
   const { data: existing } = await sb.from('votes')
-    .select('id').eq('user_id', currentUser.id).eq('complaint_id', complaintId).single();
+    .select('id').eq('user_id', currentUser.id).eq('complaint_id', complaintId).maybeSingle();
   if (existing) {
     await sb.from('votes').delete().eq('user_id', currentUser.id).eq('complaint_id', complaintId);
     return false;
