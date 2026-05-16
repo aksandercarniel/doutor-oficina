@@ -2146,12 +2146,18 @@ function validateCPF(cpf) {
 }
 
 // Sugere a montadora como empresa ao selecionar a marca do veículo
+// Guarda a última marca sugerida automaticamente, pra detectar se o usuário ainda não personalizou o campo
+let _lastSuggestedBrand = '';
+
 function suggestMontadora(sel) {
   const brand = sel.options[sel.selectedIndex]?.text || '';
-  if (!brand || brand.includes('Selecione')) return;
+  if (!brand || brand.includes('Selecione') || brand.includes('Carregando')) return;
   const compName = document.getElementById('comp-name');
-  if (compName && !compName.value) {
+  if (!compName) return;
+  // Preenche se: o campo está vazio OU o valor atual é a marca sugerida anteriormente (não foi personalizado)
+  if (!compName.value || compName.value === _lastSuggestedBrand) {
     compName.value = brand;
+    _lastSuggestedBrand = brand;
   }
 }
 
