@@ -1412,7 +1412,18 @@ footer{background:var(--navy);padding:36px 24px;margin-top:auto}
           </div>
           <!-- Campos dinâmicos por tipo -->
           <div id="reg-fields-montadora">
-            <div class="auth-group"><label class="auth-label">Modelos fabricados</label><input type="text" class="auth-input" id="reg-company-models" placeholder="Ex: Civic, HB20, Onix" autocomplete="off"/></div>
+            <div class="auth-group">
+              <label class="auth-label">Marca FIPE *</label>
+              <select class="auth-input" id="reg-fipe-brand" onchange="regLoadFipeModels()" style="cursor:pointer">
+                <option value="">Carregando marcas…</option>
+              </select>
+              <input type="hidden" id="reg-fipe-brand-code" value=""/>
+            </div>
+            <div class="auth-group" id="reg-fipe-models-group" style="display:none">
+              <label class="auth-label">Modelos fabricados <span style="font-weight:400;color:var(--muted);font-size:11px">(carregados automaticamente da FIPE)</span></label>
+              <div id="reg-fipe-models-status" style="font-size:13px;color:var(--muted);padding:8px 0">⏳ Aguardando seleção da marca…</div>
+              <input type="hidden" id="reg-company-models" value=""/>
+            </div>
             <div class="auth-group"><label class="auth-label">Concessionárias autorizadas</label><input type="text" class="auth-input" id="reg-company-dealers" placeholder="Ex: Honda SP, Honda RJ" autocomplete="off"/></div>
           </div>
           <div id="reg-fields-oficina" style="display:none">
@@ -2071,6 +2082,13 @@ function clearCompanyForm() {
   if(docLabel) { docLabel.textContent='📄 Clique para anexar CNH, RG ou Contrato Social (PDF ou imagem)'; docLabel.style.color='var(--muted)'; }
   const docInput = document.getElementById('reg-company-doc');
   if(docInput) docInput.value = '';
+  // Reset FIPE brand select
+  const fipeBrand = document.getElementById('reg-fipe-brand');
+  if(fipeBrand) fipeBrand.value = '';
+  const fipeBrandCode = document.getElementById('reg-fipe-brand-code');
+  if(fipeBrandCode) fipeBrandCode.value = '';
+  const fipeModelsGroup = document.getElementById('reg-fipe-models-group');
+  if(fipeModelsGroup) fipeModelsGroup.style.display = 'none';
   // Reset tipo para montadora
   selectCompanyType('montadora', document.querySelector('.company-type-btn'));
 }
@@ -2084,6 +2102,7 @@ function showPostRegisterForm() {
     // Pré-preenche telefone e email da conta
     document.getElementById('reg-company-phone').value = document.getElementById('reg-phone').value;
     document.getElementById('reg-company-email').value = document.getElementById('reg-email').value;
+    regInitFipeBrands();
   } else if (_registerType === 'user+lawyer') {
     document.getElementById('register-form-user').style.display = 'none';
     document.getElementById('register-form-lawyer').style.display = 'block';
@@ -2109,17 +2128,22 @@ async function doRegisterCompanyOnly() {
   const specialties        = document.getElementById('reg-company-specialties')?.value.trim() || null;
   const brands_served      = document.getElementById('reg-company-brands')?.value.trim() || document.getElementById('reg-company-brands-rev')?.value.trim() || null;
   const type_other         = document.getElementById('reg-company-type-other')?.value.trim() || null;
+  const fipe_brand_code    = document.getElementById('reg-fipe-brand-code')?.value || null;
   const errEl = document.getElementById('register-error-company');
   errEl.classList.remove('show');
   if (!name || !cnpj || !phone || !address) {
     errEl.textContent = 'Preencha todos os campos obrigatórios.';
     errEl.classList.add('show'); return;
   }
+  if (type === 'montadora' && !fipe_brand_code) {
+    errEl.textContent = 'Selecione a marca FIPE da montadora.';
+    errEl.classList.add('show'); return;
+  }
   try {
     const hasDoc = !!document.getElementById('reg-company-doc')?.files?.[0];
     const isClaiming = !!sessionStorage.getItem('claiming_company');
     sessionStorage.removeItem('claiming_company');
-    await sb.from('companies_pending').insert([{ user_id: currentUser.id, name, cnpj, email, phone, address, status: isClaiming ? 'dispute' : 'pending', has_document: hasDoc, type, city, state, models_made, authorized_dealers, specialties, brands_served, type_other }]);
+    await sb.from('companies_pending').insert([{ user_id: currentUser.id, name, cnpj, email, phone, address, status: isClaiming ? 'dispute' : 'pending', has_document: hasDoc, type, city, state, models_made, authorized_dealers, specialties, brands_served, type_other, fipe_brand_code }]);
     await sb.from('profiles').update({ role:'company_pending', company_name:name }).eq('id', currentUser.id);
     currentUser.role = 'company_pending';
     currentUser.company_name = name;
@@ -2168,6 +2192,7 @@ function openRegisterCompanyFromProfile() {
   switchAuth('register');
   document.getElementById('auth-modal').classList.add('open');
   document.body.style.overflow = 'hidden';
+  regInitFipeBrands();
 }
 
 function openRegisterLawyerFromProfile() {
@@ -2179,6 +2204,80 @@ function openRegisterLawyerFromProfile() {
   document.getElementById('auth-modal').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
+
+// ── FIPE no cadastro de montadora ──────────────────────────────
+async function regInitFipeBrands() {
+  const sel = document.getElementById('reg-fipe-brand');
+  if (!sel) return;
+  try {
+    const r = await fetch('https://parallelum.com.br/fipe/api/v2/cars/brands');
+    const brands = await r.json();
+    // Também carrega motos e caminhões para cobrir todos os tipos
+    const [moto, truck] = await Promise.all([
+      fetch('https://parallelum.com.br/fipe/api/v2/motorcycles/brands').then(x=>x.json()),
+      fetch('https://parallelum.com.br/fipe/api/v2/trucks/brands').then(x=>x.json())
+    ]);
+    // Mescla e remove duplicatas por nome
+    const all = [...brands, ...moto, ...truck];
+    const seen = new Set();
+    const unique = all.filter(b => {
+      const k = b.name.toLowerCase();
+      if (seen.has(k)) return false;
+      seen.add(k); return true;
+    }).sort((a,b) => a.name.localeCompare(b.name));
+
+    sel.innerHTML = '<option value="">Selecione a marca</option>' +
+      unique.map(b => `<option value="${b.code}" data-name="${b.name}">${b.name}</option>`).join('');
+  } catch(e) {
+    sel.innerHTML = '<option value="">Erro ao carregar marcas</option>';
+  }
+}
+
+async function regLoadFipeModels() {
+  const sel = document.getElementById('reg-fipe-brand');
+  const code = sel.value;
+  const name = sel.options[sel.selectedIndex]?.dataset?.name || '';
+  document.getElementById('reg-fipe-brand-code').value = code;
+
+  const group = document.getElementById('reg-fipe-models-group');
+  const status = document.getElementById('reg-fipe-models-status');
+  const hidden = document.getElementById('reg-company-models');
+
+  if (!code) { group.style.display = 'none'; hidden.value = ''; return; }
+
+  group.style.display = 'block';
+  status.innerHTML = '⏳ Carregando modelos da FIPE…';
+  hidden.value = '';
+
+  try {
+    // Tenta carros, motos e caminhões em paralelo para a marca
+    const tries = await Promise.allSettled([
+      fetch(`https://parallelum.com.br/fipe/api/v2/cars/brands/${code}/models`).then(x=>x.json()),
+      fetch(`https://parallelum.com.br/fipe/api/v2/motorcycles/brands/${code}/models`).then(x=>x.json()),
+      fetch(`https://parallelum.com.br/fipe/api/v2/trucks/brands/${code}/models`).then(x=>x.json())
+    ]);
+    const allModels = tries
+      .filter(t => t.status === 'fulfilled' && Array.isArray(t.value))
+      .flatMap(t => t.value);
+
+    if (!allModels.length) {
+      status.innerHTML = '⚠️ Nenhum modelo encontrado para esta marca.';
+      return;
+    }
+
+    // Remove duplicatas e ordena
+    const names = [...new Set(allModels.map(m => m.name))].sort();
+    hidden.value = names.join(', ');
+
+    status.innerHTML = `<span style="color:var(--green);font-weight:700">✅ ${names.length} modelos carregados automaticamente</span>
+      <div style="margin-top:8px;max-height:120px;overflow-y:auto;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:8px 10px;font-size:12px;color:var(--text2);line-height:1.8">
+        ${names.join(' · ')}
+      </div>`;
+  } catch(e) {
+    status.innerHTML = '⚠️ Erro ao carregar modelos. Tente novamente.';
+  }
+}
+// ── fim FIPE cadastro ───────────────────────────────────────────
 
 function selectCompanyType(type, btn) {
   document.getElementById('reg-company-type').value = type;
