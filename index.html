@@ -1502,6 +1502,12 @@ footer{background:var(--navy);padding:36px 24px;margin-top:auto}
         </div>
       </div>
     </div>
+    <div class="profile-card" id="profile-actions-card">
+      <div class="pc-title"><span class="dot"></span>Minha conta</div>
+      <div id="profile-actions-content" style="padding:4px 0">
+        <div style="color:var(--muted);font-size:14px;padding:12px 0">Carregando…</div>
+      </div>
+    </div>
     <div class="profile-card">
       <div class="pc-title"><span class="dot"></span>Minhas reclamações</div>
       <div class="my-complaints-list" id="my-complaints-list">
@@ -2149,6 +2155,19 @@ async function doRegisterLawyerOnly() {
     errEl.textContent = e.message || 'Erro ao enviar inscrição.';
     errEl.classList.add('show');
   }
+}
+
+function openRegisterCompanyFromProfile() {
+  switchAuth('register');
+  switchRegisterType('company');
+  clearCompanyForm();
+  openModal();
+}
+
+function openRegisterLawyerFromProfile() {
+  switchAuth('register');
+  switchRegisterType('lawyer');
+  openModal();
 }
 
 function selectCompanyType(type, btn) {
@@ -4718,7 +4737,41 @@ async function renderProfile() {
   if (emailEl) emailEl.textContent = currentUser.email || '';
   if (avatarEl) avatarEl.textContent = (currentUser.name || 'U')[0].toUpperCase();
 
-  // Busca reclamações do usuário
+  // Renderiza ações disponíveis conforme o role do usuário
+  const actionsEl = document.getElementById('profile-actions-content');
+  if (actionsEl) {
+    const role = currentUser.role || 'client';
+    let actionsHtml = '';
+    if (role === 'client') {
+      actionsHtml = `
+        <div style="display:flex;flex-direction:column;gap:10px;padding:4px 0">
+          <div style="font-size:13px;color:var(--muted);margin-bottom:4px">Você está cadastrado como <strong>usuário comum</strong>. Quer expandir seu acesso?</div>
+          <button onclick="openRegisterCompanyFromProfile()" style="display:flex;align-items:center;gap:12px;background:var(--bg);border:1.5px solid var(--border2);border-radius:12px;padding:14px 16px;cursor:pointer;text-align:left;width:100%;transition:border-color .2s" onmouseover="this.style.borderColor='var(--navy)'" onmouseout="this.style.borderColor='var(--border2)'">
+            <span style="font-size:24px">🏢</span>
+            <div>
+              <div style="font-family:var(--font);font-weight:700;font-size:14px;color:var(--navy)">Cadastrar minha empresa</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:2px">Montadora, oficina, revenda ou outro tipo</div>
+            </div>
+          </button>
+          <button onclick="openRegisterLawyerFromProfile()" style="display:flex;align-items:center;gap:12px;background:var(--bg);border:1.5px solid var(--border2);border-radius:12px;padding:14px 16px;cursor:pointer;text-align:left;width:100%;transition:border-color .2s" onmouseover="this.style.borderColor='var(--navy)'" onmouseout="this.style.borderColor='var(--border2)'">
+            <span style="font-size:24px">⚖️</span>
+            <div>
+              <div style="font-family:var(--font);font-weight:700;font-size:14px;color:var(--navy)">Quero ser advogado parceiro</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:2px">Atenda mediações na plataforma</div>
+            </div>
+          </button>
+        </div>`;
+    } else if (role === 'company_pending') {
+      actionsHtml = `<div style="padding:12px;background:#fff8e1;border-radius:10px;font-size:13px;color:#92400e">⏳ <strong>Empresa aguardando aprovação.</strong> Você será notificado quando for analisado.</div>`;
+    } else if (role === 'company') {
+      actionsHtml = `<div style="padding:12px;background:#e8f5e9;border-radius:10px;font-size:13px;color:#166534">✅ <strong>Empresa aprovada.</strong> <span style="cursor:pointer;text-decoration:underline;color:var(--navy)" onclick="showPage('company')">Acessar painel da empresa →</span></div>`;
+    } else if (role === 'lawyer') {
+      actionsHtml = `<div style="padding:12px;background:#eff6ff;border-radius:10px;font-size:13px;color:#1e40af">⚖️ <strong>Advogado parceiro.</strong> Você está na lista de advogados disponíveis.</div>`;
+    }
+    actionsEl.innerHTML = actionsHtml;
+  }
+
+
   try {
     const { data: complaints, error } = await sb
       .from('complaints')
