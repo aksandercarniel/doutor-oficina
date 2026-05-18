@@ -2209,6 +2209,11 @@ function openRegisterLawyerFromProfile() {
 async function regInitFipeBrands() {
   const sel = document.getElementById('reg-fipe-brand');
   if (!sel) return;
+  // Limpa estado anterior
+  document.getElementById('reg-fipe-brand-code').value = '';
+  document.getElementById('reg-company-models').value = '';
+  const g = document.getElementById('reg-fipe-models-group');
+  if (g) g.style.display = 'none';
   try {
     const r = await fetch('https://parallelum.com.br/fipe/api/v2/cars/brands');
     const brands = await r.json();
@@ -2228,6 +2233,7 @@ async function regInitFipeBrands() {
 
     sel.innerHTML = '<option value="">Selecione a marca</option>' +
       unique.map(b => `<option value="${b.code}" data-name="${b.name}">${b.name}</option>`).join('');
+    sel.value = ''; // garante que nenhuma marca fica selecionada
   } catch(e) {
     sel.innerHTML = '<option value="">Erro ao carregar marcas</option>';
   }
