@@ -1147,6 +1147,7 @@ footer{background:var(--navy);padding:36px 24px;margin-top:auto}
     <button class="qf-btn" onclick="companyFilterComplaints(this,'progress')">🟡 Em análise</button>
     <button class="qf-btn" onclick="companyFilterComplaints(this,'resolved')">🟢 Resolvidas</button>
     <button class="qf-btn" onclick="companyFilterComplaints(this,'all')">Todas</button>
+    <button class="qf-btn" id="btn-brand-mentions" onclick="companyFilterComplaints(this,'brand')" style="border-color:var(--orange);color:var(--orange)">⚠️ Menções à marca</button>
   </div>
   <div id="company-complaints-list" style="display:flex;flex-direction:column;gap:14px">
     <div style="text-align:center;padding:40px;color:var(--muted)">Carregando reclamações…</div>
@@ -1869,10 +1870,7 @@ async function sbGetSession() {
     currentUser = {
       id: data.session.user.id,
       name: profile?.name || data.session.user.email.split('@')[0],
-      email: data.session.user.email,
-      role: profile?.role || 'client',
-      phone: profile?.phone || null,
-      company_name: profile?.company_name || null
+      email: data.session.user.email
     };
     updateNavAuth();
   }
@@ -3598,34 +3596,12 @@ async function loadPendingCompanies() {
 async function approveCompany(pendingId, userId, name, cnpj, email, phone, address) {
   if (!confirm(`Aprovar a empresa "${name}"?`)) return;
   try {
-    // Busca todos os dados da empresa pending para copiar completo
-    const { data: pending } = await sb.from('companies_pending').select('*').eq('id', pendingId).single();
-    const companyData = {
-      name: pending.name,
-      cnpj: pending.cnpj || null,
-      email: pending.email || null,
-      phone: pending.phone || null,
-      address: pending.address || null,
-      type: pending.type || 'outro',
-      city: pending.city || null,
-      state: pending.state || null,
-      models_made: pending.models_made || null,
-      authorized_dealers: pending.authorized_dealers || null,
-      specialties: pending.specialties || null,
-      brands_served: pending.brands_served || null,
-      type_other: pending.type_other || null,
-      fipe_brand_code: pending.fipe_brand_code || null,
-      recalls: null,
-      owner_id: userId,
-      is_claimed: true
-    };
-    await sb.from('companies').insert([companyData]);
+    await sb.from('companies').insert([{ name, cnpj, email, phone, address }]);
     await sb.from('profiles').update({ role: 'company', company_name: name }).eq('id', userId);
     await sb.from('companies_pending').update({ status: 'approved' }).eq('id', pendingId);
     alert('✅ Empresa aprovada com sucesso!');
     loadPendingCompanies();
   } catch(e) {
-    console.error('Erro ao aprovar:', e);
     alert('Erro ao aprovar: ' + e.message);
   }
 }
@@ -4793,22 +4769,59 @@ async function loadCompanyComplaints(status='open') {
   const list = document.getElementById('company-complaints-list');
   if (!list) return;
   list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Carregando…</div>';
+
+  // Atualiza badge de menções à marca
+  updateBrandMentionsBadge();
+
   try {
-    let q = sb.from('complaints').select('*').eq('company_name', currentUser.name).order('created_at', { ascending:false });
-    if (status !== 'all') q = q.eq('status', status);
-    const { data, error } = await q;
-    if (error || !data?.length) {
-      list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Nenhuma reclamação encontrada.</div>';
+    let data, error;
+
+    if (status === 'brand') {
+      // Busca reclamações pela marca FIPE — sem mencionar a empresa diretamente
+      const brandName = currentUser.company_name || '';
+      // Busca reclamações onde vehicle_brand bate com o nome da empresa
+      // mas company_name está vazio ou diferente
+      const res = await sb.from('complaints')
+        .select('*')
+        .ilike('vehicle_brand', `%${brandName.split(' ')[0]}%`)
+        .order('created_at', { ascending: false });
+      data = (res.data || []).filter(c =>
+        !c.company_name || c.company_name.trim() === ''
+      );
+      error = res.error;
+    } else {
+      let q = sb.from('complaints').select('*')
+        .eq('company_name', currentUser.company_name || currentUser.name)
+        .order('created_at', { ascending: false });
+      if (status !== 'all') {
+        const statusMap = { open: 'open', progress: 'in_progress', resolved: 'resolved' };
+        if (statusMap[status]) q = q.eq('status', statusMap[status]);
+      }
+      const res = await q;
+      data = res.data;
+      error = res.error;
+    }
+
+    if (error) throw error;
+
+    if (!data?.length) {
+      const emptyMsg = status === 'brand'
+        ? '✅ Nenhuma reclamação não vinculada encontrada para sua marca.'
+        : 'Nenhuma reclamação encontrada.';
+      list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">${emptyMsg}</div>`;
       return;
     }
+
+    const isBrand = status === 'brand';
     list.innerHTML = data.map(c => `
-      <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:20px;cursor:pointer" onclick="showResolution('${c.id}')">
+      <div style="background:var(--white);border:1.5px solid ${isBrand ? 'var(--orange)' : 'var(--border)'};border-radius:16px;padding:20px;cursor:pointer" onclick="showResolution('${c.id}')">
+        ${isBrand ? `<div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:8px;display:flex;align-items:center;gap:6px">⚠️ Reclamação não vinculada à sua empresa — cliente não informou o nome</div>` : ''}
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;flex-wrap:wrap;gap:8px">
           <div>
             <div style="font-size:12px;color:var(--muted);margin-bottom:4px">${c.vehicle_brand||''} ${c.vehicle_model||''} ${c.vehicle_year||''}</div>
             <div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy)">${c.title}</div>
           </div>
-          <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${c.status==='resolved'?'#e8f5e9':c.status==='progress'?'#fff8e1':'#fef2f2'};color:${c.status==='resolved'?'#16a34a':c.status==='progress'?'#f59e0b':'#dc2626'}">${c.status==='resolved'?'Resolvido':c.status==='progress'?'Em análise':'Aberto'}</span>
+          <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${c.status==='resolved'?'#e8f5e9':c.status==='in_progress'?'#fff8e1':'#fef2f2'};color:${c.status==='resolved'?'#16a34a':c.status==='in_progress'?'#f59e0b':'#dc2626'}">${c.status==='resolved'?'Resolvido':c.status==='in_progress'?'Em análise':'Aberto'}</span>
         </div>
         <div style="font-size:13px;color:var(--text2);line-height:1.5">${(c.description||'').slice(0,120)}…</div>
         <div style="font-size:12px;color:var(--muted);margin-top:8px;display:flex;justify-content:space-between">
@@ -4817,8 +4830,24 @@ async function loadCompanyComplaints(status='open') {
         </div>
       </div>`).join('');
   } catch(e) {
+    console.error('Erro loadCompanyComplaints:', e);
     list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)">Erro ao carregar.</div>';
   }
+}
+
+async function updateBrandMentionsBadge() {
+  const btn = document.getElementById('btn-brand-mentions');
+  if (!btn || !currentUser?.company_name) return;
+  try {
+    const brandName = currentUser.company_name.split(' ')[0];
+    const { data } = await sb.from('complaints')
+      .select('id, company_name')
+      .ilike('vehicle_brand', `%${brandName}%`);
+    const count = (data || []).filter(c => !c.company_name || c.company_name.trim() === '').length;
+    if (count > 0) {
+      btn.innerHTML = `⚠️ Menções à marca <span style="background:var(--orange);color:#fff;border-radius:20px;padding:1px 7px;font-size:11px;margin-left:4px">${count}</span>`;
+    }
+  } catch(e) {}
 }
 
 function companyFilterComplaints(btn, status) {
