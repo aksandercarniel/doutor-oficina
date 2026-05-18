@@ -2159,16 +2159,15 @@ async function doRegisterLawyerOnly() {
 
 function openRegisterCompanyFromProfile() {
   clearCompanyForm();
-  // Vai direto para o formulário de empresa, sem precisar criar usuário
   document.getElementById('register-type-select').style.display = 'none';
   document.getElementById('register-form-user').style.display = 'none';
   document.getElementById('register-form-lawyer').style.display = 'none';
   document.getElementById('register-form-company').style.display = 'block';
-  // Pré-preenche email do usuário logado
   const emailEl = document.getElementById('reg-company-email');
   if (emailEl && currentUser?.email) emailEl.value = currentUser.email;
   switchAuth('register');
-  openModal();
+  document.getElementById('auth-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
 }
 
 function openRegisterLawyerFromProfile() {
@@ -2177,7 +2176,8 @@ function openRegisterLawyerFromProfile() {
   document.getElementById('register-form-company').style.display = 'none';
   document.getElementById('register-form-lawyer').style.display = 'block';
   switchAuth('register');
-  openModal();
+  document.getElementById('auth-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
 }
 
 function selectCompanyType(type, btn) {
