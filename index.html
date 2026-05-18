@@ -2052,11 +2052,29 @@ function backToTypeSelect() {
   document.getElementById('register-form-lawyer').style.display = 'none';
 }
 
+function clearCompanyForm() {
+  ['reg-company-name','reg-company-cnpj','reg-company-email','reg-company-phone',
+   'reg-company-address','reg-company-city','reg-company-models','reg-company-dealers',
+   'reg-company-specialties','reg-company-brands','reg-company-brands-rev','reg-company-type-other']
+  .forEach(id => { const el = document.getElementById(id); if(el) { el.value=''; el.readOnly=false; } });
+  const state = document.getElementById('reg-company-state');
+  if(state) state.value = '';
+  const status = document.getElementById('cnpj-status');
+  if(status) { status.style.display='none'; status.textContent=''; }
+  const docLabel = document.getElementById('reg-company-doc-label');
+  if(docLabel) { docLabel.textContent='📄 Clique para anexar CNH, RG ou Contrato Social (PDF ou imagem)'; docLabel.style.color='var(--muted)'; }
+  const docInput = document.getElementById('reg-company-doc');
+  if(docInput) docInput.value = '';
+  // Reset tipo para montadora
+  selectCompanyType('montadora', document.querySelector('.company-type-btn'));
+}
+
 function showPostRegisterForm() {
   // Após criar conta, mostra formulário extra se necessário
   if (_registerType === 'user+company') {
     document.getElementById('register-form-user').style.display = 'none';
     document.getElementById('register-form-company').style.display = 'block';
+    clearCompanyForm();
     // Pré-preenche telefone e email da conta
     document.getElementById('reg-company-phone').value = document.getElementById('reg-phone').value;
     document.getElementById('reg-company-email').value = document.getElementById('reg-email').value;
@@ -4437,13 +4455,13 @@ async function openCompanyProfile(companyName) {
 async function claimCompany(companyName) {
   if (!currentUser) { openAuth('login'); return; }
   if (!confirm(`Deseja reivindicar a titularidade de "${companyName}"?\n\nVocê será direcionado ao formulário de cadastro de empresa.`)) return;
-  // Abre o modal de cadastro de empresa com flag de reivindicação
-  document.getElementById('reg-company-name').value = companyName;
-  document.getElementById('reg-company-name').readOnly = true;
-  sessionStorage.setItem('claiming_company', companyName);
   switchAuth('register');
   switchRegisterType('company');
   openModal();
+  clearCompanyForm();
+  document.getElementById('reg-company-name').value = companyName;
+  document.getElementById('reg-company-name').readOnly = true;
+  sessionStorage.setItem('claiming_company', companyName);
 }
 
 // ══════════════════════════════════════════
