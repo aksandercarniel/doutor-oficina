@@ -3188,7 +3188,7 @@ Retorne entre 3 e 5 resultados relevantes. Foque em problemas reais e recentes.`
 
 // ══ ROUTING ══
 // ══ ADMIN ══
-const ADMIN_EMAIL = 'aksandercarniel@gmail.com';
+const ADMIN_EMAIL = 'akcarniel@gmail.com';
 
 async function loadAdminMediations(status = 'pending') {
   const list = document.getElementById('admin-mediations-list');
@@ -3271,6 +3271,11 @@ async function submitLawyerRegistration() {
 }
 
 function showPage(page){
+  // Proteção: só admin acessa o painel admin
+  if(page==='admin' && currentUser?.email !== ADMIN_EMAIL) {
+    alert('Acesso restrito.');
+    return;
+  }
   ['home','vehicle','profile','compare','search','admin','lawyers','resolution','company','ranking-companies','complaint'].forEach(p=>{
     const el=document.getElementById('page-'+p);
     if(el) el.style.display=p===page?'block':'none';
