@@ -1165,6 +1165,10 @@ footer{background:var(--navy);padding:36px 24px;margin-top:auto}
 </div>
 
 <!-- Página Resolução Direta -->
+<div id="page-company-profile" style="display:none;max-width:900px;margin:0 auto;padding:32px 24px">
+  <div id="company-profile-content"></div>
+</div>
+
 <div id="page-complaint" style="display:none;max-width:900px;margin:0 auto;padding:32px 24px">
   <div id="complaint-detail-content"></div>
 </div>
@@ -1397,6 +1401,31 @@ footer{background:var(--navy);padding:36px 24px;margin-top:auto}
           <div class="auth-error" id="register-error-company"></div>
           <div class="auth-group"><label class="auth-label">Nome da empresa *</label><input type="text" class="auth-input" id="reg-company-name" placeholder="Razão social ou nome fantasia" autocomplete="off"/></div>
           <div class="auth-group">
+            <label class="auth-label">Tipo de empresa *</label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
+              <button type="button" class="company-type-btn active" onclick="selectCompanyType('montadora',this)" style="padding:10px 8px;border:2px solid var(--navy);border-radius:10px;background:var(--navy);color:#fff;font-family:var(--font);font-weight:700;font-size:13px;cursor:pointer">🏭 Montadora</button>
+              <button type="button" class="company-type-btn" onclick="selectCompanyType('oficina',this)" style="padding:10px 8px;border:2px solid var(--border2);border-radius:10px;background:var(--white);color:var(--navy);font-family:var(--font);font-weight:700;font-size:13px;cursor:pointer">🔧 Oficina</button>
+              <button type="button" class="company-type-btn" onclick="selectCompanyType('revenda',this)" style="padding:10px 8px;border:2px solid var(--border2);border-radius:10px;background:var(--white);color:var(--navy);font-family:var(--font);font-weight:700;font-size:13px;cursor:pointer">🚗 Revenda</button>
+              <button type="button" class="company-type-btn" onclick="selectCompanyType('outro',this)" style="padding:10px 8px;border:2px solid var(--border2);border-radius:10px;background:var(--white);color:var(--navy);font-family:var(--font);font-weight:700;font-size:13px;cursor:pointer">📋 Outro</button>
+            </div>
+            <input type="hidden" id="reg-company-type" value="montadora"/>
+          </div>
+          <!-- Campos dinâmicos por tipo -->
+          <div id="reg-fields-montadora">
+            <div class="auth-group"><label class="auth-label">Modelos fabricados</label><input type="text" class="auth-input" id="reg-company-models" placeholder="Ex: Civic, HB20, Onix" autocomplete="off"/></div>
+            <div class="auth-group"><label class="auth-label">Concessionárias autorizadas</label><input type="text" class="auth-input" id="reg-company-dealers" placeholder="Ex: Honda SP, Honda RJ" autocomplete="off"/></div>
+          </div>
+          <div id="reg-fields-oficina" style="display:none">
+            <div class="auth-group"><label class="auth-label">Especialidades</label><input type="text" class="auth-input" id="reg-company-specialties" placeholder="Ex: Mecânica, Funilaria, Elétrica" autocomplete="off"/></div>
+            <div class="auth-group"><label class="auth-label">Marcas atendidas</label><input type="text" class="auth-input" id="reg-company-brands" placeholder="Ex: Toyota, Honda, VW" autocomplete="off"/></div>
+          </div>
+          <div id="reg-fields-revenda" style="display:none">
+            <div class="auth-group"><label class="auth-label">Marcas comercializadas</label><input type="text" class="auth-input" id="reg-company-brands-rev" placeholder="Ex: Toyota, Honda, VW" autocomplete="off"/></div>
+          </div>
+          <div id="reg-fields-outro" style="display:none">
+            <div class="auth-group"><label class="auth-label">Descreva o tipo de empresa</label><input type="text" class="auth-input" id="reg-company-type-other" placeholder="Ex: Seguradora, Locadora, Despachante" autocomplete="off"/></div>
+          </div>
+          <div class="auth-group">
             <label class="auth-label">CNPJ *</label>
             <div style="display:flex;gap:8px">
               <input type="text" class="auth-input" id="reg-company-cnpj" placeholder="00.000.000/0001-00" maxlength="18" oninput="maskCNPJ(this)" style="flex:1" autocomplete="off"/>
@@ -1406,6 +1435,13 @@ footer{background:var(--navy);padding:36px 24px;margin-top:auto}
           </div>
           <div class="auth-group"><label class="auth-label">E-mail corporativo</label><input type="email" class="auth-input" id="reg-company-email" placeholder="contato@empresa.com" autocomplete="off"/></div>
           <div class="auth-group"><label class="auth-label">Telefone *</label><input type="text" class="auth-input" id="reg-company-phone" placeholder="(11) 99999-9999" maxlength="15" oninput="maskPhone(this)" autocomplete="off"/></div>
+          <div class="auth-group"><label class="auth-label">Cidade</label><input type="text" class="auth-input" id="reg-company-city" placeholder="Ex: São Paulo" autocomplete="off"/></div>
+          <div class="auth-group"><label class="auth-label">Estado</label>
+            <select class="auth-input" id="reg-company-state" style="cursor:pointer">
+              <option value="">Selecione o estado</option>
+              <option>AC</option><option>AL</option><option>AM</option><option>AP</option><option>BA</option><option>CE</option><option>DF</option><option>ES</option><option>GO</option><option>MA</option><option>MG</option><option>MS</option><option>MT</option><option>PA</option><option>PB</option><option>PE</option><option>PI</option><option>PR</option><option>RJ</option><option>RN</option><option>RO</option><option>RR</option><option>RS</option><option>SC</option><option>SE</option><option>SP</option><option>TO</option>
+            </select>
+          </div>
           <div class="auth-group"><label class="auth-label">Endereço *</label><input type="text" class="auth-input" id="reg-company-address" placeholder="Rua, número, cidade - estado" autocomplete="off"/></div>
           <div class="auth-group">
             <label class="auth-label">Documento do representante legal <span style="color:var(--muted);font-weight:400">(opcional)</span></label>
@@ -2041,7 +2077,15 @@ async function doRegisterCompanyOnly() {
   const email   = document.getElementById('reg-company-email').value.trim() || currentUser.email;
   const phone   = document.getElementById('reg-company-phone').value.trim();
   const address = document.getElementById('reg-company-address').value.trim();
-  const errEl   = document.getElementById('register-error-company');
+  const type    = document.getElementById('reg-company-type').value || 'outro';
+  const city    = document.getElementById('reg-company-city')?.value.trim() || null;
+  const state   = document.getElementById('reg-company-state')?.value || null;
+  const models_made        = document.getElementById('reg-company-models')?.value.trim() || null;
+  const authorized_dealers = document.getElementById('reg-company-dealers')?.value.trim() || null;
+  const specialties        = document.getElementById('reg-company-specialties')?.value.trim() || null;
+  const brands_served      = document.getElementById('reg-company-brands')?.value.trim() || document.getElementById('reg-company-brands-rev')?.value.trim() || null;
+  const type_other         = document.getElementById('reg-company-type-other')?.value.trim() || null;
+  const errEl = document.getElementById('register-error-company');
   errEl.classList.remove('show');
   if (!name || !cnpj || !phone || !address) {
     errEl.textContent = 'Preencha todos os campos obrigatórios.';
@@ -2049,7 +2093,9 @@ async function doRegisterCompanyOnly() {
   }
   try {
     const hasDoc = !!document.getElementById('reg-company-doc')?.files?.[0];
-    await sb.from('companies_pending').insert([{ user_id: currentUser.id, name, cnpj, email, phone, address, status: 'pending', has_document: hasDoc }]);
+    const isClaiming = !!sessionStorage.getItem('claiming_company');
+    sessionStorage.removeItem('claiming_company');
+    await sb.from('companies_pending').insert([{ user_id: currentUser.id, name, cnpj, email, phone, address, status: isClaiming ? 'dispute' : 'pending', has_document: hasDoc, type, city, state, models_made, authorized_dealers, specialties, brands_served, type_other }]);
     await sb.from('profiles').update({ role:'company_pending', company_name:name }).eq('id', currentUser.id);
     currentUser.role = 'company_pending';
     currentUser.company_name = name;
@@ -2085,6 +2131,22 @@ async function doRegisterLawyerOnly() {
     errEl.textContent = e.message || 'Erro ao enviar inscrição.';
     errEl.classList.add('show');
   }
+}
+
+function selectCompanyType(type, btn) {
+  document.getElementById('reg-company-type').value = type;
+  document.querySelectorAll('.company-type-btn').forEach(b => {
+    b.style.background = 'var(--white)';
+    b.style.borderColor = 'var(--border2)';
+    b.style.color = 'var(--navy)';
+  });
+  btn.style.background = 'var(--navy)';
+  btn.style.borderColor = 'var(--navy)';
+  btn.style.color = '#fff';
+  ['montadora','oficina','revenda','outro'].forEach(t => {
+    const el = document.getElementById(`reg-fields-${t}`);
+    if (el) el.style.display = t === type ? 'block' : 'none';
+  });
 }
 
 async function lookupCNPJ() {
@@ -3354,12 +3416,13 @@ async function loadPendingCompanies() {
           <div style="font-size:13px;color:var(--muted)">${c.address||'—'}</div>
           <div style="font-size:12px;margin-top:6px">${c.has_document ? '📎 <span style="color:var(--green);font-weight:600">Documento enviado</span>' : '⚠️ <span style="color:var(--orange);font-weight:600">Sem documento — análise manual necessária</span>'}</div>
         </div>
-        <span style="font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;background:${c.status==='pending'?'#fff8e1':c.status==='approved'?'#e8f5e9':'#fef2f2'};color:${c.status==='pending'?'#f59e0b':c.status==='approved'?'#16a34a':'#dc2626'}">
-          ${c.status==='pending'?'⏳ Pendente':c.status==='approved'?'✅ Aprovada':'❌ Rejeitada'}
+        <span style="font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;background:${c.status==='pending'?'#fff8e1':c.status==='dispute'?'#fff3e0':c.status==='approved'?'#e8f5e9':'#fef2f2'};color:${c.status==='pending'?'#f59e0b':c.status==='dispute'?'#ea580c':c.status==='approved'?'#16a34a':'#dc2626'}">
+          ${c.status==='pending'?'⏳ Pendente':c.status==='dispute'?'⚠️ Disputa':c.status==='approved'?'✅ Aprovada':'❌ Rejeitada'}
         </span>
       </div>
-      ${c.status==='pending' ? `
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
+      ${c.status==='pending'||c.status==='dispute' ? `
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        ${c.status==='dispute'?'<span style="font-size:12px;color:var(--orange);font-weight:700">⚠️ Reivindicação de titularidade — verifique o titular atual antes de aprovar</span>':''}
         <button onclick="approveCompany('${c.id}','${c.user_id}','${c.name}','${c.cnpj||''}','${c.email||''}','${c.phone||''}','${c.address||''}')" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:8px 18px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">✅ Aprovar</button>
         <button onclick="rejectCompany('${c.id}','${c.user_id}')" style="background:var(--red);color:#fff;border:none;border-radius:8px;padding:8px 18px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">❌ Rejeitar</button>
       </div>` : ''}
@@ -3418,7 +3481,7 @@ function showPage(page){
     alert('Acesso restrito.');
     return;
   }
-  ['home','vehicle','profile','compare','search','admin','lawyers','resolution','company','ranking-companies','complaint'].forEach(p=>{
+  ['home','vehicle','profile','compare','search','admin','lawyers','resolution','company','ranking-companies','complaint','company-profile'].forEach(p=>{
     const el=document.getElementById('page-'+p);
     if(el) el.style.display=p===page?'block':'none';
   });
@@ -4277,6 +4340,113 @@ async function openComplaintDetail(complaintId) {
 }
 
 // ══════════════════════════════════════════
+// PERFIL DA EMPRESA
+// ══════════════════════════════════════════
+const typeLabel = { montadora:'🏭 Montadora', oficina:'🔧 Oficina', revenda:'🚗 Revenda', outro:'📋 Outro' };
+
+async function openCompanyProfile(companyName) {
+  showPage('company-profile');
+  const el = document.getElementById('company-profile-content');
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Carregando…</div>';
+  try {
+    const { data: company } = await sb.from('companies').select('*').eq('name', companyName).maybeSingle();
+    const { data: complaints } = await sb.from('complaints').select('*').eq('company_name', companyName).order('created_at', { ascending: false }).limit(20);
+    const list = complaints || [];
+    const total = list.length;
+    const resolved = list.filter(c => c.status === 'resolved').length;
+    const pct = total ? Math.round(resolved/total*100) : 0;
+    const avgRating = total ? (list.reduce((s,c) => s+(c.rating||0),0)/total).toFixed(1) : '—';
+    const tipo = company?.type || 'outro';
+    const isOwned = !!company?.owner_id;
+    const isOwner = currentUser && company?.owner_id === currentUser.id;
+
+    let extraFields = '';
+    if (company) {
+      if (tipo === 'montadora') {
+        if (company.models_made) extraFields += `<div style="margin-bottom:8px"><span style="font-size:12px;font-weight:700;color:var(--muted2);text-transform:uppercase">Modelos fabricados</span><div style="font-size:14px;color:var(--text2);margin-top:2px">${company.models_made}</div></div>`;
+        if (company.authorized_dealers) extraFields += `<div style="margin-bottom:8px"><span style="font-size:12px;font-weight:700;color:var(--muted2);text-transform:uppercase">Concessionárias autorizadas</span><div style="font-size:14px;color:var(--text2);margin-top:2px">${company.authorized_dealers}</div></div>`;
+      } else if (tipo === 'oficina') {
+        if (company.specialties) extraFields += `<div style="margin-bottom:8px"><span style="font-size:12px;font-weight:700;color:var(--muted2);text-transform:uppercase">Especialidades</span><div style="font-size:14px;color:var(--text2);margin-top:2px">${company.specialties}</div></div>`;
+        if (company.brands_served) extraFields += `<div style="margin-bottom:8px"><span style="font-size:12px;font-weight:700;color:var(--muted2);text-transform:uppercase">Marcas atendidas</span><div style="font-size:14px;color:var(--text2);margin-top:2px">${company.brands_served}</div></div>`;
+      } else if (tipo === 'revenda') {
+        if (company.brands_served) extraFields += `<div style="margin-bottom:8px"><span style="font-size:12px;font-weight:700;color:var(--muted2);text-transform:uppercase">Marcas comercializadas</span><div style="font-size:14px;color:var(--text2);margin-top:2px">${company.brands_served}</div></div>`;
+      } else if (company.type_other) {
+        extraFields += `<div style="margin-bottom:8px"><span style="font-size:12px;font-weight:700;color:var(--muted2);text-transform:uppercase">Tipo</span><div style="font-size:14px;color:var(--text2);margin-top:2px">${company.type_other}</div></div>`;
+      }
+    }
+
+    let html = `
+      <button onclick="showPage('home')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body);margin-bottom:20px;display:block">← Voltar</button>
+      <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:28px;margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;margin-bottom:20px">
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${typeLabel[tipo]||'📋 Outro'}</div>
+            <h2 style="font-family:var(--font);font-weight:900;font-size:24px;color:var(--navy);margin:0 0 4px">${companyName}</h2>
+            ${company?.cnpj ? `<div style="font-size:13px;color:var(--muted)">CNPJ: ${company.cnpj}</div>` : ''}
+            ${company?.city||company?.state ? `<div style="font-size:13px;color:var(--muted)">📍 ${[company.city,company.state].filter(Boolean).join(' — ')}</div>` : ''}
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:32px;font-weight:900;color:var(--navy);font-family:var(--font)">${avgRating}</div>
+            <div style="font-size:12px;color:var(--muted)">${total} reclamação${total!==1?'s':''}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;padding:16px;background:var(--bg);border-radius:12px;margin-bottom:16px">
+          <div style="text-align:center;flex:1;min-width:80px">
+            <div style="font-size:22px;font-weight:900;color:var(--green);font-family:var(--font)">${pct}%</div>
+            <div style="font-size:11px;color:var(--muted);font-weight:600">Resolvidas</div>
+          </div>
+          <div style="text-align:center;flex:1;min-width:80px">
+            <div style="font-size:22px;font-weight:900;color:var(--navy);font-family:var(--font)">${total}</div>
+            <div style="font-size:11px;color:var(--muted);font-weight:600">Reclamações</div>
+          </div>
+          <div style="text-align:center;flex:1;min-width:80px">
+            <div style="font-size:22px;font-weight:900;color:var(--red);font-family:var(--font)">${total-resolved}</div>
+            <div style="font-size:11px;color:var(--muted);font-weight:600">Em aberto</div>
+          </div>
+        </div>
+        ${extraFields ? `<div style="border-top:1px solid var(--border);padding-top:16px;margin-bottom:16px">${extraFields}</div>` : ''}
+        ${!isOwner && currentUser ? `
+        <div style="border-top:1px solid var(--border);padding-top:16px">
+          <button onclick="claimCompany('${companyName}')" style="background:none;border:2px solid var(--orange);color:var(--orange);border-radius:8px;padding:8px 18px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">
+            ${isOwned ? '⚠️ Contestar titularidade' : '🏳️ Reivindicar esta empresa'}
+          </button>
+          ${isOwned ? '<div style="font-size:11px;color:var(--muted);margin-top:6px">Esta empresa já tem um titular. Sua solicitação será analisada pelo admin.</div>' : ''}
+        </div>` : ''}
+      </div>
+      <h3 style="font-family:var(--font);font-weight:800;font-size:17px;color:var(--navy);margin:0 0 16px">Reclamações recentes</h3>`;
+
+    if (list.length === 0) {
+      html += `<div style="text-align:center;padding:40px;color:var(--muted)">Nenhuma reclamação encontrada para esta empresa.</div>`;
+    } else {
+      const statusMap = { open:'🔴 Aberto', in_progress:'🟡 Em análise', resolved:'🟢 Resolvido' };
+      html += list.map(c => `
+        <div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;cursor:pointer" onclick="openComplaintDetail('${c.id}')">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px">
+            <div style="font-family:var(--font);font-weight:700;font-size:15px;color:var(--navy)">${c.title}</div>
+            <span style="font-size:11px;font-weight:700;white-space:nowrap;padding:3px 10px;border-radius:12px;background:var(--bg2);color:var(--text)">${statusMap[c.status]||'🔴 Aberto'}</span>
+          </div>
+          <div style="font-size:13px;color:var(--muted2)">${c.vehicle_brand||''} ${c.vehicle_model||''} ${c.vehicle_year||''}</div>
+        </div>`).join('');
+    }
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)">Erro ao carregar perfil da empresa.</div>';
+  }
+}
+
+async function claimCompany(companyName) {
+  if (!currentUser) { openAuth('login'); return; }
+  if (!confirm(`Deseja reivindicar a titularidade de "${companyName}"?\n\nVocê será direcionado ao formulário de cadastro de empresa.`)) return;
+  // Abre o modal de cadastro de empresa com flag de reivindicação
+  document.getElementById('reg-company-name').value = companyName;
+  document.getElementById('reg-company-name').readOnly = true;
+  sessionStorage.setItem('claiming_company', companyName);
+  switchAuth('register');
+  switchRegisterType('company');
+  openModal();
+}
+
+// ══════════════════════════════════════════
 // RESOLUÇÃO DIRETA
 // ══════════════════════════════════════════
 let currentResolution = null;
@@ -4567,7 +4737,7 @@ async function renderProfile() {
           </div>
           <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${c.status === 'resolved' ? '#e8f5e9' : c.status === 'progress' ? '#fff8e1' : '#fef2f2'};color:${c.status === 'resolved' ? '#16a34a' : c.status === 'progress' ? '#f59e0b' : '#dc2626'}">${c.status === 'resolved' ? 'Resolvido' : c.status === 'progress' ? 'Em análise' : 'Aberto'}</span>
         </div>
-        ${c.company_name ? `<div style="font-size:12px;color:var(--muted)">🏢 ${c.company_name}</div>` : ''}
+        ${c.company_name ? `<div style="font-size:12px;color:var(--muted)">🏢 <span style="cursor:pointer;color:var(--navy);font-weight:600;text-decoration:underline" onclick="event.stopPropagation();openCompanyProfile('${c.company_name}')">${c.company_name}</span></div>` : ''}
         <div style="font-size:12px;color:var(--muted);margin-top:6px;display:flex;justify-content:space-between">
           <span>${c.created_at ? new Date(c.created_at).toLocaleDateString('pt-BR') : ''}</span>
           <span style="color:var(--navy);font-weight:700">Ver detalhes →</span>
