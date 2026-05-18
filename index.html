@@ -1519,6 +1519,12 @@ footer{background:var(--navy);padding:36px 24px;margin-top:auto}
         <div style="color:var(--muted);font-size:14px;padding:12px 0">Carregando…</div>
       </div>
     </div>
+    <div class="profile-card" id="my-companies-card" style="display:none">
+      <div class="pc-title"><span class="dot"></span>Minhas empresas</div>
+      <div id="my-companies-list" style="display:flex;flex-direction:column;gap:10px;padding:4px 0">
+        <div style="color:var(--muted);font-size:14px;padding:12px 0">Carregando…</div>
+      </div>
+    </div>
     <div class="profile-card">
       <div class="pc-title"><span class="dot"></span>Minhas reclamações</div>
       <div class="my-complaints-list" id="my-complaints-list">
@@ -4906,6 +4912,89 @@ async function renderProfile() {
     actionsEl.innerHTML = actionsHtml;
   }
 
+  // ── Minhas empresas ──────────────────────────────────────────
+  try {
+    const { data: myCompanies } = await sb
+      .from('companies_pending')
+      .select('id, name, type, status, cnpj, city, state')
+      .eq('user_id', currentUser.id)
+      .order('created_at', { ascending: false });
+
+    const card = document.getElementById('my-companies-card');
+    const listEl = document.getElementById('my-companies-list');
+
+    if (myCompanies && myCompanies.length > 0) {
+      card.style.display = 'block';
+
+      // Para cada empresa aprovada, busca stats de reclamações
+      const approvedIds = myCompanies
+        .filter(e => e.status === 'approved')
+        .map(e => e.name);
+
+      let statsMap = {};
+      if (approvedIds.length > 0) {
+        const { data: statsData } = await sb
+          .from('complaints')
+          .select('company_name, rating, status')
+          .in('company_name', approvedIds);
+        if (statsData) {
+          statsData.forEach(c => {
+            if (!statsMap[c.company_name]) statsMap[c.company_name] = { total: 0, resolved: 0, ratings: [] };
+            statsMap[c.company_name].total++;
+            if (c.status === 'resolved') statsMap[c.company_name].resolved++;
+            if (c.rating) statsMap[c.company_name].ratings.push(c.rating);
+          });
+        }
+      }
+
+      const statusBadge = s => {
+        if (s === 'approved') return '<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:#e8f5e9;color:#16a34a">✅ Aprovada</span>';
+        if (s === 'pending')  return '<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:#fff8e1;color:#92400e">⏳ Pendente</span>';
+        if (s === 'rejected') return '<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:#fef2f2;color:#dc2626">❌ Rejeitada</span>';
+        if (s === 'dispute')  return '<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:#f3e8ff;color:#7c3aed">⚠️ Disputa</span>';
+        return '';
+      };
+
+      const typeIcon = t => ({ montadora: '🏭', oficina: '🔧', revenda: '🚗', outro: '📋' }[t] || '🏢');
+
+      listEl.innerHTML = myCompanies.map(e => {
+        const stats = statsMap[e.name] || null;
+        const avgRating = stats && stats.ratings.length
+          ? (stats.ratings.reduce((a,b) => a+b, 0) / stats.ratings.length).toFixed(1)
+          : null;
+        const stars = avgRating ? '⭐ ' + avgRating : '';
+        const totalRecl = stats ? stats.total + ' reclamação(ões)' : '';
+        const resolved = stats ? stats.resolved + ' resolvida(s)' : '';
+        const canClick = e.status === 'approved';
+        return `<div onclick="${canClick ? "openCompanyProfile('" + e.name + "')" : ''}'" 
+          style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:16px;cursor:${canClick ? 'pointer' : 'default'};transition:border-color .2s"
+          onmouseover="this.style.borderColor='${canClick ? 'var(--navy)' : 'var(--border)'}'"
+          onmouseout="this.style.borderColor='var(--border)'">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:22px">${typeIcon(e.type)}</span>
+              <div>
+                <div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy)">${e.name}</div>
+                ${e.city ? `<div style="font-size:12px;color:var(--muted);margin-top:1px">${e.city}${e.state ? ' · ' + e.state : ''}</div>` : ''}
+              </div>
+            </div>
+            ${statusBadge(e.status)}
+          </div>
+          ${stats ? `<div style="display:flex;gap:16px;margin-top:10px;flex-wrap:wrap">
+            ${stars ? `<span style="font-size:13px;font-weight:700;color:var(--navy)">${stars}</span>` : ''}
+            ${totalRecl ? `<span style="font-size:12px;color:var(--muted)">${totalRecl}</span>` : ''}
+            ${resolved ? `<span style="font-size:12px;color:var(--green)">${resolved}</span>` : ''}
+          </div>` : ''}
+          ${canClick ? `<div style="font-size:12px;color:var(--navy);font-weight:700;margin-top:8px">Ver perfil público →</div>` : ''}
+        </div>`;
+      }).join('');
+    } else {
+      card.style.display = 'none';
+    }
+  } catch(e) {
+    console.error('Erro ao carregar empresas:', e);
+  }
+  // ── fim Minhas empresas ──────────────────────────────────────
 
   try {
     const { data: complaints, error } = await sb
