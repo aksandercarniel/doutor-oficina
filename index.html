@@ -4812,18 +4812,15 @@ async function loadCompanyComplaints(status='open') {
     } else {
       // Usa ilike para busca case-insensitive e tolerante a variações de nome
       const cName = (currentUser.company_name || currentUser.name || '').replace(/\.+$/, '').trim();
-      console.log('🔍 Buscando company_name:', cName, '| status:', status);
       let q = sb.from('complaints').select('*')
         .ilike('company_name', `%${cName}%`)
         .order('created_at', { ascending: false });
       if (status !== 'all') {
         const statusMap = { open: 'open', progress: 'in_progress', resolved: 'resolved' };
         const mappedStatus = statusMap[status];
-        console.log('🔍 Status mapeado:', mappedStatus);
         if (mappedStatus) q = q.eq('status', mappedStatus);
       }
       const res = await q;
-      console.log('🔍 Resultado:', res.data?.length, 'registros | erro:', res.error);
       data = res.data;
       error = res.error;
     }
