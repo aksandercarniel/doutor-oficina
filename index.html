@@ -2315,8 +2315,14 @@ async function lookupCNPJ() {
     if (d.razao_social) document.getElementById('reg-company-name').value = d.razao_social;
     if (d.ddd_telefone_1) document.getElementById('reg-company-phone').value = d.ddd_telefone_1;
     if (d.email) document.getElementById('reg-company-email').value = d.email;
-    const addr = [d.logradouro, d.numero, d.municipio, d.uf].filter(Boolean).join(', ');
-    if (addr) document.getElementById('reg-company-address').value = addr;
+    const addr = [d.logradouro, d.numero, d.complemento, d.bairro].filter(Boolean).join(', ');
+    const addrFull = [addr, d.municipio, d.uf].filter(Boolean).join(', ');
+    if (addrFull) document.getElementById('reg-company-address').value = addrFull;
+    if (d.municipio) document.getElementById('reg-company-city').value = d.municipio;
+    if (d.uf) {
+      const stateEl = document.getElementById('reg-company-state');
+      if (stateEl) stateEl.value = d.uf;
+    }
     const situacao = d.descricao_situacao_cadastral || '';
     const ativa = situacao.toLowerCase().includes('ativa');
     status.style.color = ativa ? 'var(--green)' : 'var(--red)';
