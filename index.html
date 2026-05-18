@@ -1869,7 +1869,10 @@ async function sbGetSession() {
     currentUser = {
       id: data.session.user.id,
       name: profile?.name || data.session.user.email.split('@')[0],
-      email: data.session.user.email
+      email: data.session.user.email,
+      role: profile?.role || 'client',
+      phone: profile?.phone || null,
+      company_name: profile?.company_name || null
     };
     updateNavAuth();
   }
@@ -2149,32 +2152,8 @@ async function doRegisterCompanyOnly() {
     const hasDoc = !!document.getElementById('reg-company-doc')?.files?.[0];
     const isClaiming = !!sessionStorage.getItem('claiming_company');
     sessionStorage.removeItem('claiming_company');
-    const companyPayload = {
-      user_id: currentUser.id,
-      name,
-      cnpj: cnpj || null,
-      email: email || null,
-      phone: phone || null,
-      address: address || null,
-      status: isClaiming ? 'dispute' : 'pending',
-      has_document: hasDoc,
-      type: type || 'outro',
-      city: city || null,
-      state: state || null,
-      models_made: models_made || null,
-      authorized_dealers: authorized_dealers || null,
-      specialties: specialties || null,
-      brands_served: brands_served || null,
-      type_other: type_other || null,
-      fipe_brand_code: fipe_brand_code || null,
-      recalls: null
-    };
-    console.log('📤 Enviando cadastro de empresa:', companyPayload);
-    const { error: insertErr } = await sb.from('companies_pending').insert([companyPayload]);
-    if (insertErr) {
-      console.error('❌ Erro Supabase:', insertErr);
-      throw new Error(insertErr.message || insertErr.details || insertErr.hint || JSON.stringify(insertErr));
-    }
+    const { error: insertErr } = await sb.from('companies_pending').insert([{ user_id: currentUser.id, name, cnpj, email, phone, address, status: isClaiming ? 'dispute' : 'pending', has_document: hasDoc, type, city, state, models_made, authorized_dealers, specialties, brands_served, type_other, fipe_brand_code }]);
+    if (insertErr) throw new Error(insertErr.message || JSON.stringify(insertErr));
     closeModal();
     alert('✅ Solicitação enviada!\nSua empresa será analisada e você receberá uma resposta em breve.');
     loginSuccess(currentUser);
@@ -2407,17 +2386,7 @@ async function doRegisterCompany() {
     if (error) throw error;
     await sb.from('profiles').insert([{ id: data.user.id, name, email, phone, role: 'company_pending' }]);
     const hasDoc = !!document.getElementById('reg-company-doc')?.files?.[0];
-    const { error: insertErrReg } = await sb.from('companies_pending').insert([{
-      user_id: data.user.id, name, cnpj, email, phone, address,
-      status: 'pending', has_document: hasDoc,
-      type: 'outro', city: null, state: null, models_made: null,
-      authorized_dealers: null, specialties: null, brands_served: null,
-      type_other: null, fipe_brand_code: null, recalls: null
-    }]);
-    if (insertErrReg) {
-      console.error('Erro insert empresa (reg):', insertErrReg);
-      throw new Error(insertErrReg.message || insertErrReg.details || JSON.stringify(insertErrReg));
-    }
+    await sb.from('companies_pending').insert([{ user_id: data.user.id, name, cnpj, email, phone, address, status: 'pending', has_document: hasDoc }]);
     currentUser = { id: data.user.id, name, email, role: 'company_pending' };
     closeModal();
     alert('✅ Solicitação enviada!\nSua empresa será analisada e você receberá uma resposta em breve.');
@@ -3629,12 +3598,34 @@ async function loadPendingCompanies() {
 async function approveCompany(pendingId, userId, name, cnpj, email, phone, address) {
   if (!confirm(`Aprovar a empresa "${name}"?`)) return;
   try {
-    await sb.from('companies').insert([{ name, cnpj, email, phone, address }]);
+    // Busca todos os dados da empresa pending para copiar completo
+    const { data: pending } = await sb.from('companies_pending').select('*').eq('id', pendingId).single();
+    const companyData = {
+      name: pending.name,
+      cnpj: pending.cnpj || null,
+      email: pending.email || null,
+      phone: pending.phone || null,
+      address: pending.address || null,
+      type: pending.type || 'outro',
+      city: pending.city || null,
+      state: pending.state || null,
+      models_made: pending.models_made || null,
+      authorized_dealers: pending.authorized_dealers || null,
+      specialties: pending.specialties || null,
+      brands_served: pending.brands_served || null,
+      type_other: pending.type_other || null,
+      fipe_brand_code: pending.fipe_brand_code || null,
+      recalls: null,
+      owner_id: userId,
+      is_claimed: true
+    };
+    await sb.from('companies').insert([companyData]);
     await sb.from('profiles').update({ role: 'company', company_name: name }).eq('id', userId);
     await sb.from('companies_pending').update({ status: 'approved' }).eq('id', pendingId);
     alert('✅ Empresa aprovada com sucesso!');
     loadPendingCompanies();
   } catch(e) {
+    console.error('Erro ao aprovar:', e);
     alert('Erro ao aprovar: ' + e.message);
   }
 }
