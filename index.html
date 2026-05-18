@@ -2143,7 +2143,8 @@ async function doRegisterCompanyOnly() {
     const hasDoc = !!document.getElementById('reg-company-doc')?.files?.[0];
     const isClaiming = !!sessionStorage.getItem('claiming_company');
     sessionStorage.removeItem('claiming_company');
-    await sb.from('companies_pending').insert([{ user_id: currentUser.id, name, cnpj, email, phone, address, status: isClaiming ? 'dispute' : 'pending', has_document: hasDoc, type, city, state, models_made, authorized_dealers, specialties, brands_served, type_other, fipe_brand_code }]);
+    const { error: insertErr } = await sb.from('companies_pending').insert([{ user_id: currentUser.id, name, cnpj, email, phone, address, status: isClaiming ? 'dispute' : 'pending', has_document: hasDoc, type, city, state, models_made, authorized_dealers, specialties, brands_served, type_other, fipe_brand_code }]);
+    if (insertErr) throw new Error(insertErr.message || JSON.stringify(insertErr));
     await sb.from('profiles').update({ role:'company_pending', company_name:name }).eq('id', currentUser.id);
     currentUser.role = 'company_pending';
     currentUser.company_name = name;
@@ -2151,7 +2152,8 @@ async function doRegisterCompanyOnly() {
     alert('✅ Solicitação enviada!\nSua empresa será analisada e você receberá uma resposta em breve.');
     loginSuccess(currentUser);
   } catch(e) {
-    errEl.textContent = e.message || 'Erro ao cadastrar empresa.';
+    console.error('Erro cadastro empresa:', e);
+    errEl.textContent = 'Erro: ' + (e.message || 'Falha ao cadastrar empresa.');
     errEl.classList.add('show');
   }
 }
