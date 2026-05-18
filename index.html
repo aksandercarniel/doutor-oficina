@@ -2591,13 +2591,8 @@ async function submitComplaint() {
   const modelName = parts[0] || fullModelText;
   const modelVersion = parts.slice(1).join(' ') || null;
 
-  // Valida empresa (obrigatório)
-  const compName = document.getElementById('comp-name')?.value.trim();
-  if (!compName) { 
-    alert('Informe o nome da empresa responsável.\n\nVolte ao passo anterior e preencha os dados da empresa.');
-    goStep(3); 
-    return; 
-  }
+  // Empresa é opcional — reclamação pode ser sobre o veículo sem empresa específica
+  const compName = document.getElementById('comp-name')?.value.trim() || null;
 
   if (wantsMediation) {
     const whatsapp = document.getElementById('med-whatsapp').value.trim();
