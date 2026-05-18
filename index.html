@@ -4702,13 +4702,36 @@ function renderResolutionPage() {
   // NPS - só para cliente e quando resolvido
   if (isClient && complaint.status === 'resolved') {
     if (nps) {
-      const npsColor = nps.score >= 9 ? 'var(--green)' : nps.score >= 7 ? 'var(--navy)' : 'var(--red)';
-      html += `
-      <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:24px;text-align:center">
-        <div style="font-size:32px;margin-bottom:8px">⭐</div>
-        <div style="font-family:var(--font);font-weight:800;color:var(--navy)">Você avaliou com nota <span style="color:${npsColor};font-size:24px">${nps.score}</span></div>
-        ${nps.comment?`<div style="font-size:13px;color:var(--muted);margin-top:8px">"${nps.comment}"</div>`:''}
-      </div>`;
+      const isPromotor  = nps.score >= 9;
+      const isDetrator  = nps.score <= 6;
+      const isNeutro    = !isPromotor && !isDetrator;
+      const npsColor    = isPromotor ? '#16a34a' : isDetrator ? '#dc2626' : '#d97706';
+      const npsBg       = isPromotor ? '#f0fdf4' : isDetrator ? '#fef2f2' : '#fffbeb';
+      const npsBorder   = isPromotor ? '#bbf7d0' : isDetrator ? '#fecaca' : '#fde68a';
+      const npsLabel    = isPromotor ? 'Promotor' : isDetrator ? 'Detrator' : 'Neutro';
+      const npsEmoji    = isPromotor ? '😍' : isDetrator ? '😞' : '😐';
+      const npsDesc     = isPromotor
+        ? 'Cliente satisfeito e propenso a recomendar a empresa.'
+        : isDetrator
+        ? 'Cliente insatisfeito e pode prejudicar a imagem da empresa.'
+        : 'Cliente com experiência razoável, pode melhorar.';
+      html += \`
+      <div style="background:\${npsBg};border:2px solid \${npsBorder};border-radius:16px;padding:24px">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+          <div style="font-family:var(--font);font-weight:900;font-size:15px;color:var(--navy)">⭐ Avaliação NPS</div>
+          <span style="background:\${npsColor};color:#fff;font-family:var(--font);font-weight:800;font-size:12px;padding:4px 12px;border-radius:20px">\${npsEmoji} \${npsLabel}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+          <div style="text-align:center;flex-shrink:0">
+            <div style="font-family:var(--font);font-weight:900;font-size:52px;color:\${npsColor};line-height:1">\${nps.score}</div>
+            <div style="font-size:11px;color:var(--muted);font-weight:600;margin-top:2px">de 10</div>
+          </div>
+          <div style="flex:1;min-width:160px">
+            <div style="font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:8px">\${npsDesc}</div>
+            \${nps.comment ? \`<div style="font-size:13px;color:var(--text2);background:var(--white);border:1px solid \${npsBorder};border-radius:8px;padding:10px 12px;font-style:italic">" \${nps.comment} "</div>\` : ''}
+          </div>
+        </div>
+      </div>\`;
     } else {
       html += `
       <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:24px">
