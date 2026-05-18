@@ -1870,7 +1870,10 @@ async function sbGetSession() {
     currentUser = {
       id: data.session.user.id,
       name: profile?.name || data.session.user.email.split('@')[0],
-      email: data.session.user.email
+      email: data.session.user.email,
+      role: profile?.role || 'client',
+      phone: profile?.phone || null,
+      company_name: profile?.company_name || null
     };
     updateNavAuth();
   }
@@ -1973,10 +1976,15 @@ async function doLogin() {
   errEl.classList.remove('show');
   try {
     const data = await sbSignIn(email, pass);
+    // Busca o profile completo para pegar role e company_name
+    const { data: profile } = await sb.from('profiles').select('*').eq('id', data.user.id).single();
     currentUser = {
       id: data.user.id,
-      name: data.user.user_metadata?.name || email.split('@')[0],
-      email: data.user.email
+      name: profile?.name || data.user.user_metadata?.name || email.split('@')[0],
+      email: data.user.email,
+      role: profile?.role || 'client',
+      phone: profile?.phone || null,
+      company_name: profile?.company_name || null
     };
     loginSuccess(currentUser);
   } catch(e) {
