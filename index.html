@@ -111,7 +111,7 @@ header{
   .hero h1 .dim{display:none} /* remove linha extra no mobile */
   .hero p{font-size:14px;margin-bottom:24px}
   .btn-primary,.btn-outline{font-size:14px;padding:11px 18px}
-  .stats{padding:14px 16px}
+  .stats{padding:10px 16px}
   .stats-inner{gap:16px}
   .stat-n{font-size:22px}
   .stat-l{font-size:10px}
@@ -346,7 +346,7 @@ header{
 .hero h1 .dim{color:var(--muted);font-weight:700}
 .hero p{color:var(--muted);font-size:16px;max-width:490px;margin:0 auto 38px;animation:fadeUp .5s ease .2s both;font-family:var(--font-body)}
 .hero-ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;animation:fadeUp .5s ease .3s both}
-.hero-badge-wrap{margin-top:20px;display:flex;justify-content:center;animation:fadeUp .5s ease .4s both}
+.hero-badge-wrap{display:none}
 .btn-primary{
   background:var(--red);color:#fff;font-family:var(--font);font-weight:700;
   font-size:15px;border:none;padding:14px 28px;border-radius:10px;cursor:pointer;
@@ -365,8 +365,8 @@ header{
 @keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
 
 /* ── STATS ── */
-.stats{background:var(--navy);padding:22px 24px}
-.stats-inner{max-width:1280px;margin:0 auto;display:flex;justify-content:center;align-items:center;gap:52px;flex-wrap:wrap}
+.stats{background:rgba(13,31,60,.92);padding:14px 24px}
+.stats-inner{max-width:1280px;margin:0 auto;display:flex;justify-content:center;align-items:center;gap:40px;flex-wrap:nowrap}
 .stat{text-align:center}
 .stat-n{font-family:var(--font);font-weight:900;font-size:30px;color:#fff;line-height:1}
 .stat-l{color:rgba(255,255,255,.55);font-size:11px;font-weight:600;margin-top:4px;letter-spacing:.5px;text-transform:uppercase}
@@ -2149,8 +2149,32 @@ async function doRegisterCompanyOnly() {
     const hasDoc = !!document.getElementById('reg-company-doc')?.files?.[0];
     const isClaiming = !!sessionStorage.getItem('claiming_company');
     sessionStorage.removeItem('claiming_company');
-    const { error: insertErr } = await sb.from('companies_pending').insert([{ user_id: currentUser.id, name, cnpj, email, phone, address, status: isClaiming ? 'dispute' : 'pending', has_document: hasDoc, type, city, state, models_made, authorized_dealers, specialties, brands_served, type_other, fipe_brand_code }]);
-    if (insertErr) throw new Error(insertErr.message || JSON.stringify(insertErr));
+    const companyPayload = {
+      user_id: currentUser.id,
+      name,
+      cnpj: cnpj || null,
+      email: email || null,
+      phone: phone || null,
+      address: address || null,
+      status: isClaiming ? 'dispute' : 'pending',
+      has_document: hasDoc,
+      type: type || 'outro',
+      city: city || null,
+      state: state || null,
+      models_made: models_made || null,
+      authorized_dealers: authorized_dealers || null,
+      specialties: specialties || null,
+      brands_served: brands_served || null,
+      type_other: type_other || null,
+      fipe_brand_code: fipe_brand_code || null,
+      recalls: null
+    };
+    console.log('📤 Enviando cadastro de empresa:', companyPayload);
+    const { error: insertErr } = await sb.from('companies_pending').insert([companyPayload]);
+    if (insertErr) {
+      console.error('❌ Erro Supabase:', insertErr);
+      throw new Error(insertErr.message || insertErr.details || insertErr.hint || JSON.stringify(insertErr));
+    }
     closeModal();
     alert('✅ Solicitação enviada!\nSua empresa será analisada e você receberá uma resposta em breve.');
     loginSuccess(currentUser);
@@ -2383,7 +2407,17 @@ async function doRegisterCompany() {
     if (error) throw error;
     await sb.from('profiles').insert([{ id: data.user.id, name, email, phone, role: 'company_pending' }]);
     const hasDoc = !!document.getElementById('reg-company-doc')?.files?.[0];
-    await sb.from('companies_pending').insert([{ user_id: data.user.id, name, cnpj, email, phone, address, status: 'pending', has_document: hasDoc }]);
+    const { error: insertErrReg } = await sb.from('companies_pending').insert([{
+      user_id: data.user.id, name, cnpj, email, phone, address,
+      status: 'pending', has_document: hasDoc,
+      type: 'outro', city: null, state: null, models_made: null,
+      authorized_dealers: null, specialties: null, brands_served: null,
+      type_other: null, fipe_brand_code: null, recalls: null
+    }]);
+    if (insertErrReg) {
+      console.error('Erro insert empresa (reg):', insertErrReg);
+      throw new Error(insertErrReg.message || insertErrReg.details || JSON.stringify(insertErrReg));
+    }
     currentUser = { id: data.user.id, name, email, role: 'company_pending' };
     closeModal();
     alert('✅ Solicitação enviada!\nSua empresa será analisada e você receberá uma resposta em breve.');
