@@ -1021,7 +1021,7 @@ footer{background:var(--navy);padding:36px 24px;margin-top:auto}
       <h2 style="font-family:var(--font);font-size:26px;font-weight:900;color:var(--navy)">🛡️ Painel Admin</h2>
       <p style="color:var(--muted);font-size:14px;margin-top:4px">Gerencie mediações e empresas</p>
     </div>
-    <button onclick="showPage('home')" style="background:none;border:1.5px solid var(--border2);border-radius:8px;padding:8px 16px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;color:var(--navy)">← Voltar</button>
+    <button onclick="goBack()" style="background:none;border:1.5px solid var(--border2);border-radius:8px;padding:8px 16px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;color:var(--navy)">← Voltar</button>
   </div>
 
   <!-- Abas principais -->
@@ -1140,7 +1140,7 @@ footer{background:var(--navy);padding:36px 24px;margin-top:auto}
       <h2 style="font-family:var(--font);font-size:24px;font-weight:900;color:var(--navy);margin:0">🏢 Painel da Empresa</h2>
       <p style="color:var(--muted);font-size:14px;margin:4px 0 0" id="company-panel-name"></p>
     </div>
-    <button onclick="showPage('home')" style="background:none;border:1.5px solid var(--border2);border-radius:8px;padding:8px 16px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;color:var(--navy)">← Voltar</button>
+    <button onclick="goBack()" style="background:none;border:1.5px solid var(--border2);border-radius:8px;padding:8px 16px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;color:var(--navy)">← Voltar</button>
   </div>
   <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
     <button class="qf-btn active" onclick="companyFilterComplaints(this,'open')">🔴 Abertas</button>
@@ -1180,7 +1180,7 @@ footer{background:var(--navy);padding:36px 24px;margin-top:auto}
 
 <div id="page-search" style="display:none;max-width:860px;width:100%;margin:0 auto;padding:24px 24px;box-sizing:border-box">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
-    <button onclick="showPage('home')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body)">← Voltar</button>
+    <button onclick="goBack()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body)">← Voltar</button>
     <h2 id="search-results-title" style="font-family:var(--font-body);font-size:14px;font-weight:400;color:var(--muted);margin:0"></h2>
   </div>
   <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:24px">
@@ -1315,7 +1315,7 @@ footer{background:var(--navy);padding:36px 24px;margin-top:auto}
 
 <!-- ══ PAGE VEHICLE PROFILE ══ -->
 <div id="page-vehicle" style="display:none;padding:32px 24px;max-width:1280px;margin:0 auto">
-  <button class="back-btn" onclick="showPage('home')">← Voltar para o início</button>
+  <button class="back-btn" onclick="goBack()">← Voltar para o início</button>
   <div id="vehicle-profile-content"></div>
 </div>
 
@@ -1501,7 +1501,7 @@ footer{background:var(--navy);padding:36px 24px;margin-top:auto}
 <!-- ══ PAGE PERFIL ══ -->
 <div id="page-profile" style="display:none">
   <div class="profile-page-wrap">
-    <button class="back-btn" onclick="showPage('home')">← Voltar</button>
+    <button class="back-btn" onclick="goBack()">← Voltar</button>
     <div class="user-hero">
       <div class="user-big-avatar" id="profile-avatar-big">U</div>
       <div class="user-info">
@@ -1538,7 +1538,7 @@ footer{background:var(--navy);padding:36px 24px;margin-top:auto}
 <!-- ══ PAGE COMPARADOR ══ -->
 <div id="page-compare" style="display:none">
   <div class="compare-wrap">
-    <button class="back-btn" onclick="showPage('home')">← Voltar</button>
+    <button class="back-btn" onclick="goBack()">← Voltar</button>
     <div class="section-title" style="margin-bottom:24px">Comparar <span class="accent">veículos</span></div>
     <div class="compare-selectors">
       <div class="compare-sel-card">
@@ -3341,7 +3341,10 @@ function closeModal(){
   document.getElementById('modal').classList.remove('open');
   document.body.style.overflow='';
 }
-document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeModal()});
+// Fecha modal só se o mousedown E o mouseup forem no overlay (evita fechar ao selecionar texto)
+let _modalMouseDownTarget = null;
+document.getElementById('modal').addEventListener('mousedown', function(e){ _modalMouseDownTarget = e.target; });
+document.getElementById('modal').addEventListener('mouseup', function(e){ if(e.target === this && _modalMouseDownTarget === this) closeModal(); });
 
 function goStep(n){
   document.querySelectorAll('.modal-step').forEach(s => s.classList.remove('active'));
@@ -3647,6 +3650,19 @@ async function submitLawyerRegistration() {
   showPage('home');
 }
 
+// ══ HISTÓRICO DE NAVEGAÇÃO ══
+const pageHistory = [];
+
+function goBack() {
+  if (pageHistory.length > 1) {
+    pageHistory.pop(); // remove página atual
+    const prev = pageHistory.pop(); // pega a anterior
+    showPage(prev);
+  } else {
+    showPage('home');
+  }
+}
+
 function showPage(page){
   // Proteção: só admin acessa o painel admin
   if(page==='admin' && currentUser?.email !== ADMIN_EMAIL) {
@@ -3657,6 +3673,7 @@ function showPage(page){
     const el=document.getElementById('page-'+p);
     if(el) el.style.display=p===page?'block':'none';
   });
+  pageHistory.push(page);
   window.scrollTo({top:0,behavior:'smooth'});
   if(page==='profile') renderProfile();
   if(page==='compare') initCompare();
@@ -4464,7 +4481,7 @@ async function openComplaintDetail(complaintId) {
     const date = new Date(complaint.created_at).toLocaleDateString('pt-BR');
 
     let html = `
-      <button onclick="showPage('home')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body);margin-bottom:20px;display:block">← Voltar para reclamações</button>
+      <button onclick="goBack()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body);margin-bottom:20px;display:block">← Voltar para reclamações</button>
 
       <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:20px">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px">
@@ -4548,7 +4565,7 @@ async function openCompanyProfile(companyName) {
     }
 
     let html = `
-      <button onclick="showPage('home')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body);margin-bottom:20px;display:block">← Voltar</button>
+      <button onclick="goBack()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body);margin-bottom:20px;display:block">← Voltar</button>
       <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:28px;margin-bottom:20px">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;margin-bottom:20px">
           <div>
@@ -4647,7 +4664,7 @@ function renderResolutionPage() {
   const statusMap = { open:'🔴 Aberto', progress:'🟡 Em análise', resolved:'🟢 Resolvido' };
 
   let html = `
-    <button onclick="showPage('home')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body);margin-bottom:20px;display:block">← Voltar</button>
+    <button onclick="goBack()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body);margin-bottom:20px;display:block">← Voltar</button>
 
     <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:20px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:12px">
@@ -5449,12 +5466,15 @@ function openAuth(tab='login') {
   const wrap = document.getElementById('auth-logo-wrap');
   if (srcImg && wrap) wrap.innerHTML = `<img src="${srcImg.src}" style="height:46px;width:auto;" alt="Doutor Oficina"/>`;
 }
+let _authMouseDownTarget = null;
 function closeAuth() {
   document.getElementById('auth-modal').classList.remove('open');
   document.body.style.overflow = '';
 }
-document.getElementById('auth-modal').addEventListener('click', function(e) {
-  if (e.target === this) closeAuth();
+document.getElementById('auth-modal').addEventListener('mousedown', function(e){ _authMouseDownTarget = e.target; });
+document.getElementById('auth-modal').addEventListener('mouseup', function(e) {
+  // Fecha só se mousedown e mouseup foram no overlay
+  if (e.target === this && _authMouseDownTarget === this) closeAuth();
 });
 
 function switchAuth(tab) {
