@@ -1015,23 +1015,37 @@ footer{background:var(--navy);padding:36px 24px;margin-top:auto}
 <div id="page-admin" style="display:none;max-width:1280px;margin:0 auto;padding:32px 24px">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px">
     <div>
-      <h2 style="font-family:var(--font);font-size:26px;font-weight:900;color:var(--navy)">⚖️ Painel de Mediações</h2>
-      <p style="color:var(--muted);font-size:14px;margin-top:4px">Gerencie as solicitações de mediação</p>
+      <h2 style="font-family:var(--font);font-size:26px;font-weight:900;color:var(--navy)">🛡️ Painel Admin</h2>
+      <p style="color:var(--muted);font-size:14px;margin-top:4px">Gerencie mediações e empresas</p>
     </div>
     <button onclick="showPage('home')" style="background:none;border:1.5px solid var(--border2);border-radius:8px;padding:8px 16px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;color:var(--navy)">← Voltar</button>
   </div>
 
-  <!-- Filtros -->
-  <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
-    <button class="qf-btn active" onclick="adminFilterMediation(this,'pending')">⏳ Pendentes</button>
-    <button class="qf-btn" onclick="adminFilterMediation(this,'accepted')">✅ Aceitas</button>
-    <button class="qf-btn" onclick="adminFilterMediation(this,'discarded')">❌ Descartadas</button>
-    <button class="qf-btn" onclick="adminFilterMediation(this,'resolved')">🏆 Resolvidas</button>
-    <button class="qf-btn" onclick="adminFilterMediation(this,'all')">Todas</button>
+  <!-- Abas principais -->
+  <div style="display:flex;gap:8px;margin-bottom:24px;border-bottom:2px solid var(--border);padding-bottom:0">
+    <button id="admin-tab-mediations" onclick="adminSwitchTab('mediations')" style="background:none;border:none;border-bottom:3px solid var(--navy);margin-bottom:-2px;padding:10px 20px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px;color:var(--navy)">⚖️ Mediações</button>
+    <button id="admin-tab-companies" onclick="adminSwitchTab('companies')" style="background:none;border:none;border-bottom:3px solid transparent;margin-bottom:-2px;padding:10px 20px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px;color:var(--muted)">🏢 Empresas Pendentes</button>
   </div>
 
-  <div id="admin-mediations-list" style="display:flex;flex-direction:column;gap:16px">
-    <div style="text-align:center;padding:40px;color:var(--muted)">Carregando mediações…</div>
+  <!-- Seção Mediações -->
+  <div id="admin-section-mediations">
+    <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+      <button class="qf-btn active" onclick="adminFilterMediation(this,'pending')">⏳ Pendentes</button>
+      <button class="qf-btn" onclick="adminFilterMediation(this,'accepted')">✅ Aceitas</button>
+      <button class="qf-btn" onclick="adminFilterMediation(this,'discarded')">❌ Descartadas</button>
+      <button class="qf-btn" onclick="adminFilterMediation(this,'resolved')">🏆 Resolvidas</button>
+      <button class="qf-btn" onclick="adminFilterMediation(this,'all')">Todas</button>
+    </div>
+    <div id="admin-mediations-list" style="display:flex;flex-direction:column;gap:16px">
+      <div style="text-align:center;padding:40px;color:var(--muted)">Carregando mediações…</div>
+    </div>
+  </div>
+
+  <!-- Seção Empresas -->
+  <div id="admin-section-companies" style="display:none">
+    <div id="admin-companies-list" style="display:flex;flex-direction:column;gap:16px">
+      <div style="text-align:center;padding:40px;color:var(--muted)">Carregando empresas…</div>
+    </div>
   </div>
 </div>
 
@@ -2016,10 +2030,12 @@ async function doRegisterCompanyOnly() {
     errEl.classList.add('show'); return;
   }
   try {
-    await sb.from('companies').insert([{ name, cnpj, email, phone, address }]);
-    await sb.from('profiles').update({ role:'company', company_name:name }).eq('id', currentUser.id);
-    currentUser.role = 'company';
+    await sb.from('companies_pending').insert([{ user_id: currentUser.id, name, cnpj, email, phone, address, status: 'pending' }]);
+    await sb.from('profiles').update({ role:'company_pending', company_name:name }).eq('id', currentUser.id);
+    currentUser.role = 'company_pending';
     currentUser.company_name = name;
+    closeModal();
+    alert('✅ Solicitação enviada!\nSua empresa será analisada e você receberá uma resposta em breve.');
     loginSuccess(currentUser);
   } catch(e) {
     errEl.textContent = e.message || 'Erro ao cadastrar empresa.';
@@ -2077,11 +2093,13 @@ async function doRegisterCompany() {
   try {
     const existing = await checkEmailExists(email);
     if (existing) { emailExistsError(existing, errEl); return; }
-    const { data, error } = await sb.auth.signUp({ email, password: pass, options: { data: { name, role: 'company' } } });
+    const { data, error } = await sb.auth.signUp({ email, password: pass, options: { data: { name, role: 'company_pending' } } });
     if (error) throw error;
-    await sb.from('profiles').insert([{ id: data.user.id, name, email, phone, role: 'company' }]);
-    await sb.from('companies').insert([{ name, cnpj, email, phone, address }]);
-    currentUser = { id: data.user.id, name, email, role: 'company' };
+    await sb.from('profiles').insert([{ id: data.user.id, name, email, phone, role: 'company_pending' }]);
+    await sb.from('companies_pending').insert([{ user_id: data.user.id, name, cnpj, email, phone, address, status: 'pending' }]);
+    currentUser = { id: data.user.id, name, email, role: 'company_pending' };
+    closeModal();
+    alert('✅ Solicitação enviada!\nSua empresa será analisada e você receberá uma resposta em breve.');
     loginSuccess(currentUser);
   } catch(e) {
     errEl.textContent = e.message?.includes('already registered') ? 'E-mail já cadastrado. Faça login.' : e.message || 'Erro ao criar conta.';
@@ -3244,9 +3262,70 @@ async function updateMediation(id, status) {
 }
 
 function adminFilterMediation(btn, status) {
-  document.querySelectorAll('#page-admin .qf-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#admin-section-mediations .qf-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   loadAdminMediations(status);
+}
+
+function adminSwitchTab(tab) {
+  document.getElementById('admin-section-mediations').style.display = tab === 'mediations' ? 'block' : 'none';
+  document.getElementById('admin-section-companies').style.display  = tab === 'companies'  ? 'block' : 'none';
+  document.getElementById('admin-tab-mediations').style.cssText = `background:none;border:none;border-bottom:3px solid ${tab==='mediations'?'var(--navy)':'transparent'};margin-bottom:-2px;padding:10px 20px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px;color:${tab==='mediations'?'var(--navy)':'var(--muted)'}`;
+  document.getElementById('admin-tab-companies').style.cssText  = `background:none;border:none;border-bottom:3px solid ${tab==='companies' ?'var(--navy)':'transparent'};margin-bottom:-2px;padding:10px 20px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px;color:${tab==='companies' ?'var(--navy)':'var(--muted)'}`;
+  if (tab === 'companies') loadPendingCompanies();
+}
+
+async function loadPendingCompanies() {
+  const el = document.getElementById('admin-companies-list');
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Carregando…</div>';
+  const { data, error } = await sb.from('companies_pending').select('*').order('created_at', { ascending: false });
+  if (error || !data?.length) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Nenhuma empresa pendente.</div>';
+    return;
+  }
+  el.innerHTML = data.map(c => `
+    <div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:12px">
+        <div>
+          <div style="font-family:var(--font);font-weight:800;font-size:17px;color:var(--navy)">${c.name}</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:2px">CNPJ: ${c.cnpj||'—'} · ${c.email||'—'} · ${c.phone||'—'}</div>
+          <div style="font-size:13px;color:var(--muted)">${c.address||'—'}</div>
+        </div>
+        <span style="font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;background:${c.status==='pending'?'#fff8e1':c.status==='approved'?'#e8f5e9':'#fef2f2'};color:${c.status==='pending'?'#f59e0b':c.status==='approved'?'#16a34a':'#dc2626'}">
+          ${c.status==='pending'?'⏳ Pendente':c.status==='approved'?'✅ Aprovada':'❌ Rejeitada'}
+        </span>
+      </div>
+      ${c.status==='pending' ? `
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button onclick="approveCompany('${c.id}','${c.user_id}','${c.name}','${c.cnpj||''}','${c.email||''}','${c.phone||''}','${c.address||''}')" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:8px 18px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">✅ Aprovar</button>
+        <button onclick="rejectCompany('${c.id}','${c.user_id}')" style="background:var(--red);color:#fff;border:none;border-radius:8px;padding:8px 18px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">❌ Rejeitar</button>
+      </div>` : ''}
+    </div>`).join('');
+}
+
+async function approveCompany(pendingId, userId, name, cnpj, email, phone, address) {
+  if (!confirm(`Aprovar a empresa "${name}"?`)) return;
+  try {
+    await sb.from('companies').insert([{ name, cnpj, email, phone, address }]);
+    await sb.from('profiles').update({ role: 'company', company_name: name }).eq('id', userId);
+    await sb.from('companies_pending').update({ status: 'approved' }).eq('id', pendingId);
+    alert('✅ Empresa aprovada com sucesso!');
+    loadPendingCompanies();
+  } catch(e) {
+    alert('Erro ao aprovar: ' + e.message);
+  }
+}
+
+async function rejectCompany(pendingId, userId) {
+  if (!confirm('Rejeitar esta empresa?')) return;
+  try {
+    await sb.from('companies_pending').update({ status: 'rejected' }).eq('id', pendingId);
+    await sb.from('profiles').update({ role: 'client' }).eq('id', userId);
+    alert('Empresa rejeitada.');
+    loadPendingCompanies();
+  } catch(e) {
+    alert('Erro ao rejeitar: ' + e.message);
+  }
 }
 
 async function submitLawyerRegistration() {
