@@ -1393,10 +1393,25 @@ footer{background:var(--navy);padding:36px 24px;margin-top:auto}
           </div>
           <div class="auth-error" id="register-error-company"></div>
           <div class="auth-group"><label class="auth-label">Nome da empresa *</label><input type="text" class="auth-input" id="reg-company-name" placeholder="Razão social ou nome fantasia"/></div>
-          <div class="auth-group"><label class="auth-label">CNPJ *</label><input type="text" class="auth-input" id="reg-company-cnpj" placeholder="00.000.000/0001-00" maxlength="18" oninput="maskCNPJ(this)"/></div>
+          <div class="auth-group">
+            <label class="auth-label">CNPJ *</label>
+            <div style="display:flex;gap:8px">
+              <input type="text" class="auth-input" id="reg-company-cnpj" placeholder="00.000.000/0001-00" maxlength="18" oninput="maskCNPJ(this)" style="flex:1"/>
+              <button type="button" onclick="lookupCNPJ()" style="background:var(--navy);color:#fff;border:none;border-radius:10px;padding:0 14px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;white-space:nowrap">Consultar</button>
+            </div>
+            <div id="cnpj-status" style="font-size:12px;margin-top:6px;display:none"></div>
+          </div>
           <div class="auth-group"><label class="auth-label">E-mail corporativo</label><input type="email" class="auth-input" id="reg-company-email" placeholder="contato@empresa.com"/></div>
           <div class="auth-group"><label class="auth-label">Telefone *</label><input type="text" class="auth-input" id="reg-company-phone" placeholder="(11) 99999-9999" maxlength="15" oninput="maskPhone(this)"/></div>
           <div class="auth-group"><label class="auth-label">Endereço *</label><input type="text" class="auth-input" id="reg-company-address" placeholder="Rua, número, cidade - estado"/></div>
+          <div class="auth-group">
+            <label class="auth-label">Documento do representante legal <span style="color:var(--muted);font-weight:400">(opcional)</span></label>
+            <div style="border:2px dashed var(--border2);border-radius:10px;padding:16px;text-align:center;cursor:pointer;background:var(--bg)" onclick="document.getElementById('reg-company-doc').click()">
+              <div id="reg-company-doc-label" style="font-size:13px;color:var(--muted)">📄 Clique para anexar CNH, RG ou Contrato Social (PDF ou imagem)</div>
+              <input type="file" id="reg-company-doc" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="previewCompanyDoc(this)"/>
+            </div>
+            <div style="font-size:11px;color:var(--muted2);margin-top:4px">Será analisado manualmente. Pode enviar depois da aprovação inicial.</div>
+          </div>
           <div style="display:flex;gap:10px;margin-top:4px">
             <button class="auth-btn" style="flex:1;background:var(--bg);color:var(--navy);border:1.5px solid var(--border2)" onclick="skipCompanyRegister()">Pular por agora</button>
             <button class="auth-btn" style="flex:1" onclick="doRegisterCompanyOnly()">Cadastrar empresa →</button>
@@ -2030,7 +2045,8 @@ async function doRegisterCompanyOnly() {
     errEl.classList.add('show'); return;
   }
   try {
-    await sb.from('companies_pending').insert([{ user_id: currentUser.id, name, cnpj, email, phone, address, status: 'pending' }]);
+    const hasDoc = !!document.getElementById('reg-company-doc')?.files?.[0];
+    await sb.from('companies_pending').insert([{ user_id: currentUser.id, name, cnpj, email, phone, address, status: 'pending', has_document: hasDoc }]);
     await sb.from('profiles').update({ role:'company_pending', company_name:name }).eq('id', currentUser.id);
     currentUser.role = 'company_pending';
     currentUser.company_name = name;
@@ -2068,6 +2084,48 @@ async function doRegisterLawyerOnly() {
   }
 }
 
+async function lookupCNPJ() {
+  const cnpj = document.getElementById('reg-company-cnpj').value.replace(/\D/g,'');
+  const status = document.getElementById('cnpj-status');
+  if (cnpj.length !== 14) {
+    status.style.display = 'block';
+    status.style.color = 'var(--red)';
+    status.textContent = '⚠️ Digite o CNPJ completo antes de consultar.';
+    return;
+  }
+  status.style.display = 'block';
+  status.style.color = 'var(--muted)';
+  status.textContent = '🔍 Consultando Receita Federal…';
+  try {
+    const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+    if (!res.ok) throw new Error('CNPJ não encontrado');
+    const d = await res.json();
+    // Preenche campos automaticamente
+    if (d.razao_social) document.getElementById('reg-company-name').value = d.razao_social;
+    if (d.ddd_telefone_1) document.getElementById('reg-company-phone').value = d.ddd_telefone_1;
+    if (d.email) document.getElementById('reg-company-email').value = d.email;
+    const addr = [d.logradouro, d.numero, d.municipio, d.uf].filter(Boolean).join(', ');
+    if (addr) document.getElementById('reg-company-address').value = addr;
+    const situacao = d.descricao_situacao_cadastral || '';
+    const ativa = situacao.toLowerCase().includes('ativa');
+    status.style.color = ativa ? 'var(--green)' : 'var(--red)';
+    status.textContent = ativa
+      ? `✅ CNPJ válido — ${d.razao_social} — Situação: ${situacao}`
+      : `⚠️ CNPJ encontrado mas situação: ${situacao}. Verifique antes de prosseguir.`;
+  } catch(e) {
+    status.style.color = 'var(--red)';
+    status.textContent = '❌ CNPJ não encontrado na Receita Federal. Verifique o número.';
+  }
+}
+
+function previewCompanyDoc(input) {
+  const label = document.getElementById('reg-company-doc-label');
+  if (input.files && input.files[0]) {
+    label.textContent = `📎 ${input.files[0].name} (${(input.files[0].size/1024).toFixed(0)} KB) — será enviado após aprovação`;
+    label.style.color = 'var(--green)';
+  }
+}
+
 function maskCNPJ(input) {
   let v = input.value.replace(/\D/g, '').slice(0, 14);
   if (v.length > 12) v = v.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{1,2})/, '$1.$2.$3/$4-$5');
@@ -2096,7 +2154,8 @@ async function doRegisterCompany() {
     const { data, error } = await sb.auth.signUp({ email, password: pass, options: { data: { name, role: 'company_pending' } } });
     if (error) throw error;
     await sb.from('profiles').insert([{ id: data.user.id, name, email, phone, role: 'company_pending' }]);
-    await sb.from('companies_pending').insert([{ user_id: data.user.id, name, cnpj, email, phone, address, status: 'pending' }]);
+    const hasDoc = !!document.getElementById('reg-company-doc')?.files?.[0];
+    await sb.from('companies_pending').insert([{ user_id: data.user.id, name, cnpj, email, phone, address, status: 'pending', has_document: hasDoc }]);
     currentUser = { id: data.user.id, name, email, role: 'company_pending' };
     closeModal();
     alert('✅ Solicitação enviada!\nSua empresa será analisada e você receberá uma resposta em breve.');
@@ -3290,6 +3349,7 @@ async function loadPendingCompanies() {
           <div style="font-family:var(--font);font-weight:800;font-size:17px;color:var(--navy)">${c.name}</div>
           <div style="font-size:13px;color:var(--muted);margin-top:2px">CNPJ: ${c.cnpj||'—'} · ${c.email||'—'} · ${c.phone||'—'}</div>
           <div style="font-size:13px;color:var(--muted)">${c.address||'—'}</div>
+          <div style="font-size:12px;margin-top:6px">${c.has_document ? '📎 <span style="color:var(--green);font-weight:600">Documento enviado</span>' : '⚠️ <span style="color:var(--orange);font-weight:600">Sem documento — análise manual necessária</span>'}</div>
         </div>
         <span style="font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;background:${c.status==='pending'?'#fff8e1':c.status==='approved'?'#e8f5e9':'#fef2f2'};color:${c.status==='pending'?'#f59e0b':c.status==='approved'?'#16a34a':'#dc2626'}">
           ${c.status==='pending'?'⏳ Pendente':c.status==='approved'?'✅ Aprovada':'❌ Rejeitada'}
