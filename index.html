@@ -2145,9 +2145,6 @@ async function doRegisterCompanyOnly() {
     sessionStorage.removeItem('claiming_company');
     const { error: insertErr } = await sb.from('companies_pending').insert([{ user_id: currentUser.id, name, cnpj, email, phone, address, status: isClaiming ? 'dispute' : 'pending', has_document: hasDoc, type, city, state, models_made, authorized_dealers, specialties, brands_served, type_other, fipe_brand_code }]);
     if (insertErr) throw new Error(insertErr.message || JSON.stringify(insertErr));
-    await sb.from('profiles').update({ role:'company_pending', company_name:name }).eq('id', currentUser.id);
-    currentUser.role = 'company_pending';
-    currentUser.company_name = name;
     closeModal();
     alert('✅ Solicitação enviada!\nSua empresa será analisada e você receberá uma resposta em breve.');
     loginSuccess(currentUser);
@@ -4865,17 +4862,20 @@ async function renderProfile() {
   if (actionsEl) {
     const role = currentUser.role || 'client';
     let actionsHtml = '';
+    // Botão de cadastrar empresa sempre disponível (qualquer role pode cadastrar mais empresas)
+    const btnEmpresa = `
+      <button onclick="openRegisterCompanyFromProfile()" style="display:flex;align-items:center;gap:12px;background:var(--bg);border:1.5px solid var(--border2);border-radius:12px;padding:14px 16px;cursor:pointer;text-align:left;width:100%;transition:border-color .2s" onmouseover="this.style.borderColor='var(--navy)'" onmouseout="this.style.borderColor='var(--border2)'">
+        <span style="font-size:24px">🏢</span>
+        <div>
+          <div style="font-family:var(--font);font-weight:700;font-size:14px;color:var(--navy)">Cadastrar nova empresa</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">Montadora, oficina, revenda ou outro tipo</div>
+        </div>
+      </button>`;
     if (role === 'client') {
       actionsHtml = `
         <div style="display:flex;flex-direction:column;gap:10px;padding:4px 0">
           <div style="font-size:13px;color:var(--muted);margin-bottom:4px">Você está cadastrado como <strong>usuário comum</strong>. Quer expandir seu acesso?</div>
-          <button onclick="openRegisterCompanyFromProfile()" style="display:flex;align-items:center;gap:12px;background:var(--bg);border:1.5px solid var(--border2);border-radius:12px;padding:14px 16px;cursor:pointer;text-align:left;width:100%;transition:border-color .2s" onmouseover="this.style.borderColor='var(--navy)'" onmouseout="this.style.borderColor='var(--border2)'">
-            <span style="font-size:24px">🏢</span>
-            <div>
-              <div style="font-family:var(--font);font-weight:700;font-size:14px;color:var(--navy)">Cadastrar minha empresa</div>
-              <div style="font-size:12px;color:var(--muted);margin-top:2px">Montadora, oficina, revenda ou outro tipo</div>
-            </div>
-          </button>
+          ${btnEmpresa}
           <button onclick="openRegisterLawyerFromProfile()" style="display:flex;align-items:center;gap:12px;background:var(--bg);border:1.5px solid var(--border2);border-radius:12px;padding:14px 16px;cursor:pointer;text-align:left;width:100%;transition:border-color .2s" onmouseover="this.style.borderColor='var(--navy)'" onmouseout="this.style.borderColor='var(--border2)'">
             <span style="font-size:24px">⚖️</span>
             <div>
@@ -4885,11 +4885,23 @@ async function renderProfile() {
           </button>
         </div>`;
     } else if (role === 'company_pending') {
-      actionsHtml = `<div style="padding:12px;background:#fff8e1;border-radius:10px;font-size:13px;color:#92400e">⏳ <strong>Empresa aguardando aprovação.</strong> Você será notificado quando for analisado.</div>`;
+      actionsHtml = `
+        <div style="display:flex;flex-direction:column;gap:10px;padding:4px 0">
+          <div style="padding:12px;background:#fff8e1;border-radius:10px;font-size:13px;color:#92400e">⏳ <strong>Empresa aguardando aprovação.</strong> Você será notificado quando for analisado.</div>
+          ${btnEmpresa}
+        </div>`;
     } else if (role === 'company') {
-      actionsHtml = `<div style="padding:12px;background:#e8f5e9;border-radius:10px;font-size:13px;color:#166534">✅ <strong>Empresa aprovada.</strong> <span style="cursor:pointer;text-decoration:underline;color:var(--navy)" onclick="showPage('company')">Acessar painel da empresa →</span></div>`;
+      actionsHtml = `
+        <div style="display:flex;flex-direction:column;gap:10px;padding:4px 0">
+          <div style="padding:12px;background:#e8f5e9;border-radius:10px;font-size:13px;color:#166534">✅ <strong>Empresa aprovada.</strong> <span style="cursor:pointer;text-decoration:underline;color:var(--navy)" onclick="showPage('company')">Acessar painel da empresa →</span></div>
+          ${btnEmpresa}
+        </div>`;
     } else if (role === 'lawyer') {
-      actionsHtml = `<div style="padding:12px;background:#eff6ff;border-radius:10px;font-size:13px;color:#1e40af">⚖️ <strong>Advogado parceiro.</strong> Você está na lista de advogados disponíveis.</div>`;
+      actionsHtml = `
+        <div style="display:flex;flex-direction:column;gap:10px;padding:4px 0">
+          <div style="padding:12px;background:#eff6ff;border-radius:10px;font-size:13px;color:#1e40af">⚖️ <strong>Advogado parceiro.</strong> Você está na lista de advogados disponíveis.</div>
+          ${btnEmpresa}
+        </div>`;
     }
     actionsEl.innerHTML = actionsHtml;
   }
