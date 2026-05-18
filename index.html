@@ -4699,8 +4699,8 @@ function renderResolutionPage() {
     </div>`;
   }
 
-  // NPS - só para cliente e quando resolvido
-  if (isClient && complaint.status === 'resolved') {
+  // NPS - card aparece para todos quando resolvido, formulário só para cliente
+  if (complaint.status === 'resolved') {
     if (nps) {
       const isPromotor = nps.score >= 9;
       const isDetrator = nps.score <= 6;
@@ -4730,7 +4730,7 @@ function renderResolutionPage() {
             + '</div>'
             + '</div>'
             + '</div>';
-    } else {
+    } else if (isClient) {
       html += `
       <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:24px">
         <div style="font-family:var(--font);font-weight:900;font-size:16px;color:var(--navy);margin-bottom:6px;text-align:center">Como foi a experiência com ${complaint.company_name||'a empresa'}?</div>
@@ -4927,20 +4927,22 @@ async function loadCompanyRanking() {
       .sort((a,b) => b.avg - a.avg);
 
     list.innerHTML = ranking.map((c, i) => {
-      const color = c.avg >= 9 ? 'var(--green)' : c.avg >= 7 ? 'var(--navy)' : c.avg >= 5 ? '#f59e0b' : 'var(--red)';
-      const medal = i===0 ? '🥇' : i===1 ? '🥈' : i===2 ? '🥉' : `${i+1}.`;
-      return `
-      <div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:18px 20px;display:flex;align-items:center;gap:16px">
-        <div style="font-size:22px;width:36px;text-align:center;flex-shrink:0">${medal}</div>
-        <div style="flex:1">
-          <div style="font-family:var(--font);font-weight:800;font-size:16px;color:var(--navy)">${c.name}</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">${c.count} avaliação${c.count!==1?'ões':''}</div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-family:var(--font);font-weight:900;font-size:24px;color:${color}">${c.avg}</div>
-          <div style="font-size:11px;color:var(--muted)">NPS médio</div>
-        </div>
-      </div>`;
+      const avg = parseFloat(c.avg);
+      const color = avg >= 8.1 ? '#16a34a' : avg >= 6.1 ? '#2563eb' : avg >= 4.1 ? '#d97706' : avg >= 2.1 ? '#ea580c' : '#dc2626';
+      const bg    = avg >= 8.1 ? '#f0fdf4' : avg >= 6.1 ? '#eff6ff' : avg >= 4.1 ? '#fffbeb' : avg >= 2.1 ? '#fff7ed' : '#fef2f2';
+      const label = avg >= 8.1 ? 'Ótimo' : avg >= 6.1 ? 'Bom' : avg >= 4.1 ? 'Regular' : avg >= 2.1 ? 'Ruim' : 'Péssimo';
+      const medal = i===0 ? '🥇' : i===1 ? '🥈' : i===2 ? '🥉' : (i+1)+'.';
+      return '<div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:18px 20px;display:flex;align-items:center;gap:16px">'
+        + '<div style="font-size:22px;width:36px;text-align:center;flex-shrink:0">' + medal + '</div>'
+        + '<div style="flex:1">'
+        + '<div style="font-family:var(--font);font-weight:800;font-size:16px;color:var(--navy)">' + c.name + '</div>'
+        + '<div style="font-size:12px;color:var(--muted);margin-top:2px">' + c.count + ' avaliação' + (c.count!==1?'ões':'') + '</div>'
+        + '</div>'
+        + '<div style="text-align:right">'
+        + '<div style="font-family:var(--font);font-weight:900;font-size:28px;color:' + color + '">' + c.avg + '</div>'
+        + '<div style="background:' + bg + ';color:' + color + ';font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;margin-top:4px">' + label + '</div>'
+        + '</div>'
+        + '</div>';
     }).join('');
   } catch(e) {
     list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)">Erro ao carregar ranking.</div>';
@@ -5031,16 +5033,28 @@ async function renderProfile() {
 
       let statsMap = {};
       if (approvedIds.length > 0) {
+        // Busca reclamações (total e resolvidas)
         const { data: statsData } = await sb
           .from('complaints')
-          .select('company_name, rating, status')
+          .select('company_name, status')
           .in('company_name', approvedIds);
         if (statsData) {
           statsData.forEach(c => {
-            if (!statsMap[c.company_name]) statsMap[c.company_name] = { total: 0, resolved: 0, ratings: [] };
+            if (!statsMap[c.company_name]) statsMap[c.company_name] = { total: 0, resolved: 0, npsScores: [] };
             statsMap[c.company_name].total++;
             if (c.status === 'resolved') statsMap[c.company_name].resolved++;
-            if (c.rating) statsMap[c.company_name].ratings.push(c.rating);
+          });
+        }
+        // Busca NPS por empresa
+        const { data: npsData } = await sb
+          .from('nps_ratings')
+          .select('company_name, score')
+          .in('company_name', approvedIds);
+        if (npsData) {
+          npsData.forEach(n => {
+            if (!n.company_name) return;
+            if (!statsMap[n.company_name]) statsMap[n.company_name] = { total: 0, resolved: 0, npsScores: [] };
+            statsMap[n.company_name].npsScores.push(n.score);
           });
         }
       }
@@ -5057,10 +5071,17 @@ async function renderProfile() {
 
       listEl.innerHTML = myCompanies.map(e => {
         const stats = statsMap[e.name] || null;
-        const avgRating = stats && stats.ratings.length
-          ? (stats.ratings.reduce((a,b) => a+b, 0) / stats.ratings.length).toFixed(1)
+        const npsAvg = stats && stats.npsScores && stats.npsScores.length
+          ? (stats.npsScores.reduce((a,b) => a+b, 0) / stats.npsScores.length)
           : null;
-        const stars = avgRating ? '⭐ ' + avgRating : '';
+        const npsLabel = npsAvg === null ? null
+          : npsAvg >= 8.1 ? 'Ótimo' : npsAvg >= 6.1 ? 'Bom' : npsAvg >= 4.1 ? 'Regular' : npsAvg >= 2.1 ? 'Ruim' : 'Péssimo';
+        const npsLabelColor = npsAvg === null ? null
+          : npsAvg >= 8.1 ? '#16a34a' : npsAvg >= 6.1 ? '#2563eb' : npsAvg >= 4.1 ? '#d97706' : npsAvg >= 2.1 ? '#ea580c' : '#dc2626';
+        const notaDisplay = npsAvg !== null
+          ? '<span style="font-weight:900;color:' + npsLabelColor + ';font-size:15px;font-family:var(--font)">' + npsAvg.toFixed(1) + '</span>'
+          + '<span style="font-size:11px;font-weight:700;color:' + npsLabelColor + ';background:' + (npsAvg >= 8.1 ? '#f0fdf4' : npsAvg >= 6.1 ? '#eff6ff' : npsAvg >= 4.1 ? '#fffbeb' : npsAvg >= 2.1 ? '#fff7ed' : '#fef2f2') + ';padding:2px 8px;border-radius:20px;margin-left:6px">' + npsLabel + '</span>'
+          : '';
         const totalRecl = stats ? stats.total + ' reclamação(ões)' : '';
         const resolved = stats ? stats.resolved + ' resolvida(s)' : '';
         const canClick = e.status === 'approved';
@@ -5079,7 +5100,7 @@ async function renderProfile() {
             ${statusBadge(e.status)}
           </div>
           ${stats ? `<div style="display:flex;gap:16px;margin-top:10px;flex-wrap:wrap">
-            ${stars ? `<span style="font-size:13px;font-weight:700;color:var(--navy)">${stars}</span>` : ''}
+            ${notaDisplay ? `<span style="font-size:13px;display:flex;align-items:center;gap:4px">${notaDisplay}</span>` : ''}
             ${totalRecl ? `<span style="font-size:12px;color:var(--muted)">${totalRecl}</span>` : ''}
             ${resolved ? `<span style="font-size:12px;color:var(--green)">${resolved}</span>` : ''}
           </div>` : ''}
