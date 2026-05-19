@@ -3737,7 +3737,7 @@ function goBack() {
   }
 }
 
-function showPage(page){
+function showPage(page, params={}){
   // Proteção: só admin acessa o painel admin
   if(page==='admin' && currentUser?.email !== ADMIN_EMAIL) {
     alert('Acesso restrito.');
@@ -3755,6 +3755,9 @@ function showPage(page){
   if(page==='company') loadCompanyComplaints('open');
   if(page==='ranking-companies') loadCompanyRanking();
   if(page==='lawyer-panel') loadLawyerPanel();
+  // Salva estado na URL para sobreviver ao Cmd+R
+  const hashParams = new URLSearchParams(params).toString();
+  window.location.hash = hashParams ? page + '?' + hashParams : page;
 }
 
 // ══ PLACA ══
@@ -4542,7 +4545,7 @@ async function doFreeSearch() {
 // DETALHE PÚBLICO DA RECLAMAÇÃO
 // ══════════════════════════════════════════
 async function openComplaintDetail(complaintId) {
-  showPage('complaint');
+  showPage('complaint', {id: complaintId});
   const el = document.getElementById('complaint-detail-content');
   el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Carregando…</div>';
   try {
@@ -4654,7 +4657,7 @@ async function openComplaintDetail(complaintId) {
 const typeLabel = { montadora:'🏭 Montadora', oficina:'🔧 Oficina', revenda:'🚗 Revenda', outro:'📋 Outro' };
 
 async function openCompanyProfile(companyName) {
-  showPage('company-profile');
+  showPage('company-profile', {name: encodeURIComponent(companyName)});
   const el = document.getElementById('company-profile-content');
   el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Carregando…</div>';
   try {
@@ -4808,7 +4811,7 @@ let currentResolution = null;
 let npsScore = null;
 
 async function showResolution(complaintId) {
-  showPage('resolution');
+  showPage('resolution', {id: complaintId});
   const el = document.getElementById('resolution-content');
   el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Carregando…</div>';
   try {
@@ -5958,7 +5961,7 @@ async function createMediationRequest(complaintId, lawyerId, lawyerName, lawyerO
 
 // ══ CANAL DE MEDIAÇÃO ══
 async function openMediationChannel(mediationId) {
-  showPage('mediation-channel');
+  showPage('mediation-channel', {id: mediationId});
   const el = document.getElementById('mediation-channel-content');
   el.innerHTML = '<div style="text-align:center;padding:60px;color:var(--muted)">Carregando…</div>';
 
@@ -6405,6 +6408,37 @@ if (window.innerWidth <= 640) {
   if (si) si.placeholder = 'Buscar...';
 }
 
+// Lê o hash da URL e restaura a página após reload
+async function restoreFromHash() {
+  const hash = window.location.hash.slice(1); // remove o #
+  if (!hash || hash === 'home') return;
+
+  const [page, paramStr] = hash.split('?');
+  const params = paramStr ? Object.fromEntries(new URLSearchParams(paramStr)) : {};
+
+  const simplePages = ['profile','compare','admin','lawyers','ranking-companies','company','lawyer-panel'];
+  if (simplePages.includes(page)) {
+    showPage(page);
+    return;
+  }
+  if (page === 'complaint' && params.id) {
+    openComplaintDetail(params.id);
+    return;
+  }
+  if (page === 'company-profile' && params.name) {
+    openCompanyProfile(decodeURIComponent(params.name));
+    return;
+  }
+  if (page === 'resolution' && params.id) {
+    showResolution(params.id);
+    return;
+  }
+  if (page === 'mediation-channel' && params.id) {
+    openMediationChannel(params.id);
+    return;
+  }
+}
+
 // Inicializa sessão Supabase e carrega dados reais
 (async () => {
   await sbGetSession();
@@ -6415,6 +6449,8 @@ if (window.innerWidth <= 640) {
   } catch(e) {
     renderComplaintsList(mockComplaints);
   }
+  // Restaura página do hash (após sessão estar pronta)
+  await restoreFromHash();
 })();
 
 function togglePassword(inputId, btn) {
