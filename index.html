@@ -6127,7 +6127,7 @@ async function openMediationChannel(mediationId) {
                 return '<div style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:14px;padding:20px;margin-bottom:16px">'
                   + '<div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--red);margin-bottom:12px">⏱️ O advogado não respondeu no prazo</div>'
                   + '<div style="font-size:13px;color:var(--muted);margin-bottom:14px">O advogado <strong>' + (med.lawyer_name||'escolhido') + '</strong> não respondeu em 24 horas. Escolha outro advogado.</div>'
-                  + '<button onclick="openMediationFlow('' + med.complaint_id + '')" style="background:var(--orange);color:#fff;border:none;border-radius:8px;padding:10px 20px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">🔄 Escolher outro advogado</button>'
+                  + '<button onclick="openMediationFlow(this.dataset.id)" data-id="' + med.complaint_id + '" style="background:var(--orange);color:#fff;border:none;border-radius:8px;padding:10px 20px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">🔄 Escolher outro advogado</button>'
                   + '</div>';
               }
               const color = urgent ? 'var(--red)' : '#92400e';
