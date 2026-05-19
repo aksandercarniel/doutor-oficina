@@ -2204,12 +2204,14 @@ async function doRegisterLawyerOnly() {
     errEl.classList.add('show'); return;
   }
   try {
-    await sb.from('lawyers_waitlist').insert([{
+    const { error: insertErr } = await sb.from('lawyers_waitlist').insert([{
       name: currentUser.name, oab, email: currentUser.email,
       whatsapp: currentUser.phone || '', state, specialties: spec, status: 'pending'
-    }]).catch(() => {});
+    }]);
+    if (insertErr) throw new Error(insertErr.message || JSON.stringify(insertErr));
     await sb.from('profiles').update({ role:'lawyer' }).eq('id', currentUser.id);
     currentUser.role = 'lawyer';
+    closeModal();
     alert('✅ Inscrição enviada!\nEntraremos em contato em breve.');
     loginSuccess(currentUser);
   } catch(e) {
