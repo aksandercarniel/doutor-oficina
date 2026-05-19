@@ -1192,6 +1192,22 @@ footer{background:var(--navy);padding:36px 24px;margin-top:auto}
   <div id="search-results-grid"></div>
 </div>
 
+
+<!-- ══ PÁGINA: ESCOLHER ADVOGADO PARA MEDIAÇÃO ══ -->
+<div id="page-mediation" style="display:none;max-width:1100px;margin:0 auto;padding:32px 24px">
+  <div id="mediation-content"></div>
+</div>
+
+<!-- ══ PÁGINA: PAINEL DO ADVOGADO ══ -->
+<div id="page-lawyer-panel" style="display:none;max-width:1100px;margin:0 auto;padding:32px 24px">
+  <div id="lawyer-panel-content"></div>
+</div>
+
+<!-- ══ PÁGINA: CANAL DE MEDIAÇÃO ══ -->
+<div id="page-mediation-channel" style="display:none;max-width:1100px;margin:0 auto;padding:32px 24px">
+  <div id="mediation-channel-content"></div>
+</div>
+
 <div id="page-home">
 
   <section class="hero">
@@ -3685,7 +3701,7 @@ function showPage(page){
     alert('Acesso restrito.');
     return;
   }
-  ['home','vehicle','profile','compare','search','admin','lawyers','resolution','company','ranking-companies','complaint','company-profile'].forEach(p=>{
+  ['home','vehicle','profile','compare','search','admin','lawyers','resolution','company','ranking-companies','complaint','company-profile','mediation','lawyer-panel','mediation-channel'].forEach(p=>{
     const el=document.getElementById('page-'+p);
     if(el) el.style.display=p===page?'block':'none';
   });
@@ -3696,6 +3712,7 @@ function showPage(page){
   if(page==='admin') loadAdminMediations('pending');
   if(page==='company') loadCompanyComplaints('open');
   if(page==='ranking-companies') loadCompanyRanking();
+  if(page==='lawyer-panel') loadLawyerPanel();
 }
 
 // ══ PLACA ══
@@ -4550,6 +4567,7 @@ async function openComplaintDetail(complaintId) {
             <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Ações</div>
             <button onclick="showResolution('${complaint.id}')" style="width:100%;background:var(--navy);color:#fff;border:none;border-radius:8px;padding:10px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">💬 Ver canal de resolução</button>
             ${!isResolved ? `<button onclick="markResolved('${complaint.id}')" style="width:100%;background:var(--green);color:#fff;border:none;border-radius:8px;padding:10px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">✅ Marcar como resolvido</button>` : ''}
+            ${!isResolved ? `<button onclick="openMediationFlow('${complaint.id}')" id="btn-mediation-${complaint.id}" style="width:100%;background:var(--orange);color:#fff;border:none;border-radius:8px;padding:10px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">⚖️ Solicitar mediação</button>` : ''}
           </div>` : ''}
 
           ${isCompany && !isResolved ? `
@@ -5645,6 +5663,521 @@ function doSocialLogin(provider) {
   loginSuccess(user);
 }
 
+// ══════════════════════════════════════════════════════
+// MEDIAÇÃO
+// ══════════════════════════════════════════════════════
+
+// Abre o fluxo: verifica se já tem mediação ativa, senão mostra lista de advogados
+async function openMediationFlow(complaintId) {
+  if (!currentUser) { openAuth('login'); return; }
+  showPage('mediation');
+  const el = document.getElementById('mediation-content');
+  el.innerHTML = '<div style="text-align:center;padding:60px;color:var(--muted)">Carregando…</div>';
+
+  try {
+    // Verifica se já existe mediação ativa para essa reclamação
+    const { data: existing } = await sb.from('mediations')
+      .select('*').eq('complaint_id', complaintId)
+      .not('status', 'eq', 'cancelled')
+      .maybeSingle();
+
+    if (existing) {
+      // Já tem mediação — vai direto pro canal
+      openMediationChannel(existing.id);
+      return;
+    }
+
+    // Busca advogados disponíveis
+    const { data: lawyers } = await sb.from('lawyers_waitlist')
+      .select('*').order('created_at', { ascending: true });
+
+    const { data: complaint } = await sb.from('complaints')
+      .select('*').eq('id', complaintId).single();
+
+    renderMediationLawyerList(complaintId, complaint, lawyers || []);
+  } catch(e) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)">Erro ao carregar. Tente novamente.</div>';
+  }
+}
+
+function renderMediationLawyerList(complaintId, complaint, lawyers) {
+  const el = document.getElementById('mediation-content');
+
+  const lawyerCards = lawyers.length === 0
+    ? `<div style="text-align:center;padding:60px;color:var(--muted)">
+        <div style="font-size:40px;margin-bottom:12px">⚖️</div>
+        <div style="font-family:var(--font);font-weight:700;font-size:16px;color:var(--navy);margin-bottom:8px">Nenhum advogado disponível no momento</div>
+        <div style="font-size:13px;color:var(--muted)">Estamos expandindo nossa rede de advogados parceiros. Tente novamente em breve.</div>
+      </div>`
+    : lawyers.map(l => {
+        const specs = l.specialties || 'Direito do Consumidor';
+        const state = l.state || '';
+        const oab   = l.oab || '';
+        // NPS do advogado (futuro) — por enquanto sem nota
+        return `
+        <div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px;display:flex;align-items:center;gap:16px;cursor:pointer;transition:border-color .2s,box-shadow .2s"
+          onmouseover="this.style.borderColor='var(--navy)';this.style.boxShadow='var(--shadow-md)'"
+          onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+          <div style="width:52px;height:52px;border-radius:50%;background:var(--navy);color:#fff;font-family:var(--font);font-weight:900;font-size:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            ${(l.name||'A')[0].toUpperCase()}
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-family:var(--font);font-weight:800;font-size:16px;color:var(--navy)">${l.name||'Advogado'}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:3px">OAB ${oab} ${state ? '· '+state : ''}</div>
+            <div style="font-size:12px;color:var(--text2);margin-top:4px">${specs}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Honorários</div>
+            <div style="font-family:var(--font);font-weight:900;font-size:18px;color:var(--navy)">R$ 500</div>
+            <button onclick="confirmMediationRequest('${complaintId}','${l.id}','${(l.name||'').replace(/'/g,"\'")}','${oab}')"
+              style="margin-top:8px;background:var(--orange);color:#fff;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;white-space:nowrap">
+              Escolher →
+            </button>
+          </div>
+        </div>`;
+      }).join('');
+
+  el.innerHTML = `
+    <button onclick="goBack()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body);margin-bottom:24px;display:flex;align-items:center;gap:6px">← Voltar</button>
+
+    <!-- Cabeçalho -->
+    <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:24px">
+      <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap">
+        <div style="flex:1">
+          <div style="font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">⚖️ Solicitar Mediação</div>
+          <h2 style="font-family:var(--font);font-weight:900;font-size:22px;color:var(--navy);margin:0 0 8px">${complaint?.title || 'Reclamação'}</h2>
+          <div style="font-size:13px;color:var(--muted)">🚗 ${complaint?.vehicle_brand||''} ${complaint?.vehicle_model||''} ${complaint?.vehicle_year||''}</div>
+        </div>
+        <div style="background:var(--orange-light);border:1px solid #fed7aa;border-radius:12px;padding:16px;min-width:200px">
+          <div style="font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Como funciona</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.6">
+            1. Escolha um advogado<br>
+            2. Confirme e "pague" R$ 500<br>
+            3. Advogado aceita o caso<br>
+            4. Mediação no canal privado<br>
+            5. Resolvido → advogado recebe
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de advogados -->
+    <h3 style="font-family:var(--font);font-weight:800;font-size:16px;color:var(--navy);margin:0 0 16px">Advogados disponíveis</h3>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      ${lawyerCards}
+    </div>`;
+}
+
+// Confirmação antes de criar a mediação
+async function confirmMediationRequest(complaintId, lawyerId, lawyerName, lawyerOab) {
+  const el = document.getElementById('mediation-content');
+
+  // Busca dados do advogado
+  const { data: lawyer } = await sb.from('lawyers_waitlist').select('*').eq('id', lawyerId).single();
+  const { data: complaint } = await sb.from('complaints').select('*').eq('id', complaintId).single();
+
+  el.innerHTML = `
+    <button onclick="openMediationFlow('${complaintId}')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body);margin-bottom:24px;display:flex;align-items:center;gap:6px">← Voltar</button>
+
+    <div style="max-width:560px;margin:0 auto">
+      <div style="text-align:center;margin-bottom:28px">
+        <div style="font-size:40px;margin-bottom:8px">⚖️</div>
+        <h2 style="font-family:var(--font);font-weight:900;font-size:24px;color:var(--navy);margin:0 0 6px">Confirmar mediação</h2>
+        <div style="font-size:14px;color:var(--muted)">Revise os detalhes antes de confirmar</div>
+      </div>
+
+      <!-- Resumo -->
+      <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px">Advogado escolhido</div>
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+          <div style="width:48px;height:48px;border-radius:50%;background:var(--navy);color:#fff;font-family:var(--font);font-weight:900;font-size:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            ${lawyerName[0].toUpperCase()}
+          </div>
+          <div>
+            <div style="font-family:var(--font);font-weight:800;font-size:16px;color:var(--navy)">${lawyerName}</div>
+            <div style="font-size:12px;color:var(--muted)">OAB ${lawyerOab} ${lawyer?.state ? '· '+lawyer.state : ''}</div>
+            <div style="font-size:12px;color:var(--text2);margin-top:2px">${lawyer?.specialties || 'Direito do Consumidor'}</div>
+          </div>
+        </div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Reclamação</div>
+        <div style="font-family:var(--font);font-weight:700;font-size:15px;color:var(--navy);margin-bottom:4px">${complaint?.title || ''}</div>
+        <div style="font-size:13px;color:var(--muted)">🚗 ${complaint?.vehicle_brand||''} ${complaint?.vehicle_model||''}</div>
+      </div>
+
+      <!-- Valores -->
+      <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px">Valores</div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:14px">
+          <div style="display:flex;justify-content:space-between">
+            <span style="color:var(--muted)">Taxa de mediação</span>
+            <span style="font-weight:700">R$ 500,00</span>
+          </div>
+          <div style="display:flex;justify-content:space-between">
+            <span style="color:var(--muted)">✅ Se resolver</span>
+            <span style="color:var(--green);font-weight:700">Advogado recebe R$ 400</span>
+          </div>
+          <div style="display:flex;justify-content:space-between">
+            <span style="color:var(--muted)">⏱️ Se não resolver em 60 dias</span>
+            <span style="color:var(--orange);font-weight:700">Você recebe R$ 300 de volta</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aviso pagamento simulado -->
+      <div style="background:#fff8e1;border:1px solid #fde68a;border-radius:12px;padding:14px 16px;margin-bottom:20px;font-size:13px;color:#92400e">
+        ⚠️ <strong>Modo de teste:</strong> O pagamento está simulado. Nenhum valor real será cobrado.
+      </div>
+
+      <button onclick="createMediationRequest('${complaintId}','${lawyerId}','${lawyerName.replace(/'/g,"\'")}','${lawyerOab}')"
+        style="width:100%;background:var(--orange);color:#fff;border:none;border-radius:12px;padding:16px;cursor:pointer;font-family:var(--font);font-weight:800;font-size:16px;transition:background .2s"
+        onmouseover="this.style.background='#ea6a00'" onmouseout="this.style.background='var(--orange)'">
+        ⚖️ Confirmar e simular pagamento
+      </button>
+    </div>`;
+}
+
+// Cria a mediação no banco
+async function createMediationRequest(complaintId, lawyerId, lawyerName, lawyerOab) {
+  try {
+    const { data: complaint } = await sb.from('complaints').select('*').eq('id', complaintId).single();
+    const deadline = new Date();
+    deadline.setDate(deadline.getDate() + 60);
+
+    const { data: med, error } = await sb.from('mediations').insert([{
+      complaint_id:     complaintId,
+      client_id:        currentUser.id,
+      client_name:      currentUser.name,
+      client_whatsapp:  currentUser.phone || '',
+      company_name:     complaint.company_name || '',
+      company_cnpj:     complaint.company_cnpj || '',
+      company_email:    complaint.company_email || '',
+      company_phone:    complaint.company_phone || '',
+      lawyer_id:        lawyerId,
+      lawyer_name:      lawyerName,
+      lawyer_oab:       lawyerOab,
+      status:           'waiting_lawyer',
+      payment_status:   'paid',
+      payment_amount:   500,
+      deadline_at:      deadline.toISOString(),
+    }]).select().single();
+
+    if (error) throw error;
+
+    // Atualiza reclamação para indicar que tem mediação
+    await sb.from('complaints').update({ wants_mediation: true }).eq('id', complaintId);
+
+    openMediationChannel(med.id);
+  } catch(e) {
+    alert('Erro ao criar mediação: ' + e.message);
+  }
+}
+
+// ══ CANAL DE MEDIAÇÃO ══
+async function openMediationChannel(mediationId) {
+  showPage('mediation-channel');
+  const el = document.getElementById('mediation-channel-content');
+  el.innerHTML = '<div style="text-align:center;padding:60px;color:var(--muted)">Carregando…</div>';
+
+  try {
+    const { data: med } = await sb.from('mediations').select('*').eq('id', mediationId).single();
+    if (!med) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)">Mediação não encontrada.</div>'; return; }
+
+    const { data: complaint } = await sb.from('complaints').select('*').eq('id', med.complaint_id).single();
+    const { data: messages }  = await sb.from('resolutions').select('*').eq('complaint_id', med.complaint_id).order('created_at', { ascending: true });
+
+    const isClient  = currentUser?.id === med.client_id;
+    const isLawyer  = currentUser?.id === med.lawyer_id;
+    const isResolved = med.status === 'resolved';
+    const isExpired  = med.status === 'expired';
+
+    const statusMap = {
+      waiting_lawyer: '⏳ Aguardando advogado aceitar',
+      in_progress:    '⚖️ Em mediação',
+      resolved:       '✅ Resolvida',
+      expired:        '⏱️ Expirada',
+      cancelled:      '❌ Cancelada',
+    };
+    const statusColor = {
+      waiting_lawyer: '#d97706',
+      in_progress:    '#2563eb',
+      resolved:       '#16a34a',
+      expired:        '#6b7a99',
+      cancelled:      '#dc2626',
+    };
+
+    const deadline = med.deadline_at ? new Date(med.deadline_at).toLocaleDateString('pt-BR') : '—';
+    const daysLeft = med.deadline_at ? Math.max(0, Math.ceil((new Date(med.deadline_at) - new Date()) / 86400000)) : 0;
+
+    const msgHtml = (messages||[]).map(m => {
+      const isFromClient  = m.sender_role === 'client' || m.author_type === 'client';
+      const isFromLawyer  = m.sender_role === 'lawyer'  || m.author_type === 'lawyer';
+      const bg     = isFromClient ? 'var(--blue-light)'  : isFromLawyer ? '#f3e8ff' : 'var(--green-light)';
+      const border = isFromClient ? '#bfdbfe' : isFromLawyer ? '#ddd6fe' : '#a7f3d0';
+      const label  = isFromClient ? '👤 Cliente' : isFromLawyer ? '⚖️ Advogado' : '🏢 Empresa';
+      return `<div style="margin-bottom:12px;padding:14px 16px;border-radius:12px;background:${bg};border:1px solid ${border}">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px">${label} · ${new Date(m.created_at).toLocaleDateString('pt-BR')}</div>
+        <div style="font-size:14px;color:var(--text2);line-height:1.6">${m.message}</div>
+      </div>`;
+    }).join('') || '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Nenhuma mensagem ainda.</div>';
+
+    el.innerHTML = `
+      <button onclick="goBack()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body);margin-bottom:24px;display:flex;align-items:center;gap:6px">← Voltar</button>
+
+      <div style="display:grid;grid-template-columns:1fr 280px;gap:20px;align-items:start">
+
+        <!-- Coluna principal: mensagens -->
+        <div>
+          <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+              <div>
+                <div style="font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">⚖️ Canal de Mediação</div>
+                <h2 style="font-family:var(--font);font-weight:900;font-size:20px;color:var(--navy);margin:0 0 4px">${complaint?.title || 'Reclamação'}</h2>
+                <div style="font-size:13px;color:var(--muted)">🚗 ${complaint?.vehicle_brand||''} ${complaint?.vehicle_model||''}</div>
+              </div>
+              <span style="font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;background:${statusColor[med.status]||'#e5e7eb'}22;color:${statusColor[med.status]||'#6b7280'};border:1px solid ${statusColor[med.status]||'#e5e7eb'}44">${statusMap[med.status]||med.status}</span>
+            </div>
+
+            <!-- Aceitar/Recusar (advogado) -->
+            ${isLawyer && med.status === 'waiting_lawyer' ? `
+            <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:16px;margin-bottom:16px">
+              <div style="font-family:var(--font);font-weight:700;font-size:14px;color:#92400e;margin-bottom:12px">📩 Novo caso aguardando sua resposta</div>
+              <div style="display:flex;gap:10px">
+                <button onclick="lawyerRespondCase('${med.id}','accept')" style="flex:1;background:var(--green);color:#fff;border:none;border-radius:8px;padding:10px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">✅ Aceitar caso</button>
+                <button onclick="lawyerRespondCase('${med.id}','reject')" style="flex:1;background:var(--bg);border:1.5px solid var(--border2);color:var(--text);border-radius:8px;padding:10px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">❌ Recusar</button>
+              </div>
+            </div>` : ''}
+
+            <!-- Mensagens -->
+            <div style="margin-bottom:16px">${msgHtml}</div>
+
+            <!-- Input de mensagem -->
+            ${!isResolved && !isExpired && med.status !== 'waiting_lawyer' ? `
+            <div style="border-top:1px solid var(--border);padding-top:16px">
+              <textarea id="mediation-msg-input" placeholder="Escreva sua mensagem…" rows="3"
+                style="width:100%;background:var(--bg);border:1.5px solid var(--border2);border-radius:10px;padding:12px 14px;font-family:var(--font-body);font-size:14px;color:var(--text);resize:none;outline:none;transition:border-color .2s"
+                onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='var(--border2)'"></textarea>
+              <button onclick="sendMediationMessage('${med.id}','${med.complaint_id}')"
+                style="margin-top:10px;background:var(--navy);color:#fff;border:none;border-radius:8px;padding:10px 24px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px">
+                Enviar →
+              </button>
+            </div>` : ''}
+
+            <!-- Confirmar resolução (cliente) -->
+            ${isClient && med.status === 'in_progress' ? `
+            <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px">
+              <button onclick="confirmMediationResolution('${med.id}','${med.complaint_id}')"
+                style="width:100%;background:var(--green);color:#fff;border:none;border-radius:10px;padding:12px;cursor:pointer;font-family:var(--font);font-weight:800;font-size:14px">
+                ✅ Confirmar resolução — liberar pagamento ao advogado
+              </button>
+            </div>` : ''}
+          </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px">
+            <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Advogado</div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+              <div style="width:36px;height:36px;border-radius:50%;background:var(--navy);color:#fff;font-family:var(--font);font-weight:900;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${med.lawyer_name?med.lawyer_name[0].toUpperCase():'A'}</div>
+              <div>
+                <div style="font-family:var(--font);font-weight:700;font-size:14px;color:var(--navy)">${med.lawyer_name||'—'}</div>
+                <div style="font-size:12px;color:var(--muted)">OAB ${med.lawyer_oab||'—'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px">
+            <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Pagamento</div>
+            <div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
+              <div style="display:flex;justify-content:space-between">
+                <span style="color:var(--muted)">Valor</span>
+                <span style="font-weight:700">R$ ${med.payment_amount||500}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between">
+                <span style="color:var(--muted)">Status</span>
+                <span style="font-weight:700;color:${med.payment_status==='released'?'var(--green)':med.payment_status==='refunded'?'var(--orange)':'var(--navy)'}">
+                  ${med.payment_status==='paid'?'💰 Retido':med.payment_status==='released'?'✅ Liberado':med.payment_status==='refunded'?'↩️ Devolvido':'⏳ Pendente'}
+                </span>
+              </div>
+              <div style="display:flex;justify-content:space-between">
+                <span style="color:var(--muted)">Prazo</span>
+                <span style="font-weight:600;color:${daysLeft<=7?'var(--red)':daysLeft<=15?'var(--orange)':'var(--navy)'}">${deadline} (${daysLeft}d)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+  } catch(e) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)">Erro ao carregar mediação.</div>';
+    console.error(e);
+  }
+}
+
+// Advogado aceita ou recusa
+async function lawyerRespondCase(mediationId, action) {
+  try {
+    if (action === 'reject') {
+      if (!confirm('Tem certeza que deseja recusar este caso?')) return;
+      await sb.from('mediations').update({ status:'cancelled', lawyer_rejected_at: new Date().toISOString() }).eq('id', mediationId);
+      alert('Caso recusado. O cliente poderá escolher outro advogado.');
+      showPage('lawyer-panel');
+    } else {
+      await sb.from('mediations').update({ status:'in_progress', lawyer_accepted_at: new Date().toISOString() }).eq('id', mediationId);
+      alert('✅ Caso aceito! Você pode agora se comunicar com o cliente.');
+      openMediationChannel(mediationId);
+    }
+  } catch(e) {
+    alert('Erro: ' + e.message);
+  }
+}
+
+// Enviar mensagem no canal de mediação
+async function sendMediationMessage(mediationId, complaintId) {
+  const input = document.getElementById('mediation-msg-input');
+  const msg = input?.value.trim();
+  if (!msg) { alert('Escreva uma mensagem antes de enviar.'); return; }
+
+  const { data: med } = await sb.from('mediations').select('*').eq('id', mediationId).single();
+  const authorType = currentUser?.id === med?.client_id ? 'client' : currentUser?.id === med?.lawyer_id ? 'lawyer' : 'company';
+
+  try {
+    await sb.from('resolutions').insert([{
+      complaint_id: complaintId,
+      author_type:  authorType,
+      sender_role:  authorType,
+      author_id:    currentUser.id,
+      author_name:  currentUser.name,
+      message:      msg,
+    }]);
+    input.value = '';
+    openMediationChannel(mediationId);
+  } catch(e) {
+    alert('Erro ao enviar mensagem.');
+  }
+}
+
+// Cliente confirma resolução → libera pagamento (simulado)
+async function confirmMediationResolution(mediationId, complaintId) {
+  if (!confirm('Confirma que o problema foi resolvido?\n\nIsso irá liberar o pagamento ao advogado (R$ 400).')) return;
+  try {
+    await sb.from('mediations').update({
+      status:         'resolved',
+      payment_status: 'released',
+      resolved_at:    new Date().toISOString(),
+    }).eq('id', mediationId);
+    await sb.from('complaints').update({ status: 'resolved' }).eq('id', complaintId);
+    alert('✅ Resolução confirmada! Pagamento de R$ 400 liberado ao advogado (simulado).');
+    openMediationChannel(mediationId);
+  } catch(e) {
+    alert('Erro: ' + e.message);
+  }
+}
+
+// ══ PAINEL DO ADVOGADO ══
+async function loadLawyerPanel() {
+  if (!currentUser || currentUser.role !== 'lawyer') return;
+  const el = document.getElementById('lawyer-panel-content');
+  el.innerHTML = '<div style="text-align:center;padding:60px;color:var(--muted)">Carregando…</div>';
+
+  try {
+    const { data: mediations } = await sb.from('mediations')
+      .select('*')
+      .eq('lawyer_id', currentUser.id)
+      .order('created_at', { ascending: false });
+
+    const list = mediations || [];
+
+    const statusMap = {
+      waiting_lawyer: '⏳ Aguardando resposta',
+      in_progress:    '⚖️ Em andamento',
+      resolved:       '✅ Resolvida',
+      expired:        '⏱️ Expirada',
+      cancelled:      '❌ Cancelada',
+    };
+    const statusBg = {
+      waiting_lawyer: '#fffbeb', in_progress:'#eff6ff',
+      resolved:'#f0fdf4', expired:'var(--bg2)', cancelled:'#fef2f2'
+    };
+    const statusColor = {
+      waiting_lawyer:'#d97706', in_progress:'#2563eb',
+      resolved:'#16a34a', expired:'var(--muted)', cancelled:'#dc2626'
+    };
+
+    const pending  = list.filter(m => m.status === 'waiting_lawyer');
+    const active   = list.filter(m => m.status === 'in_progress');
+    const finished = list.filter(m => ['resolved','expired','cancelled'].includes(m.status));
+
+    function renderCards(items) {
+      if (!items.length) return '<div style="color:var(--muted);font-size:13px;padding:8px 0">Nenhum caso.</div>';
+      return items.map(m => {
+        const deadline = m.deadline_at ? new Date(m.deadline_at).toLocaleDateString('pt-BR') : '—';
+        const daysLeft = m.deadline_at ? Math.max(0, Math.ceil((new Date(m.deadline_at) - new Date()) / 86400000)) : 0;
+        return `
+        <div onclick="openMediationChannel('${m.id}')" style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:18px 20px;cursor:pointer;transition:border-color .2s,box-shadow .2s"
+          onmouseover="this.style.borderColor='var(--navy)';this.style.boxShadow='var(--shadow)'"
+          onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px">
+            <div>
+              <div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy);margin-bottom:3px">${m.client_name||'Cliente'}</div>
+              <div style="font-size:12px;color:var(--muted)">${m.company_name || 'Sem empresa vinculada'}</div>
+            </div>
+            <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${statusBg[m.status]};color:${statusColor[m.status]};white-space:nowrap">${statusMap[m.status]||m.status}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)">
+            <span>Prazo: ${deadline} ${m.status==='in_progress'?'('+daysLeft+'d restantes)':''}</span>
+            <span style="color:var(--navy);font-weight:700">Ver caso →</span>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    el.innerHTML = `
+      <div style="margin-bottom:28px">
+        <h1 style="font-family:var(--font);font-weight:900;font-size:28px;color:var(--navy);margin:0 0 4px">⚖️ Painel do Advogado</h1>
+        <div style="font-size:14px;color:var(--muted)">Gerencie seus casos de mediação</div>
+      </div>
+
+      <!-- Stats -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px">
+        <div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px;text-align:center">
+          <div style="font-family:var(--font);font-weight:900;font-size:32px;color:var(--orange)">${pending.length}</div>
+          <div style="font-size:12px;color:var(--muted);font-weight:600;margin-top:4px">Aguardando resposta</div>
+        </div>
+        <div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px;text-align:center">
+          <div style="font-family:var(--font);font-weight:900;font-size:32px;color:var(--blue)">${active.length}</div>
+          <div style="font-size:12px;color:var(--muted);font-weight:600;margin-top:4px">Em andamento</div>
+        </div>
+        <div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px;text-align:center">
+          <div style="font-family:var(--font);font-weight:900;font-size:32px;color:var(--green)">${finished.filter(m=>m.status==='resolved').length}</div>
+          <div style="font-size:12px;color:var(--muted);font-weight:600;margin-top:4px">Resolvidos</div>
+        </div>
+      </div>
+
+      ${pending.length ? `
+      <h3 style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy);margin:0 0 12px">⏳ Aguardando sua resposta</h3>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px">${renderCards(pending)}</div>` : ''}
+
+      ${active.length ? `
+      <h3 style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy);margin:0 0 12px">⚖️ Em andamento</h3>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px">${renderCards(active)}</div>` : ''}
+
+      ${finished.length ? `
+      <h3 style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy);margin:0 0 12px">📁 Histórico</h3>
+      <div style="display:flex;flex-direction:column;gap:10px">${renderCards(finished)}</div>` : ''}
+
+      ${!list.length ? `
+      <div style="text-align:center;padding:60px;color:var(--muted)">
+        <div style="font-size:40px;margin-bottom:12px">⚖️</div>
+        <div style="font-family:var(--font);font-weight:700;font-size:16px;color:var(--navy);margin-bottom:8px">Nenhum caso ainda</div>
+        <div style="font-size:13px">Você será notificado quando um cliente escolher você para uma mediação.</div>
+      </div>` : ''}`;
+
+  } catch(e) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)">Erro ao carregar painel.</div>';
+  }
+}
+
 function loginSuccess(user) {
   currentUser = user;
   closeAuth();
@@ -5674,6 +6207,7 @@ function updateNavAuth() {
           <div class="udrop-divider"></div>
           ${currentUser?.email === ADMIN_EMAIL ? `<button class="udrop-item" onclick="showPage('admin')" style="color:var(--navy);font-weight:800">🛡️ Painel Admin</button><div class="udrop-divider"></div>` : ''}
           ${currentUser?.role === 'company' ? `<button class="udrop-item" onclick="showPage('company')">🏢 Painel da Empresa</button><div class="udrop-divider"></div>` : ''}
+          ${currentUser?.role === 'lawyer' ? `<button class="udrop-item" onclick="showPage('lawyer-panel')">⚖️ Painel do Advogado</button><div class="udrop-divider"></div>` : ''}
           <button class="udrop-item" onclick="logout()">🚪 Sair</button>
         </div>
       </div>`;
