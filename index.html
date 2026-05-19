@@ -1166,15 +1166,15 @@ footer{background:var(--navy);padding:36px 24px;margin-top:auto}
 </div>
 
 <!-- Página Resolução Direta -->
-<div id="page-company-profile" style="display:none;max-width:900px;margin:0 auto;padding:32px 24px">
+<div id="page-company-profile" style="display:none;max-width:1100px;margin:0 auto;padding:32px 24px">
   <div id="company-profile-content"></div>
 </div>
 
-<div id="page-complaint" style="display:none;max-width:900px;margin:0 auto;padding:32px 24px">
+<div id="page-complaint" style="display:none;max-width:1100px;margin:0 auto;padding:32px 24px">
   <div id="complaint-detail-content"></div>
 </div>
 
-<div id="page-resolution" style="display:none;max-width:900px;margin:0 auto;padding:32px 24px">
+<div id="page-resolution" style="display:none;max-width:1100px;margin:0 auto;padding:32px 24px">
   <div id="resolution-content"></div>
 </div>
 
@@ -4588,67 +4588,96 @@ async function openCompanyProfile(companyName) {
     }
 
     let html = `
-      <button onclick="goBack()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body);margin-bottom:20px;display:block">← Voltar</button>
-      <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:28px;margin-bottom:20px">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;margin-bottom:20px">
-          <div>
-            <div style="font-size:12px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${typeLabel[tipo]||'📋 Outro'}</div>
-            <h2 style="font-family:var(--font);font-weight:900;font-size:24px;color:var(--navy);margin:0 0 4px">${companyName}</h2>
-            ${company?.cnpj ? `<div style="font-size:13px;color:var(--muted)">CNPJ: ${company.cnpj}</div>` : ''}
+      <button onclick="goBack()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body);margin-bottom:20px;display:flex;align-items:center;gap:6px">← Voltar</button>
+
+      <div style="display:grid;grid-template-columns:1fr auto;gap:24px;align-items:start;margin-bottom:24px;flex-wrap:wrap">
+
+        <!-- Coluna esquerda: identidade -->
+        <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:28px">
+          <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">${typeLabel[tipo]||'📋 Outro'}</div>
+          <h2 style="font-family:var(--font);font-weight:900;font-size:28px;color:var(--navy);margin:0 0 10px;line-height:1.2">${companyName}</h2>
+          <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px">
+            ${company?.cnpj ? `<div style="font-size:13px;color:var(--muted)">📋 CNPJ: ${company.cnpj}</div>` : ''}
             ${company?.city||company?.state ? `<div style="font-size:13px;color:var(--muted)">📍 ${[company.city,company.state].filter(Boolean).join(' — ')}</div>` : ''}
+            ${company?.phone ? `<div style="font-size:13px;color:var(--muted)">📞 ${company.phone}</div>` : ''}
+            ${company?.email ? `<div style="font-size:13px;color:var(--muted)">✉️ ${company.email}</div>` : ''}
           </div>
-          <div style="text-align:right">
-            ${npsAvg !== null ? `
-            <div style="font-size:32px;font-weight:900;color:${npsColor};font-family:var(--font)">${npsAvg.toFixed(1)}</div>
-            <div style="background:${npsBg};color:${npsColor};font-size:11px;font-weight:700;padding:3px 12px;border-radius:20px;margin-top:4px;display:inline-block">${npsLabel}</div>
-            <div style="font-size:11px;color:var(--muted);margin-top:4px">${npsScores.length} avaliaç${npsScores.length===1?'ão':'ões'}</div>
-            ` : `
-            <div style="font-size:13px;color:var(--muted);font-style:italic">Sem avaliações</div>
-            `}
-          </div>
-        </div>
-        <div style="display:flex;gap:16px;flex-wrap:wrap;padding:16px;background:var(--bg);border-radius:12px;margin-bottom:16px">
-          <div style="text-align:center;flex:1;min-width:80px">
-            <div style="font-size:22px;font-weight:900;color:var(--green);font-family:var(--font)">${pct}%</div>
-            <div style="font-size:11px;color:var(--muted);font-weight:600">Resolvidas</div>
-          </div>
-          <div style="text-align:center;flex:1;min-width:80px">
-            <div style="font-size:22px;font-weight:900;color:var(--navy);font-family:var(--font)">${total}</div>
-            <div style="font-size:11px;color:var(--muted);font-weight:600">Reclamações</div>
-          </div>
-          <div style="text-align:center;flex:1;min-width:80px">
-            <div style="font-size:22px;font-weight:900;color:var(--red);font-family:var(--font)">${total-resolved}</div>
-            <div style="font-size:11px;color:var(--muted);font-weight:600">Em aberto</div>
-          </div>
-          ${npsAvg !== null ? `
-          <div style="text-align:center;flex:1;min-width:80px">
-            <div style="font-size:22px;font-weight:900;color:${npsColor};font-family:var(--font)">${npsAvg.toFixed(1)}</div>
-            <div style="font-size:11px;color:var(--muted);font-weight:600">Nota NPS</div>
+          ${extraFields ? `<div style="border-top:1px solid var(--border);padding-top:16px">${extraFields}</div>` : ''}
+          ${!isOwner && currentUser ? `
+          <div style="${extraFields ? 'border-top:1px solid var(--border);padding-top:16px;margin-top:16px' : ''}">
+            <button onclick="claimCompany('${companyName}')" style="background:none;border:2px solid var(--orange);color:var(--orange);border-radius:8px;padding:8px 18px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">
+              ${isOwned ? '⚠️ Contestar titularidade' : '🏳️ Reivindicar esta empresa'}
+            </button>
+            ${isOwned ? '<div style="font-size:11px;color:var(--muted);margin-top:6px">Esta empresa já tem um titular. Sua solicitação será analisada pelo admin.</div>' : ''}
           </div>` : ''}
         </div>
-        ${extraFields ? `<div style="border-top:1px solid var(--border);padding-top:16px;margin-bottom:16px">${extraFields}</div>` : ''}
-        ${!isOwner && currentUser ? `
-        <div style="border-top:1px solid var(--border);padding-top:16px">
-          <button onclick="claimCompany('${companyName}')" style="background:none;border:2px solid var(--orange);color:var(--orange);border-radius:8px;padding:8px 18px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">
-            ${isOwned ? '⚠️ Contestar titularidade' : '🏳️ Reivindicar esta empresa'}
-          </button>
-          ${isOwned ? '<div style="font-size:11px;color:var(--muted);margin-top:6px">Esta empresa já tem um titular. Sua solicitação será analisada pelo admin.</div>' : ''}
-        </div>` : ''}
+
+        <!-- Coluna direita: nota + stats -->
+        <div style="display:flex;flex-direction:column;gap:16px;min-width:220px">
+          <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:24px;text-align:center">
+            ${npsAvg !== null ? `
+            <div style="font-size:13px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Nota NPS</div>
+            <div style="font-size:52px;font-weight:900;color:${npsColor};font-family:var(--font);line-height:1">${npsAvg.toFixed(1)}</div>
+            <div style="background:${npsBg};color:${npsColor};font-size:12px;font-weight:700;padding:4px 16px;border-radius:20px;margin-top:8px;display:inline-block">${npsLabel}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:8px">${npsScores.length} avaliação${npsScores.length===1?'':'s'}</div>
+            ` : `
+            <div style="font-size:13px;color:var(--muted);font-style:italic;padding:8px 0">Sem avaliações ainda</div>
+            `}
+          </div>
+          <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:20px">
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:13px;color:var(--muted);font-weight:600">Reclamações</span>
+                <span style="font-family:var(--font);font-weight:900;font-size:18px;color:var(--navy)">${total}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:13px;color:var(--muted);font-weight:600">Resolvidas</span>
+                <span style="font-family:var(--font);font-weight:900;font-size:18px;color:var(--green)">${pct}%</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:13px;color:var(--muted);font-weight:600">Em aberto</span>
+                <span style="font-family:var(--font);font-weight:900;font-size:18px;color:var(--red)">${total-resolved}</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+
       <h3 style="font-family:var(--font);font-weight:800;font-size:17px;color:var(--navy);margin:0 0 16px">Reclamações recentes</h3>`;
 
     if (list.length === 0) {
       html += `<div style="text-align:center;padding:40px;color:var(--muted)">Nenhuma reclamação encontrada para esta empresa.</div>`;
     } else {
       const statusMap = { open:'🔴 Não respondida', in_progress:'🟡 Em análise', resolved:'🟢 Resolvido' };
-      html += list.map(c => `
-        <div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;cursor:pointer" onclick="openComplaintDetail('${c.id}')">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px">
-            <div style="font-family:var(--font);font-weight:700;font-size:15px;color:var(--navy)">${c.title}</div>
-            <span style="font-size:11px;font-weight:700;white-space:nowrap;padding:3px 10px;border-radius:12px;background:var(--bg2);color:var(--text)">${statusMap[c.status]||'🔴 Aberto'}</span>
+      const statusBg  = { open:'#fef2f2', in_progress:'#fffbeb', resolved:'#f0fdf4' };
+      const statusCol = { open:'#dc2626', in_progress:'#d97706', resolved:'#16a34a' };
+      html += list.map(c => {
+        const date = c.created_at ? new Date(c.created_at).toLocaleDateString('pt-BR') : '';
+        const desc = (c.description||'').slice(0,140) + ((c.description||'').length > 140 ? '…' : '');
+        const st = c.status || 'open';
+        return `
+        <div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px;margin-bottom:12px;cursor:pointer;transition:border-color .2s,box-shadow .2s"
+          onclick="openComplaintDetail('${c.id}')"
+          onmouseover="this.style.borderColor='var(--navy)';this.style.boxShadow='var(--shadow-md)'"
+          onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px">
+            <div style="flex:1;min-width:0">
+              <div style="font-family:var(--font);font-weight:800;font-size:16px;color:var(--navy);margin-bottom:4px">${c.title}</div>
+              <div style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <span>🚗 ${c.vehicle_brand||''} ${c.vehicle_model||''} ${c.vehicle_year||''}</span>
+                ${c.category ? `<span style="background:var(--bg2);padding:1px 8px;border-radius:10px">${c.category}</span>` : ''}
+                ${c.state ? `<span>📍 ${c.state}</span>` : ''}
+              </div>
+            </div>
+            <span style="font-size:11px;font-weight:700;white-space:nowrap;padding:4px 12px;border-radius:20px;background:${statusBg[st]||'#fef2f2'};color:${statusCol[st]||'#dc2626'};flex-shrink:0">${statusMap[st]||'🔴 Não respondida'}</span>
           </div>
-          <div style="font-size:13px;color:var(--muted2)">${c.vehicle_brand||''} ${c.vehicle_model||''} ${c.vehicle_year||''}</div>
-        </div>`).join('');
+          ${desc ? `<div style="font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:12px">${desc}</div>` : ''}
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted)">
+            <span>${date}</span>
+            <span style="color:var(--navy);font-weight:700;font-size:13px">Ver detalhes →</span>
+          </div>
+        </div>`;
+      }).join('');
     }
     el.innerHTML = html;
   } catch(e) {
