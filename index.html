@@ -2697,38 +2697,24 @@ async function submitComplaint() {
   try {
     const saved = await sbSaveComplaint(complaint);
 
-    // Se pediu mediação, salva na tabela de mediações
-    if (wantsMediation && saved?.id) {
-      await sb.from('mediations').insert([{
-        complaint_id:    saved.id,
-        client_id:       currentUser.id,
-        client_name:     currentUser.name,
-        client_whatsapp: document.getElementById('med-whatsapp').value.trim(),
-        company_name:    document.getElementById('comp-name').value.trim(),
-        company_cnpj:    document.getElementById('comp-cnpj').value.trim(),
-        company_email:   document.getElementById('comp-email').value.trim(),
-        company_phone:   document.getElementById('comp-phone').value.trim(),
-        company_address: document.getElementById('comp-address').value.trim(),
-        status: 'pending'
-      }]);
-    }
-
-    // Mostra success personalizado
-    document.querySelectorAll('.modal-step').forEach(s => s.classList.remove('active'));
-    document.getElementById('step-success').classList.add('active');
-    if (wantsMediation) {
-      document.getElementById('success-icon').textContent = '⚖️';
-      document.getElementById('success-title').textContent = 'Reclamação e mediação enviadas!';
-      document.getElementById('success-text').innerHTML = 'Sua reclamação foi registrada com sucesso.<br>Um advogado entrará em contato pelo WhatsApp em breve.<br><strong style="color:var(--green)">Mediação gratuita ativada! ✅</strong>';
-    } else {
-      document.getElementById('success-icon').textContent = '🎉';
-      document.getElementById('success-title').textContent = 'Reclamação enviada!';
-      document.getElementById('success-text').innerHTML = 'Obrigado por contribuir com a comunidade.<br>Sua reclamação já está visível e vai ajudar outros motoristas.';
-    }
+    // Mediação será criada após o cliente escolher o advogado (openMediationFlow)
 
     // Reset
     wantsMediation = false;
     sbLoadComplaints().then(data => { if (data.length) renderComplaintsList(data); });
+
+    if (saved?.id && complaint.wants_mediation) {
+      // Fecha o modal e abre direto a escolha de advogado
+      closeModal();
+      openMediationFlow(saved.id);
+    } else {
+      // Mostra tela de sucesso normal
+      document.querySelectorAll('.modal-step').forEach(s => s.classList.remove('active'));
+      document.getElementById('step-success').classList.add('active');
+      document.getElementById('success-icon').textContent = '🎉';
+      document.getElementById('success-title').textContent = 'Reclamação enviada!';
+      document.getElementById('success-text').innerHTML = 'Obrigado por contribuir com a comunidade.<br>Sua reclamação já está visível e vai ajudar outros motoristas.';
+    }
   } catch(e) {
     console.error(e);
     alert('Erro ao salvar reclamação. Tente novamente.');
@@ -3419,7 +3405,16 @@ function goStep(n){
   const dots = ['dot0','dot1','dot2'];
   dots.forEach((d,i) => { const el=document.getElementById(d); if(el) el.classList.toggle('done', i<=n); });
   currentStep = n;
-  if (n===2) updateSummary();
+  if (n===2) {
+    updateSummary();
+    // Pré-preenche nome, email e estado com dados do usuário logado
+    if (currentUser) {
+      const nameEl  = document.getElementById('inp-name');
+      const emailEl = document.getElementById('inp-email');
+      if (nameEl  && !nameEl.value)  nameEl.value  = currentUser.name  || '';
+      if (emailEl && !emailEl.value) emailEl.value = currentUser.email || '';
+    }
+  }
 }
 
 function selectVehicleType(btn,type){
