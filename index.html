@@ -4827,50 +4827,92 @@ function renderResolutionPage() {
   const { complaint, messages, nps } = currentResolution;
   const el = document.getElementById('resolution-content');
   const isClient = currentUser?.id === complaint.user_id;
-  const statusMap = { open:'🔴 Não respondida', in_progress:'🟡 Em análise', resolved:'🟢 Resolvido' };
+  const statusMap  = { open:'🔴 Não respondida', in_progress:'🟡 Em análise', resolved:'🟢 Resolvido' };
+  const statusBg   = { open:'#fef2f2', in_progress:'#fffbeb', resolved:'#f0fdf4' };
+  const statusCol  = { open:'#dc2626', in_progress:'#d97706', resolved:'#16a34a' };
+  const st = complaint.status || 'open';
+
+  const msgHtml = messages.length === 0
+    ? `<div style="text-align:center;padding:32px;color:var(--muted);background:var(--bg);border-radius:12px;font-size:14px">Aguardando resposta da empresa…</div>`
+    : messages.map(m => `
+      <div style="background:var(--white);border:1.5px solid var(--border);border-left:4px solid ${m.author_type==='client'?'var(--red)':m.author_type==='company'?'var(--navy)':'var(--green)'};border-radius:12px;padding:16px;margin-bottom:12px">
+        <div style="font-family:var(--font);font-weight:800;font-size:12px;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;gap:6px">
+          <span>${m.author_type==='client'?'👤':m.author_type==='company'?'🏢':'⚖️'}</span>
+          <span>${m.author_name||(m.author_type==='client'?'Cliente':m.author_type==='company'?'Empresa':'Mediador')}</span>
+          <span style="margin-left:auto">${new Date(m.created_at).toLocaleDateString('pt-BR')} às ${new Date(m.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span>
+        </div>
+        <div style="font-size:14px;color:var(--text2);line-height:1.7">${m.message}</div>
+      </div>`).join('');
 
   let html = `
-    <button onclick="goBack()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body);margin-bottom:20px;display:block">← Voltar</button>
+    <button onclick="goBack()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body);margin-bottom:24px;display:flex;align-items:center;gap:6px">← Voltar</button>
 
-    <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:20px">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:12px">
-        <div>
-          <div style="font-size:12px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${complaint.vehicle_brand||''} ${complaint.vehicle_model||''} ${complaint.vehicle_year||''}</div>
-          <h2 style="font-family:var(--font);font-weight:900;font-size:20px;color:var(--navy);margin:0">${complaint.title}</h2>
-        </div>
-        <span style="font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;background:var(--bg2);color:var(--text)">${statusMap[complaint.status]||'🔴 Aberto'}</span>
-      </div>
-      <p style="font-size:14px;color:var(--text2);line-height:1.6;margin:0 0 12px">${complaint.description||''}</p>
-      ${complaint.company_name ? `<div style="font-size:12px;color:var(--muted);background:var(--bg);padding:8px 12px;border-radius:8px">🏢 Empresa: <strong>${complaint.company_name}</strong></div>` : ''}
-    </div>
+    <div style="display:grid;grid-template-columns:1fr 280px;gap:20px;align-items:start">
 
-    <div style="margin-bottom:20px">
-      <div style="font-family:var(--font);font-weight:900;font-size:15px;color:var(--navy);margin-bottom:14px">💬 Diálogo</div>
-      ${messages.length === 0 ? `<div style="text-align:center;padding:32px;color:var(--muted);background:var(--bg);border-radius:12px;font-size:14px">Aguardando resposta da empresa…</div>` : ''}
-      ${messages.map(m => `
-        <div style="background:var(--white);border:1.5px solid var(--border);border-left:4px solid ${m.author_type==='client'?'var(--red)':m.author_type==='company'?'var(--navy)':'var(--green)'};border-radius:12px;padding:16px;margin-bottom:12px">
-          <div style="font-family:var(--font);font-weight:800;font-size:13px;margin-bottom:6px;display:flex;align-items:center;gap:8px">
-            <span>${m.author_type==='client'?'👤':m.author_type==='company'?'🏢':'⚖️'}</span>
-            <span>${m.author_name||(m.author_type==='client'?'Cliente':m.author_type==='company'?'Empresa':'Mediador')}</span>
+      <!-- Coluna principal -->
+      <div>
+        <!-- Cabeçalho da reclamação -->
+        <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px">
+          <div style="font-size:12px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">🚗 ${complaint.vehicle_brand||''} ${complaint.vehicle_model||''} ${complaint.vehicle_year||''}</div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px">
+            <h2 style="font-family:var(--font);font-weight:900;font-size:22px;color:var(--navy);margin:0;line-height:1.2">${complaint.title}</h2>
+            <span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;white-space:nowrap;background:${statusBg[st]};color:${statusCol[st]}">${statusMap[st]||'🔴 Não respondida'}</span>
           </div>
-          <div style="font-size:14px;color:var(--text2);line-height:1.6">${m.message}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:6px">${new Date(m.created_at).toLocaleDateString('pt-BR')} às ${new Date(m.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div>
-        </div>`).join('')}
-    </div>`;
+          <p style="font-size:14px;color:var(--text2);line-height:1.7;margin:0">${complaint.description||''}</p>
+        </div>
 
-  if (complaint.status !== 'resolved') {
-    html += `
-    <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:20px;margin-bottom:20px">
-      <div style="font-family:var(--font);font-weight:800;font-size:14px;color:var(--navy);margin-bottom:12px">${isClient?'✍️ Sua réplica':'🏢 Resposta da empresa'}</div>
-      <textarea id="resolution-msg-input" placeholder="${isClient?'Descreva o andamento ou replique a resposta da empresa…':'Responda a reclamação do cliente…'}" style="width:100%;min-height:100px;border:1.5px solid var(--border2);border-radius:10px;padding:12px;font-family:var(--font-body);font-size:14px;resize:vertical;outline:none;box-sizing:border-box"></textarea>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;flex-wrap:wrap;gap:10px">
-        ${isClient?`<button onclick="markResolved('${complaint.id}')" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:10px 16px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">✅ Marcar como resolvido</button>`:'<div></div>'}
-        <button onclick="sendResolutionMessage('${complaint.id}')" style="background:var(--navy);color:#fff;border:none;border-radius:8px;padding:10px 24px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px">Enviar →</button>
+        <!-- Diálogo -->
+        <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px">
+          <div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy);margin-bottom:16px">💬 Diálogo</div>
+          ${msgHtml}
+
+          ${complaint.status !== 'resolved' ? `
+          <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px">
+            <div style="font-family:var(--font);font-weight:700;font-size:13px;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">${isClient?'✍️ Sua réplica':'🏢 Resposta da empresa'}</div>
+            <textarea id="resolution-msg-input" placeholder="${isClient?'Descreva o andamento ou replique a resposta da empresa…':'Responda a reclamação do cliente…'}"
+              style="width:100%;min-height:100px;border:1.5px solid var(--border2);border-radius:10px;padding:12px;font-family:var(--font-body);font-size:14px;resize:vertical;outline:none;box-sizing:border-box;transition:border-color .2s"
+              onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='var(--border2)'"></textarea>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;flex-wrap:wrap;gap:10px">
+              ${isClient?`<button onclick="markResolved('${complaint.id}')" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:10px 16px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">✅ Marcar como resolvido</button>`:'<div></div>'}
+              <button onclick="sendResolutionMessage('${complaint.id}')" style="background:var(--navy);color:#fff;border:none;border-radius:8px;padding:10px 24px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px">Enviar →</button>
+            </div>
+          </div>` : ''}
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div style="display:flex;flex-direction:column;gap:14px">
+        ${complaint.company_name ? `
+        <div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px">
+          <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Empresa</div>
+          <div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy);margin-bottom:10px">${complaint.company_name}</div>
+          <button onclick="openCompanyProfile('${complaint.company_name}')" style="width:100%;background:var(--bg);border:1.5px solid var(--border2);color:var(--navy);border-radius:8px;padding:8px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:12px;transition:border-color .2s" onmouseover="this.style.borderColor='var(--navy)'" onmouseout="this.style.borderColor='var(--border2)'">Ver perfil →</button>
+        </div>` : ''}
+
+        <div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px">
+          <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Detalhes</div>
+          <div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
+            <div style="display:flex;justify-content:space-between">
+              <span style="color:var(--muted)">Status</span>
+              <span style="font-weight:700;color:${statusCol[st]}">${statusMap[st]}</span>
+            </div>
+            ${complaint.category ? `<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Categoria</span><span style="font-weight:600">${complaint.category}</span></div>` : ''}
+            ${complaint.state ? `<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Estado</span><span style="font-weight:600">${complaint.state}</span></div>` : ''}
+            ${complaint.km ? `<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Km</span><span style="font-weight:600">${Number(complaint.km).toLocaleString('pt-BR')} km</span></div>` : ''}
+            <div style="display:flex;justify-content:space-between">
+              <span style="color:var(--muted)">Publicado</span>
+              <span style="font-weight:600">${new Date(complaint.created_at).toLocaleDateString('pt-BR')}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between">
+              <span style="color:var(--muted)">Mensagens</span>
+              <span style="font-weight:600">${messages.length}</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>`;
-  }
 
-  // NPS - card aparece para todos quando resolvido, formulário só para cliente
+  // NPS em largura total abaixo do grid
   if (complaint.status === 'resolved') {
     if (nps) {
       const isPromotor = nps.score >= 9;
