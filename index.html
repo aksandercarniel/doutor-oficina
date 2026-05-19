@@ -3602,8 +3602,29 @@ async function loadPendingCompanies() {
 async function approveCompany(pendingId, userId, name, cnpj, email, phone, address) {
   if (!confirm(`Aprovar a empresa "${name}"?`)) return;
   try {
-    await sb.from('companies').insert([{ name, cnpj, email, phone, address }]);
-    await sb.from('profiles').update({ role: 'company', company_name: name }).eq('id', userId);
+    // Busca todos os campos do pending para copiar integralmente
+    const { data: pending } = await sb.from('companies_pending').select('*').eq('id', pendingId).single();
+    const companyData = {
+      name:               pending.name,
+      cnpj:               pending.cnpj,
+      email:              pending.email,
+      phone:              pending.phone,
+      address:            pending.address,
+      type:               pending.type,
+      city:               pending.city,
+      state:              pending.state,
+      specialties:        pending.specialties,
+      brands_served:      pending.brands_served,
+      models_made:        pending.models_made,
+      authorized_dealers: pending.authorized_dealers,
+      recalls:            pending.recalls,
+      type_other:         pending.type_other,
+      fipe_brand_code:    pending.fipe_brand_code,
+      owner_id:           pending.user_id,
+      is_claimed:         false,
+    };
+    await sb.from('companies').insert([companyData]);
+    await sb.from('profiles').update({ role: 'company', company_name: pending.name }).eq('id', userId);
     await sb.from('companies_pending').update({ status: 'approved' }).eq('id', pendingId);
     alert('✅ Empresa aprovada com sucesso!');
     loadPendingCompanies();
@@ -4535,11 +4556,18 @@ async function openCompanyProfile(companyName) {
   try {
     const { data: company } = await sb.from('companies').select('*').eq('name', companyName).maybeSingle();
     const { data: complaints } = await sb.from('complaints').select('*').eq('company_name', companyName).order('created_at', { ascending: false }).limit(20);
+    const { data: npsRatings } = await sb.from('nps_ratings').select('score').eq('company_name', companyName);
     const list = complaints || [];
     const total = list.length;
     const resolved = list.filter(c => c.status === 'resolved').length;
     const pct = total ? Math.round(resolved/total*100) : 0;
     const avgRating = total ? (list.reduce((s,c) => s+(c.rating||0),0)/total).toFixed(1) : '—';
+    // NPS
+    const npsScores = (npsRatings || []).map(n => n.score);
+    const npsAvg = npsScores.length ? (npsScores.reduce((a,b)=>a+b,0)/npsScores.length) : null;
+    const npsColor = npsAvg===null ? 'var(--muted)' : npsAvg>=8.1?'#16a34a':npsAvg>=6.1?'#2563eb':npsAvg>=4.1?'#d97706':npsAvg>=2.1?'#ea580c':'#dc2626';
+    const npsBg    = npsAvg===null ? 'var(--bg2)'    : npsAvg>=8.1?'#f0fdf4':npsAvg>=6.1?'#eff6ff':npsAvg>=4.1?'#fffbeb':npsAvg>=2.1?'#fff7ed':'#fef2f2';
+    const npsLabel = npsAvg===null ? 'Sem avaliações' : npsAvg>=8.1?'Ótimo':npsAvg>=6.1?'Bom':npsAvg>=4.1?'Regular':npsAvg>=2.1?'Ruim':'Péssimo';
     const tipo = company?.type || 'outro';
     const isOwned = !!company?.owner_id;
     const isOwner = currentUser && company?.owner_id === currentUser.id;
@@ -4570,8 +4598,13 @@ async function openCompanyProfile(companyName) {
             ${company?.city||company?.state ? `<div style="font-size:13px;color:var(--muted)">📍 ${[company.city,company.state].filter(Boolean).join(' — ')}</div>` : ''}
           </div>
           <div style="text-align:right">
-            <div style="font-size:32px;font-weight:900;color:var(--navy);font-family:var(--font)">${avgRating}</div>
-            <div style="font-size:12px;color:var(--muted)">${total} reclamação${total!==1?'s':''}</div>
+            ${npsAvg !== null ? `
+            <div style="font-size:32px;font-weight:900;color:${npsColor};font-family:var(--font)">${npsAvg.toFixed(1)}</div>
+            <div style="background:${npsBg};color:${npsColor};font-size:11px;font-weight:700;padding:3px 12px;border-radius:20px;margin-top:4px;display:inline-block">${npsLabel}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px">${npsScores.length} avaliaç${npsScores.length===1?'ão':'ões'}</div>
+            ` : `
+            <div style="font-size:13px;color:var(--muted);font-style:italic">Sem avaliações</div>
+            `}
           </div>
         </div>
         <div style="display:flex;gap:16px;flex-wrap:wrap;padding:16px;background:var(--bg);border-radius:12px;margin-bottom:16px">
@@ -4587,6 +4620,11 @@ async function openCompanyProfile(companyName) {
             <div style="font-size:22px;font-weight:900;color:var(--red);font-family:var(--font)">${total-resolved}</div>
             <div style="font-size:11px;color:var(--muted);font-weight:600">Em aberto</div>
           </div>
+          ${npsAvg !== null ? `
+          <div style="text-align:center;flex:1;min-width:80px">
+            <div style="font-size:22px;font-weight:900;color:${npsColor};font-family:var(--font)">${npsAvg.toFixed(1)}</div>
+            <div style="font-size:11px;color:var(--muted);font-weight:600">Nota NPS</div>
+          </div>` : ''}
         </div>
         ${extraFields ? `<div style="border-top:1px solid var(--border);padding-top:16px;margin-bottom:16px">${extraFields}</div>` : ''}
         ${!isOwner && currentUser ? `
@@ -4932,11 +4970,12 @@ async function loadCompanyRanking() {
       const bg    = avg >= 8.1 ? '#f0fdf4' : avg >= 6.1 ? '#eff6ff' : avg >= 4.1 ? '#fffbeb' : avg >= 2.1 ? '#fff7ed' : '#fef2f2';
       const label = avg >= 8.1 ? 'Ótimo' : avg >= 6.1 ? 'Bom' : avg >= 4.1 ? 'Regular' : avg >= 2.1 ? 'Ruim' : 'Péssimo';
       const medal = i===0 ? '🥇' : i===1 ? '🥈' : i===2 ? '🥉' : (i+1)+'.';
-      return '<div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:18px 20px;display:flex;align-items:center;gap:16px">'
+      const safeName = c.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      return '<div onclick="openCompanyProfile(\'' + safeName + '\')" style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:18px 20px;display:flex;align-items:center;gap:16px;cursor:pointer;transition:border-color .2s" onmouseover="this.style.borderColor=\'var(--navy)\'" onmouseout="this.style.borderColor=\'var(--border)\'">'
         + '<div style="font-size:22px;width:36px;text-align:center;flex-shrink:0">' + medal + '</div>'
         + '<div style="flex:1">'
         + '<div style="font-family:var(--font);font-weight:800;font-size:16px;color:var(--navy)">' + c.name + '</div>'
-        + '<div style="font-size:12px;color:var(--muted);margin-top:2px">' + c.count + ' avaliação' + (c.count!==1?'ões':'') + '</div>'
+        + '<div style="font-size:12px;color:var(--muted);margin-top:2px">' + c.count + (c.count===1?' avaliação':' avaliações') + '</div>'
         + '</div>'
         + '<div style="text-align:right">'
         + '<div style="font-family:var(--font);font-weight:900;font-size:28px;color:' + color + '">' + c.avg + '</div>'
