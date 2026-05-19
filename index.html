@@ -6113,6 +6113,33 @@ async function openMediationChannel(mediationId) {
               <span style="font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;background:${statusColor[med.status]||'#e5e7eb'}22;color:${statusColor[med.status]||'#6b7280'};border:1px solid ${statusColor[med.status]||'#e5e7eb'}44">${statusMap[med.status]||med.status}</span>
             </div>
 
+            <!-- Countdown para o cliente quando aguardando advogado -->
+            ${(() => {
+              if (!isClient || med.status !== 'waiting_lawyer' || !med.lawyer_response_deadline) return '';
+              const msLeft = new Date(med.lawyer_response_deadline) - new Date();
+              const expired = msLeft <= 0;
+              const hLeft = Math.max(0, Math.floor(msLeft / 3600000));
+              const mLeft = Math.max(0, Math.floor((msLeft % 3600000) / 60000));
+              const urgent = !expired && hLeft < 4;
+              if (expired) {
+                return '<div style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:14px;padding:20px;margin-bottom:16px">'
+                  + '<div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--red);margin-bottom:12px">⏱️ O advogado não respondeu no prazo</div>'
+                  + '<div style="font-size:13px;color:var(--muted);margin-bottom:14px">O advogado <strong>' + (med.lawyer_name||'escolhido') + '</strong> não respondeu em 24 horas. Escolha outro advogado.</div>'
+                  + '<button onclick="openMediationFlow('' + med.complaint_id + '')" style="background:var(--orange);color:#fff;border:none;border-radius:8px;padding:10px 20px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">🔄 Escolher outro advogado</button>'
+                  + '</div>';
+              }
+              const color = urgent ? 'var(--red)' : '#92400e';
+              const bg    = urgent ? '#fef2f2'    : '#fffbeb';
+              const border = urgent ? '#fecaca'   : '#fde68a';
+              return '<div style="background:' + bg + ';border:1.5px solid ' + border + ';border-radius:14px;padding:16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">'
+                + '<div>'
+                + '<div style="font-family:var(--font);font-weight:700;font-size:14px;color:' + color + ';margin-bottom:2px">⏱️ Aguardando resposta do advogado</div>'
+                + '<div style="font-size:12px;color:var(--muted)"><strong>' + (med.lawyer_name||'Advogado') + '</strong> tem ' + hLeft + 'h ' + mLeft + 'min para aceitar o caso</div>'
+                + '</div>'
+                + '<span style="font-size:13px;font-weight:800;color:' + color + '">' + hLeft + 'h ' + mLeft + 'min</span>'
+                + '</div>';
+            })()}
+
             <!-- Aceitar/Recusar (advogado) -->
             ${isLawyer && med.status === 'waiting_lawyer' ? `
             <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:14px;padding:20px;margin-bottom:16px">
