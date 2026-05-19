@@ -2992,18 +2992,58 @@ async function loadKnownIssues(brand, model) {
 // Busca preço FIPE para o veículo dinâmico
 async function loadFipePriceForVehicle(v) {
   if (v.fipePrice) return v.fipePrice;
-  if (!v.fipeCode && !v.fipeBrandCode) return null;
-  try {
-    const type = v.fipeType || 'carros';
-    const fipeTypeMap = { carros: 'cars', motos: 'motorcycles', caminhoes: 'trucks' };
-    const t = fipeTypeMap[type] || 'cars';
-    if (v.fipeBrandCode && v.fipeModelCode && v.fipeYearCode) {
+
+  // Tem códigos completos
+  if (v.fipeBrandCode && v.fipeModelCode && v.fipeYearCode) {
+    try {
+      const type = v.fipeType || 'carros';
+      const fipeTypeMap = { carros: 'cars', motos: 'motorcycles', caminhoes: 'trucks' };
+      const t = fipeTypeMap[type] || 'cars';
       const url = FIPE_V2 + '/' + t + '/brands/' + v.fipeBrandCode + '/models/' + v.fipeModelCode + '/years/' + v.fipeYearCode;
       const res = await fipeFetch(url);
-      return res?.price || null;
-    }
-  } catch(e) {}
-  return null;
+      if (res && res.price) return res.price;
+    } catch(e) {}
+  }
+
+  // Sem códigos — busca por nome (caso "Ver perfil" nos resultados)
+  const brand = (v.brand || '').trim();
+  const model = (v.name || '').trim();
+  if (!brand || !model) return null;
+
+  try {
+    const motoEmoji = '🏍️';
+    const truckEmoji = '🚚';
+    const fipeType = (v.emoji === motoEmoji) ? 'motorcycles' : (v.emoji === truckEmoji) ? 'trucks' : 'cars';
+
+    const brands = await fipeFetch(FIPE_V2 + '/' + fipeType + '/brands');
+    if (!Array.isArray(brands)) return null;
+
+    const brandMatch = brands.find(function(b) {
+      return (b.name || b.nome || '').toLowerCase().includes(brand.toLowerCase().split(' ')[0]);
+    });
+    if (!brandMatch) return null;
+    const brandCode = brandMatch.code || brandMatch.codigo;
+
+    const modelsData = await fipeFetch(FIPE_V2 + '/' + fipeType + '/brands/' + brandCode + '/models');
+    const modelsList = Array.isArray(modelsData) ? modelsData : (modelsData && (modelsData.models || modelsData.modelos) || []);
+    if (!modelsList.length) return null;
+
+    const modelKeyword = model.toLowerCase().split(' ')[0];
+    const modelMatch = modelsList.find(function(m) {
+      return (m.name || m.nome || '').toLowerCase().includes(modelKeyword);
+    });
+    if (!modelMatch) return null;
+    const modelCode = modelMatch.code || modelMatch.codigo;
+
+    const years = await fipeFetch(FIPE_V2 + '/' + fipeType + '/brands/' + brandCode + '/models/' + modelCode + '/years');
+    if (!Array.isArray(years) || !years.length) return null;
+
+    const yearCode = years[0].code || years[0].codigo;
+    const fipeData = await fipeFetch(FIPE_V2 + '/' + fipeType + '/brands/' + brandCode + '/models/' + modelCode + '/years/' + yearCode);
+    return (fipeData && (fipeData.price || fipeData.Valor)) || null;
+  } catch(e) {
+    return null;
+  }
 }
 
 // Renderiza a página completa com dados reais
