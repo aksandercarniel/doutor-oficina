@@ -1143,7 +1143,7 @@ footer{background:var(--navy);padding:36px 24px;margin-top:auto}
     <button onclick="goBack()" style="background:none;border:1.5px solid var(--border2);border-radius:8px;padding:8px 16px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;color:var(--navy)">← Voltar</button>
   </div>
   <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
-    <button class="qf-btn active" onclick="companyFilterComplaints(this,'open')">🔴 Abertas</button>
+    <button class="qf-btn active" onclick="companyFilterComplaints(this,'open')">🔴 Não respondidas</button>
     <button class="qf-btn" onclick="companyFilterComplaints(this,'progress')">🟡 Em análise</button>
     <button class="qf-btn" onclick="companyFilterComplaints(this,'resolved')">🟢 Resolvidas</button>
     <button class="qf-btn" onclick="companyFilterComplaints(this,'all')">Todas</button>
@@ -1244,7 +1244,7 @@ footer{background:var(--navy);padding:36px 24px;margin-top:auto}
         <span class="filter-label">Filtrar:</span>
         <select class="filter-select" id="filter-status" onchange="applyFilters()">
           <option value="">Todos os status</option>
-          <option value="s-open">Abertos</option>
+          <option value="s-open">Não respondidas</option>
           <option value="s-progress">Em análise</option>
           <option value="s-resolved">Resolvidos</option>
         </select>
@@ -1947,7 +1947,7 @@ async function sbLoadUserComplaints() {
 // ══ MAPEAMENTO ══
 function mapComplaint(c) {
   const statusMap = { open: 's-open', in_progress: 's-progress', resolved: 's-resolved' };
-  const statusLabel = { open: 'Aberto', in_progress: 'Em análise', resolved: 'Resolvido' };
+  const statusLabel = { open: 'Não respondida', in_progress: 'Em análise', resolved: 'Resolvido' };
   const typeEmoji = { carro: '🚗', moto: '🏍️', caminhao: '🚚' };
   const date = new Date(c.created_at);
   const diff = Math.floor((Date.now() - date) / 86400000);
@@ -1960,7 +1960,7 @@ function mapComplaint(c) {
     title: c.title,
     text: c.description,
     status: statusMap[c.status] || 's-open',
-    statusLabel: statusLabel[c.status] || 'Aberto',
+    statusLabel: statusLabel[c.status] || 'Não respondida',
     date: dateStr,
     tags: [c.category, c.state].filter(Boolean),
     votes: c.votes_count || 0,
@@ -2719,9 +2719,9 @@ const mockCompanies=[
 ];
 
 const mockComplaints=[
-  {emoji:'🚗',brand:'Hyundai',model:'HB20 2023',title:'Motor para sem aviso na estrada',text:'Com apenas 8.000 km o carro simplesmente desligou na rodovia. O reboque demorou 4 horas e a concessionária demorou 2 semanas para dar retorno.',status:'s-open',statusLabel:'Aberto',date:'há 2 dias',tags:['Motor','Garantia','SP'],votes:47},
+  {emoji:'🚗',brand:'Hyundai',model:'HB20 2023',title:'Motor para sem aviso na estrada',text:'Com apenas 8.000 km o carro simplesmente desligou na rodovia. O reboque demorou 4 horas e a concessionária demorou 2 semanas para dar retorno.',status:'s-open',statusLabel:'Não respondida',date:'há 2 dias',tags:['Motor','Garantia','SP'],votes:47},
   {emoji:'🚗',brand:'Chevrolet',model:'Onix 2022',title:'Câmbio automático com solavanco frequente',text:'Desde os 15.000 km o câmbio dá solavanco na troca de 2ª para 3ª marcha. Já levei 3x na concessionária e o problema persiste.',status:'s-progress',statusLabel:'Em análise',date:'há 5 dias',tags:['Câmbio','RJ'],votes:89},
-  {emoji:'🚗',brand:'Jeep',model:'Compass 2022',title:'Transmissão com ruído metálico acima de 80 km/h',text:'Barulho começou com 22.000 km. Custo estimado pela concessionária: R$ 8.400 fora da garantia.',status:'s-open',statusLabel:'Aberto',date:'há 1 semana',tags:['Transmissão','MG'],votes:134},
+  {emoji:'🚗',brand:'Jeep',model:'Compass 2022',title:'Transmissão com ruído metálico acima de 80 km/h',text:'Barulho começou com 22.000 km. Custo estimado pela concessionária: R$ 8.400 fora da garantia.',status:'s-open',statusLabel:'Não respondida',date:'há 1 semana',tags:['Transmissão','MG'],votes:134},
   {emoji:'🏍️',brand:'Honda',model:'CB 500 2021',title:'Farol LED apagando intermitentemente',text:'Problema elétrico no farol que apaga à noite. Situação de risco. Peça está em falta há 60 dias.',status:'s-resolved',statusLabel:'Resolvido',date:'há 2 semanas',tags:['Elétrica','Segurança','PR'],votes:56},
 ];
 const rankingData=[
@@ -4352,7 +4352,7 @@ function renderSearchList(tab) {
   if (tab === 'all' || tab === 'complaints') {
     if (tab === 'all' && complaints.length) html += `<div style="font-family:var(--font);font-weight:900;font-size:12px;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;padding:4px 0 10px;border-bottom:1px solid var(--border)">📋 Reclamações</div>`;    complaints.slice(0,10).forEach(c => {
       html += `<div style="padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.querySelector('.sr-title').style.textDecoration='underline'" onmouseout="this.querySelector('.sr-title').style.textDecoration='none'">
-        <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${c.brand||''} ${c.model||''} · <span style="background:${c.status==='s-resolved'?'#e8f5e9':c.status==='s-progress'?'#fff8e1':'#fef2f2'};color:${c.status==='s-resolved'?'#16a34a':c.status==='s-progress'?'#f59e0b':'#dc2626'};padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700">${c.status==='s-resolved'?'Resolvido':c.status==='s-progress'?'Em análise':'Aberto'}</span></div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${c.brand||''} ${c.model||''} · <span style="background:${c.status==='s-resolved'?'#e8f5e9':c.status==='s-progress'?'#fff8e1':'#fef2f2'};color:${c.status==='s-resolved'?'#16a34a':c.status==='s-progress'?'#f59e0b':'#dc2626'};padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700">${c.status==='s-resolved'?'Resolvido':c.status==='s-progress'?'Em análise':'Não respondida'}</span></div>
         <div class="sr-title" style="font-family:var(--font);font-weight:700;font-size:15px;color:var(--navy);margin-bottom:4px">${c.title||'Reclamação'}</div>
         <div style="font-size:13px;color:var(--text2);line-height:1.5">${(c.description||c.text||'').slice(0,120)}${(c.description||c.text||'').length>120?'…':''}</div>
       </div>`;
@@ -4490,7 +4490,7 @@ async function openComplaintDetail(complaintId) {
     const { data: complaint } = await sb.from('complaints').select('*').eq('id', complaintId).single();
     if (!complaint) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Reclamação não encontrada.</div>'; return; }
     const { data: messages } = await sb.from('resolutions').select('*').eq('complaint_id', complaintId).order('created_at', { ascending: true });
-    const statusMap = { open:'🔴 Aberto', in_progress:'🟡 Em análise', resolved:'🟢 Resolvido' };
+    const statusMap = { open:'🔴 Não respondida', in_progress:'🟡 Em análise', resolved:'🟢 Resolvido' };
     const typeEmoji = { carro:'🚗', moto:'🏍️', caminhao:'🚚' };
     const isAuthor = currentUser?.id === complaint.user_id;
     const isCompany = currentUser?.role === 'company';
@@ -4640,7 +4640,7 @@ async function openCompanyProfile(companyName) {
     if (list.length === 0) {
       html += `<div style="text-align:center;padding:40px;color:var(--muted)">Nenhuma reclamação encontrada para esta empresa.</div>`;
     } else {
-      const statusMap = { open:'🔴 Aberto', in_progress:'🟡 Em análise', resolved:'🟢 Resolvido' };
+      const statusMap = { open:'🔴 Não respondida', in_progress:'🟡 Em análise', resolved:'🟢 Resolvido' };
       html += list.map(c => `
         <div style="background:var(--white);border:1.5px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;cursor:pointer" onclick="openComplaintDetail('${c.id}')">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px">
@@ -4694,7 +4694,7 @@ function renderResolutionPage() {
   const { complaint, messages, nps } = currentResolution;
   const el = document.getElementById('resolution-content');
   const isClient = currentUser?.id === complaint.user_id;
-  const statusMap = { open:'🔴 Aberto', progress:'🟡 Em análise', resolved:'🟢 Resolvido' };
+  const statusMap = { open:'🔴 Não respondida', in_progress:'🟡 Em análise', resolved:'🟢 Resolvido' };
 
   let html = `
     <button onclick="goBack()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body);margin-bottom:20px;display:block">← Voltar</button>
@@ -4822,10 +4822,10 @@ async function sendResolutionMessage(complaintId) {
       author_id:currentUser.id, author_name:currentUser.name, message:msg
     }]).select().single();
     currentResolution.messages.push(data);
-    // Atualiza status para em análise
-    if (currentResolution.complaint.status === 'open') {
-      await sb.from('complaints').update({ status:'progress' }).eq('id', complaintId);
-      currentResolution.complaint.status = 'progress';
+    // Se empresa respondeu e status ainda é 'open', muda para 'in_progress'
+    if (authorType === 'company' && currentResolution.complaint.status === 'open') {
+      await sb.from('complaints').update({ status:'in_progress' }).eq('id', complaintId);
+      currentResolution.complaint.status = 'in_progress';
     }
     renderResolutionPage();
   } catch(e) { alert('Erro ao enviar mensagem.'); }
@@ -4903,7 +4903,7 @@ async function loadCompanyComplaints(status='open') {
             <div style="font-size:12px;color:var(--muted);margin-bottom:4px">${c.vehicle_brand||''} ${c.vehicle_model||''} ${c.vehicle_year||''}</div>
             <div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy)">${c.title}</div>
           </div>
-          <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${c.status==='resolved'?'#e8f5e9':c.status==='in_progress'?'#fff8e1':'#fef2f2'};color:${c.status==='resolved'?'#16a34a':c.status==='in_progress'?'#f59e0b':'#dc2626'}">${c.status==='resolved'?'Resolvido':c.status==='in_progress'?'Em análise':'Aberto'}</span>
+          <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${c.status==='resolved'?'#e8f5e9':c.status==='in_progress'?'#fff8e1':'#fef2f2'};color:${c.status==='resolved'?'#16a34a':c.status==='in_progress'?'#f59e0b':'#dc2626'}">${c.status==='resolved'?'Resolvido':c.status==='in_progress'?'Em análise':'Não respondida'}</span>
         </div>
         <div style="font-size:13px;color:var(--text2);line-height:1.5">${(c.description||'').slice(0,120)}…</div>
         <div style="font-size:12px;color:var(--muted);margin-top:8px;display:flex;justify-content:space-between">
@@ -5188,7 +5188,7 @@ async function renderProfile() {
             ${c.vehicle_version ? `<div style="font-size:12px;color:var(--muted);font-style:italic;margin-top:2px">${c.vehicle_version}</div>` : ''}
             <div style="font-family:var(--font);font-weight:800;font-size:14px;color:var(--text);margin-top:8px">${c.title || 'Reclamação'}</div>
           </div>
-          <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${c.status === 'resolved' ? '#e8f5e9' : c.status === 'progress' ? '#fff8e1' : '#fef2f2'};color:${c.status === 'resolved' ? '#16a34a' : c.status === 'progress' ? '#f59e0b' : '#dc2626'}">${c.status === 'resolved' ? 'Resolvido' : c.status === 'progress' ? 'Em análise' : 'Aberto'}</span>
+          <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${c.status === 'resolved' ? '#e8f5e9' : c.status === 'progress' ? '#fff8e1' : '#fef2f2'};color:${c.status === 'resolved' ? '#16a34a' : c.status === 'progress' ? '#f59e0b' : '#dc2626'}">${c.status === 'resolved' ? 'Resolvido' : c.status === 'in_progress' ? 'Em análise' : 'Não respondida'}</span>
         </div>
         ${c.company_name ? `<div style="font-size:12px;color:var(--muted)">🏢 <span style="cursor:pointer;color:var(--navy);font-weight:600;text-decoration:underline" onclick="event.stopPropagation();openCompanyProfile('${c.company_name}')">${c.company_name}</span></div>` : ''}
         <div style="font-size:12px;color:var(--muted);margin-top:6px;display:flex;justify-content:space-between">
