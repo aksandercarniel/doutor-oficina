@@ -1750,40 +1750,47 @@ footer{background:var(--navy);padding:36px 24px;margin-top:auto}
         </div>
       </div>
 
-      <!-- STEP 4: Mediação -->
       <!-- STEP 3: Empresa responsável -->
       <div class="modal-step" id="step3">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
           <div style="width:28px;height:28px;background:var(--navy);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font);font-weight:900;font-size:13px;flex-shrink:0">3</div>
           <div style="font-family:var(--font);font-weight:900;font-size:18px;color:var(--navy)">Empresa responsável</div>
         </div>
-        <div style="font-size:14px;color:var(--muted);margin-bottom:20px">Informe os dados da empresa/concessionária envolvida para que ela possa ser notificada e responder sua reclamação.</div>
-        <div class="form-row">
-          <div class="form-group" style="position:relative">
-            <label class="form-label">Nome da empresa *</label>
-            <input type="text" class="form-input" id="comp-name" placeholder="Ex: Honda Concessionária SP" oninput="searchCompanyAutocomplete(this.value)"/>
-            <div id="company-autocomplete" style="display:none;position:absolute;background:var(--white);border:1.5px solid var(--border2);border-radius:10px;box-shadow:0 8px 24px rgba(13,31,60,.12);z-index:100;max-height:180px;overflow-y:auto;width:100%;top:100%;left:0"></div>
+        <div style="font-size:14px;color:var(--muted);margin-bottom:20px">Informe os dados da empresa/concessionária envolvida. Digite o CNPJ para preenchimento automático.</div>
+
+        <!-- CNPJ primeiro com busca automática -->
+        <div class="form-group">
+          <label class="form-label">CNPJ</label>
+          <div style="display:flex;gap:8px;align-items:flex-start">
+            <div style="flex:1">
+              <input type="text" class="form-input" id="comp-cnpj" placeholder="00.000.000/0001-00" maxlength="18"
+                oninput="maskCNPJ(this);autoLookupComplaintCNPJ(this.value)"/>
+              <div id="comp-cnpj-status" style="font-size:12px;margin-top:6px;min-height:18px"></div>
+            </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">CNPJ</label>
-            <input type="text" class="form-input" id="comp-cnpj" placeholder="00.000.000/0001-00" maxlength="18" oninput="maskCNPJ(this)"/>
-          </div>
+        </div>
+
+        <!-- Demais campos preenchidos automaticamente -->
+        <div class="form-group" style="position:relative">
+          <label class="form-label">Nome da empresa *</label>
+          <input type="text" class="form-input" id="comp-name" placeholder="Preenchido automaticamente ou digite" oninput="searchCompanyAutocomplete(this.value)"/>
+          <div id="company-autocomplete" style="display:none;position:absolute;background:var(--white);border:1.5px solid var(--border2);border-radius:10px;box-shadow:0 8px 24px rgba(13,31,60,.12);z-index:100;max-height:180px;overflow-y:auto;width:100%;top:100%;left:0"></div>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">E-mail da empresa</label>
-            <input type="email" class="form-input" id="comp-email" placeholder="contato@empresa.com"/>
+            <input type="email" class="form-input" id="comp-email" placeholder="Preenchido automaticamente"/>
           </div>
           <div class="form-group">
             <label class="form-label">Telefone</label>
-            <input type="text" class="form-input" id="comp-phone" placeholder="(11) 99999-9999" maxlength="15" oninput="maskPhone(this)"/>
+            <input type="text" class="form-input" id="comp-phone" placeholder="Preenchido automaticamente" maxlength="15" oninput="maskPhone(this)"/>
           </div>
         </div>
         <div class="form-group">
           <label class="form-label">Endereço</label>
-          <input type="text" class="form-input" id="comp-address" placeholder="Rua, número, cidade - estado"/>
+          <input type="text" class="form-input" id="comp-address" placeholder="Preenchido automaticamente"/>
         </div>
-        <div style="font-size:12px;color:var(--muted);margin-top:-4px">💡 Preencha o máximo possível para facilitar o contato</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:-4px">💡 Se não tiver CNPJ, preencha o nome da empresa manualmente</div>
         <div class="form-actions" style="margin-top:20px">
           <button class="btn-back" onclick="goStep(2)">← Voltar</button>
           <button class="btn-submit" onclick="goStep(4)">Próximo →</button>
@@ -2329,6 +2336,41 @@ function selectCompanyType(type, btn) {
     const el = document.getElementById(`reg-fields-${t}`);
     if (el) el.style.display = t === type ? 'block' : 'none';
   });
+}
+
+
+// Auto-lookup CNPJ no formulário de reclamação (step 3)
+async function autoLookupComplaintCNPJ(val) {
+  const cnpj = val.replace(/\D/g, '');
+  const status = document.getElementById('comp-cnpj-status');
+  if (cnpj.length < 14) {
+    status.textContent = '';
+    return;
+  }
+  status.style.color = 'var(--muted)';
+  status.textContent = '🔍 Consultando Receita Federal…';
+  try {
+    const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+    if (!res.ok) throw new Error('não encontrado');
+    const d = await res.json();
+
+    if (d.razao_social) document.getElementById('comp-name').value    = d.razao_social;
+    if (d.email)        document.getElementById('comp-email').value   = d.email;
+    if (d.ddd_telefone_1) document.getElementById('comp-phone').value = d.ddd_telefone_1.replace(/\D/g,'').replace(/(\d{2})(\d{4,5})(\d{4})/, '($1) $2-$3');
+    const addr = [d.logradouro, d.numero, d.complemento, d.bairro].filter(Boolean).join(', ');
+    const addrFull = [addr, d.municipio, d.uf].filter(Boolean).join(' - ');
+    if (addrFull) document.getElementById('comp-address').value = addrFull;
+
+    const situacao = d.descricao_situacao_cadastral || '';
+    const ativa = situacao.toLowerCase().includes('ativa');
+    status.style.color = ativa ? 'var(--green)' : 'var(--orange)';
+    status.textContent = ativa
+      ? `✅ ${d.razao_social}`
+      : `⚠️ ${d.razao_social} — Situação: ${situacao}`;
+  } catch(e) {
+    status.style.color = 'var(--red)';
+    status.textContent = '❌ CNPJ não encontrado. Preencha o nome manualmente.';
+  }
 }
 
 async function lookupCNPJ() {
