@@ -5998,22 +5998,26 @@ async function createMediationRequest(complaintId, lawyerId, lawyerName, lawyerO
     const deadline = new Date();
     deadline.setDate(deadline.getDate() + 60);
 
+    const lawyerDeadline = new Date();
+    lawyerDeadline.setHours(lawyerDeadline.getHours() + 24);
+
     const { data: med, error } = await sb.from('mediations').insert([{
-      complaint_id:     complaintId,
-      client_id:        currentUser.id,
-      client_name:      currentUser.name,
-      client_whatsapp:  currentUser.phone || '',
-      company_name:     complaint.company_name || '',
-      company_cnpj:     complaint.company_cnpj || '',
-      company_email:    complaint.company_email || '',
-      company_phone:    complaint.company_phone || '',
-      lawyer_id:        lawyerId,
-      lawyer_name:      lawyerName,
-      lawyer_oab:       lawyerOab,
-      status:           'waiting_lawyer',
-      payment_status:   'paid',
-      payment_amount:   500,
-      deadline_at:      deadline.toISOString(),
+      complaint_id:              complaintId,
+      client_id:                 currentUser.id,
+      client_name:               currentUser.name,
+      client_whatsapp:           currentUser.phone || '',
+      company_name:              complaint.company_name || '',
+      company_cnpj:              complaint.company_cnpj || '',
+      company_email:             complaint.company_email || '',
+      company_phone:             complaint.company_phone || '',
+      lawyer_id:                 lawyerId,
+      lawyer_name:               lawyerName,
+      lawyer_oab:                lawyerOab,
+      status:                    'waiting_lawyer',
+      payment_status:            'paid',
+      payment_amount:            500,
+      deadline_at:               deadline.toISOString(),
+      lawyer_response_deadline:  lawyerDeadline.toISOString(),
     }]).select().single();
 
     if (error) throw error;
@@ -6036,6 +6040,23 @@ async function openMediationChannel(mediationId) {
   try {
     const { data: med } = await sb.from('mediations').select('*').eq('id', mediationId).single();
     if (!med) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)">Mediação não encontrada.</div>'; return; }
+
+    // Verifica se o prazo de resposta do advogado expirou
+    if (med.status === 'waiting_lawyer' && med.lawyer_response_deadline) {
+      const expired = new Date(med.lawyer_response_deadline) < new Date();
+      if (expired) {
+        await sb.from('mediations').update({ status: 'cancelled', admin_notes: 'Advogado não respondeu no prazo de 24h' }).eq('id', mediationId);
+        // Se for o cliente abrindo, redireciona para escolher outro advogado
+        if (currentUser?.id === med.client_id) {
+          alert('⏱️ O advogado não respondeu no prazo de 24h. Escolha outro advogado.');
+          openMediationFlow(med.complaint_id);
+          return;
+        }
+        // Se for o advogado, mostra como caso perdido
+        med.status = 'cancelled';
+        med.admin_notes = 'Você não respondeu no prazo de 24h.';
+      }
+    }
 
     const { data: complaint } = await sb.from('complaints').select('*').eq('id', med.complaint_id).single();
     const { data: messages }  = await sb.from('resolutions').select('*').eq('complaint_id', med.complaint_id).order('created_at', { ascending: true });
@@ -6095,7 +6116,17 @@ async function openMediationChannel(mediationId) {
             <!-- Aceitar/Recusar (advogado) -->
             ${isLawyer && med.status === 'waiting_lawyer' ? `
             <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:14px;padding:20px;margin-bottom:16px">
-              <div style="font-family:var(--font);font-weight:800;font-size:15px;color:#92400e;margin-bottom:16px">📩 Novo caso aguardando sua resposta</div>
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+                <div style="font-family:var(--font);font-weight:800;font-size:15px;color:#92400e">📩 Novo caso aguardando sua resposta</div>
+                ${med.lawyer_response_deadline ? (() => {
+                  const msLeft = new Date(med.lawyer_response_deadline) - new Date();
+                  if (msLeft <= 0) return '<span style="font-size:12px;font-weight:700;color:var(--red);background:#fef2f2;padding:4px 10px;border-radius:20px">⏱️ Prazo expirado</span>';
+                  const hLeft = Math.floor(msLeft / 3600000);
+                  const mLeft = Math.floor((msLeft % 3600000) / 60000);
+                  const urgent = hLeft < 4;
+                  return \`<span style="font-size:12px;font-weight:700;color:\${urgent?'var(--red)':'#92400e'};background:\${urgent?'#fef2f2':'#fef9c3'};padding:4px 10px;border-radius:20px">⏱️ \${hLeft}h \${mLeft}min restantes</span>\`;
+                })() : ''}
+              </div>
 
               <!-- Detalhes da reclamação para tomada de decisão -->
               <div style="background:var(--white);border:1px solid #fde68a;border-radius:10px;padding:16px;margin-bottom:16px">
@@ -6272,7 +6303,7 @@ async function loadLawyerPanel() {
       in_progress:    '⚖️ Em andamento',
       resolved:       '✅ Resolvida',
       expired:        '⏱️ Expirada',
-      cancelled:      '❌ Cancelada',
+      cancelled:      '❌ Não respondida a tempo',
     };
     const statusBg = {
       waiting_lawyer: '#fffbeb', in_progress:'#eff6ff',
@@ -6292,6 +6323,20 @@ async function loadLawyerPanel() {
       return items.map(m => {
         const deadline = m.deadline_at ? new Date(m.deadline_at).toLocaleDateString('pt-BR') : '—';
         const daysLeft = m.deadline_at ? Math.max(0, Math.ceil((new Date(m.deadline_at) - new Date()) / 86400000)) : 0;
+        // Tempo para responder (só quando waiting_lawyer)
+        let responseDeadlineHtml = '';
+        if (m.status === 'waiting_lawyer' && m.lawyer_response_deadline) {
+          const msLeft = new Date(m.lawyer_response_deadline) - new Date();
+          if (msLeft <= 0) {
+            responseDeadlineHtml = '<span style="font-size:11px;font-weight:700;color:var(--red);background:#fef2f2;padding:2px 8px;border-radius:12px">⏱️ Prazo expirado</span>';
+          } else {
+            const hLeft = Math.floor(msLeft / 3600000);
+            const mLeft = Math.floor((msLeft % 3600000) / 60000);
+            const urgent = hLeft < 4;
+            responseDeadlineHtml = `<span style="font-size:11px;font-weight:700;color:${urgent?'var(--red)':'#92400e'};background:${urgent?'#fef2f2':'#fffbeb'};padding:2px 8px;border-radius:12px">⏱️ ${hLeft}h ${mLeft}min para responder</span>`;
+          }
+        }
+
         return `
         <div onclick="openMediationChannel('${m.id}')" style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:18px 20px;cursor:pointer;transition:border-color .2s,box-shadow .2s"
           onmouseover="this.style.borderColor='var(--navy)';this.style.boxShadow='var(--shadow)'"
@@ -6301,7 +6346,10 @@ async function loadLawyerPanel() {
               <div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy);margin-bottom:3px">${m.client_name||'Cliente'}</div>
               <div style="font-size:12px;color:var(--muted)">${m.company_name || 'Sem empresa vinculada'}</div>
             </div>
-            <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${statusBg[m.status]};color:${statusColor[m.status]};white-space:nowrap">${statusMap[m.status]||m.status}</span>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+              <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${statusBg[m.status]};color:${statusColor[m.status]};white-space:nowrap">${statusMap[m.status]||m.status}</span>
+              ${responseDeadlineHtml}
+            </div>
           </div>
           <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)">
             <span>Prazo: ${deadline} ${m.status==='in_progress'?'('+daysLeft+'d restantes)':''}</span>
