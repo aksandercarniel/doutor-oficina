@@ -2204,17 +2204,28 @@ async function doRegisterLawyerOnly() {
     errEl.classList.add('show'); return;
   }
   try {
+    // Garante que a sessão está ativa antes de prosseguir
+    const { data: sessionData } = await sb.auth.getSession();
+    const uid = sessionData?.session?.user?.id || currentUser?.id;
+    if (!uid) throw new Error('Sessão não encontrada. Tente fazer login novamente.');
+
     const { error: insertErr } = await sb.from('lawyers_waitlist').insert([{
+      id: uid,
       name: currentUser.name, oab, email: currentUser.email,
       whatsapp: currentUser.phone || '', state, specialties: spec, status: 'pending'
     }]);
-    if (insertErr) throw new Error(insertErr.message || JSON.stringify(insertErr));
-    await sb.from('profiles').update({ role:'lawyer' }).eq('id', currentUser.id);
+    if (insertErr && !insertErr.message?.includes('duplicate')) throw new Error(insertErr.message || JSON.stringify(insertErr));
+
+    const { error: updateErr } = await sb.from('profiles').update({ role:'lawyer' }).eq('id', uid);
+    if (updateErr) throw new Error(updateErr.message || JSON.stringify(updateErr));
+
     currentUser.role = 'lawyer';
+    currentUser.id = uid;
     closeModal();
     alert('✅ Inscrição enviada!\nEntraremos em contato em breve.');
     loginSuccess(currentUser);
   } catch(e) {
+    console.error('Erro doRegisterLawyerOnly:', e);
     errEl.textContent = e.message || 'Erro ao enviar inscrição.';
     errEl.classList.add('show');
   }
