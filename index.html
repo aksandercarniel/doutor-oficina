@@ -2889,41 +2889,337 @@ function renderRanking(){
 
 // ══ VEHICLE PROFILE ══
 async function showVehicleProfile(id){
-  const v=mockVehicles.find(x=>x.id===id)||mockVehicles[0];
+  const v = mockVehicles.find(x => x.id === id) || mockVehicles[0];
   showPage('vehicle');
-
-  if (id === 'dynamic' || v._dynamic) {
-    // Gera dados estimados imediatamente baseados no nome do veículo
-    const estimated = estimateVehicleData(v);
-    renderVehicleProfileFull({...v, ...estimated}, id);
-    // IA atualiza em segundo plano silenciosamente
-    enrichVehicleWithAI(v);
-    return;
-  }
-
-  renderVehicleProfileFull(v, id);
+  renderVehicleProfileSkeleton(v);
+  await loadVehicleProfileData(v);
 }
 
-// Gera dados estimados instantaneamente para exibição imediata
-function estimateVehicleData(v) {
-  const name = (v.name || '').toLowerCase();
-  const brand = (v.brand || '').toLowerCase();
+// Renderiza skeleton enquanto carrega dados reais
+function renderVehicleProfileSkeleton(v) {
+  const el = document.getElementById('vehicle-profile-content');
+  el.innerHTML = `
+    <button class="back-btn" onclick="goBack()">← Voltar</button>
+    <div class="profile-hero">
+      <div class="profile-left">
+        <span class="profile-emoji">${v.emoji || '🚗'}</span>
+        <div class="profile-brand-label">${v.brand || ''}</div>
+        <div class="profile-name">${v.name || ''}</div>
+        <div class="profile-sub">${v.version || ''} · ${v.year || ''}</div>
+        <div class="profile-rating">
+          <span class="big-stars" style="color:var(--muted2)">☆☆☆☆☆</span>
+          <span class="big-score" style="color:var(--muted2)">—</span>
+          <span class="profile-rcount">carregando…</span>
+        </div>
+        <div class="profile-tags"><span class="ptag" style="background:var(--bg2);color:var(--muted);border-color:var(--border)">Buscando dados…</span></div>
+      </div>
+      <div class="profile-right">
+        <div class="info-card">
+          <div class="ic-label">💰 Tabela FIPE</div>
+          <div class="ic-value" id="sk-fipe">—</div>
+          <div class="ic-sub" id="sk-fipe-ref">buscando…</div>
+        </div>
+        <div class="info-card">
+          <div class="ic-label">📋 Reclamações na plataforma</div>
+          <div class="ic-value ic-value-red" id="sk-count">—</div>
+          <div class="ic-sub" id="sk-resolved">buscando…</div>
+        </div>
+        <button class="btn-primary" style="width:100%;justify-content:center" onclick="requireAuth()">🚨 Reclamar deste veículo</button>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:20px 0;color:var(--muted);font-size:13px">
+      <span class="ai-spinner" style="border-color:rgba(13,31,60,.2);border-top-color:var(--navy)"></span>
+      Buscando raio-x e reclamações para <strong>${v.brand} ${v.name}</strong>…
+    </div>`;
+}
 
-  // Rating baseado em reputação conhecida
-  const highRated = ['toyota','honda','mazda','subaru','hyundai'];
-  const lowRated  = ['jeep','chery','lifan','jac'];
-  let rating = 3.5;
-  if (highRated.some(b => brand.includes(b))) rating = 4.0;
-  if (lowRated.some(b => brand.includes(b))) rating = 2.8;
+// Carrega todos os dados reais e renderiza a página completa
+async function loadVehicleProfileData(v) {
+  const brand = v.brand || '';
+  const model = v.name || '';
 
-  const count = Math.floor(Math.random() * 400) + 100;
-  const badge = rating >= 4 ? 'Confiável' : rating >= 3 ? 'Moderado' : 'Crítico';
-  const badgeClass = rating >= 4 ? 'badge-green' : rating >= 3 ? 'badge-yellow' : 'badge-red';
+  // Busca em paralelo: raio-x curado + reclamações reais + fipe
+  const [knownIssues, complaints, fipePrice] = await Promise.all([
+    loadKnownIssues(brand, model),
+    sbLoadVehicleComplaintsFull(brand, model),
+    loadFipePriceForVehicle(v)
+  ]);
 
-  const allProblems = ['Motor','Elétrica','Câmbio','Suspensão','Ar-condicionado','Freios','Transmissão'];
-  const problems = allProblems.slice(0, 3);
+  // Calcula stats diretamente das complaints (não depende da view)
+  const stats = calcVehicleStats(complaints);
 
-  return { rating, count, badge, badgeClass, problems, _estimated: true };
+  renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice);
+}
+
+// Busca reclamações completas para calcular stats
+async function sbLoadVehicleComplaintsFull(brand, model) {
+  try {
+    const { data } = await sb.from('complaints')
+      .select('*')
+      .eq('vehicle_brand', brand)
+      .eq('vehicle_model', model)
+      .order('created_at', { ascending: false })
+      .limit(50);
+    return (data || []).map(mapComplaint);
+  } catch(e) { return []; }
+}
+
+// Calcula stats a partir das complaints mapeadas
+function calcVehicleStats(complaints) {
+  const total = complaints.length;
+  if (total === 0) return { total_complaints: 0, resolved_count: 0, avg_rating: null, stars_1: 0, stars_2: 0, stars_3: 0, stars_4: 0, stars_5: 0 };
+  const resolved = complaints.filter(c => c.status === 's-resolved').length;
+  // rating vem do campo votes como proxy — se tiver rating real melhor
+  const stars = { stars_1: 0, stars_2: 0, stars_3: 0, stars_4: 0, stars_5: 0 };
+  // tenta pegar rating do objeto original (antes do mapComplaint)
+  return { total_complaints: total, resolved_count: resolved, avg_rating: null, ...stars };
+}
+
+// Busca raio-x curado no Supabase
+async function loadKnownIssues(brand, model) {
+  try {
+    const { data, error } = await sb.from('vehicle_known_issues')
+      .select('*')
+      .eq('vehicle_brand', brand)
+      .eq('vehicle_model', model)
+      .order('is_summary', { ascending: false })
+      .order('severity', { ascending: true });
+    if (error) return [];
+    return data || [];
+  } catch(e) { return []; }
+}
+
+// Busca preço FIPE para o veículo dinâmico
+async function loadFipePriceForVehicle(v) {
+  if (v.fipePrice) return v.fipePrice;
+  if (!v.fipeCode && !v.fipeBrandCode) return null;
+  try {
+    const type = v.fipeType || 'carros';
+    const fipeTypeMap = { carros: 'cars', motos: 'motorcycles', caminhoes: 'trucks' };
+    const t = fipeTypeMap[type] || 'cars';
+    if (v.fipeBrandCode && v.fipeModelCode && v.fipeYearCode) {
+      const url = FIPE_V2 + '/' + t + '/brands/' + v.fipeBrandCode + '/models/' + v.fipeModelCode + '/years/' + v.fipeYearCode;
+      const res = await fipeFetch(url);
+      return res?.price || null;
+    }
+  } catch(e) {}
+  return null;
+}
+
+// Renderiza a página completa com dados reais
+function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice) {
+  const el = document.getElementById('vehicle-profile-content');
+  if (!el) return;
+
+  // -- Extrai resumo curado
+  const summary = knownIssues.find(i => i.is_summary);
+  const issues = knownIssues.filter(i => !i.is_summary);
+
+  // -- Calcula stats de reclamações reais
+  const totalComplaints = stats?.total_complaints || complaints.length || 0;
+  const resolvedCount = stats?.resolved_count || complaints.filter(c => c.status === 's-resolved').length || 0;
+  const resolvedPct = totalComplaints > 0 ? Math.round((resolvedCount / totalComplaints) * 100) : null;
+
+  // -- Nota: usa curada se existir, senão calcula da média real
+  const avgRating = summary?.reliability_score
+    || (stats?.avg_rating ? parseFloat(stats.avg_rating).toFixed(1) : null);
+  const displayRating = avgRating ? parseFloat(avgRating) : null;
+
+  // -- Badge baseado na nota curada
+  const getBadge = (r) => {
+    if (!r) return { label: 'Sem avaliação', cls: 'badge-yellow' };
+    if (r >= 4.0) return { label: 'Confiável', cls: 'badge-green' };
+    if (r >= 3.0) return { label: 'Moderado', cls: 'badge-yellow' };
+    return { label: 'Atenção', cls: 'badge-red' };
+  };
+  const badge = getBadge(displayRating);
+
+  // -- Veredicto
+  const verdictText = summary?.verdict || null;
+  const vClass = displayRating >= 4 ? '' : displayRating >= 3 ? 'verdict-warn' : 'verdict-danger';
+  const vIcon  = displayRating >= 4 ? '✅' : displayRating >= 3 ? '⚠️' : '🚨';
+
+  // -- Distribuição de notas reais (do Supabase)
+  const distRaw = stats ? [
+    { s: 5, v: stats.stars_5 || 0 },
+    { s: 4, v: stats.stars_4 || 0 },
+    { s: 3, v: stats.stars_3 || 0 },
+    { s: 2, v: stats.stars_2 || 0 },
+    { s: 1, v: stats.stars_1 || 0 }
+  ] : [];
+  const distTotal = distRaw.reduce((a, b) => a + b.v, 0);
+  const distBars = distTotal > 0
+    ? distRaw.map(d => {
+        const pct = Math.round((d.v / distTotal) * 100);
+        return '<div class="dist-row">'
+          + '<span class="dist-label">' + d.s + '★</span>'
+          + '<div class="dist-bar-bg"><div class="dist-bar" style="width:' + pct + '%"></div></div>'
+          + '<span class="dist-count">' + pct + '%</span>'
+          + '</div>';
+      }).join('')
+    : '<div style="color:var(--muted);font-size:13px;padding:8px 0">Sem avaliações ainda — seja o primeiro!</div>';
+
+  // -- Tags de pontos fracos do curado
+  const weaknessTags = summary?.weaknesses
+    ? summary.weaknesses.slice(0, 3).map(w => '<span class="ptag">' + w + '</span>').join('')
+    : '';
+
+  // -- Raio-X: problemas curados
+  const severityConfig = {
+    grave:    { color: 'var(--red)',    bg: '#fff0f3', border: '#ffd0d9', icon: '🔴' },
+    moderado: { color: 'var(--orange)', bg: '#fff7ed', border: '#fed7aa', icon: '🟡' },
+    leve:     { color: 'var(--green)',  bg: '#edfaf5', border: '#a7f3d0', icon: '🟢' }
+  };
+
+  const issueCards = issues.length > 0
+    ? issues.map(issue => {
+        const cfg = severityConfig[issue.severity] || severityConfig.leve;
+        return '<div style="border:1.5px solid ' + cfg.border + ';border-radius:12px;padding:14px 16px;margin-bottom:10px;background:' + cfg.bg + '">'
+          + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">'
+          + '<div style="font-family:var(--font);font-weight:700;font-size:13.5px;color:var(--navy)">' + cfg.icon + ' ' + issue.issue_title + '</div>'
+          + '<span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;background:' + cfg.color + '22;color:' + cfg.color + ';border:1px solid ' + cfg.color + '44;white-space:nowrap;text-transform:uppercase">' + issue.severity + '</span>'
+          + '</div>'
+          + '<div style="font-size:13px;color:var(--text2);line-height:1.55;margin-bottom:' + (issue.fix_exists || issue.affected_years ? '8' : '0') + 'px">' + issue.issue_description + '</div>'
+          + (issue.affected_years ? '<div style="font-size:11px;color:var(--muted);margin-bottom:4px">📅 Anos afetados: <strong>' + issue.affected_years + '</strong></div>' : '')
+          + (issue.fix_exists && issue.fix_description ? '<div style="font-size:12px;color:var(--green);background:var(--green-light);border-radius:8px;padding:8px 10px;border:1px solid rgba(0,168,120,.2)">✅ <strong>Solução conhecida:</strong> ' + issue.fix_description + '</div>' : '')
+          + (!issue.fix_exists && issues.length ? '<div style="font-size:12px;color:var(--muted);font-style:italic">⚠️ Sem solução definitiva conhecida até o momento.</div>' : '')
+          + '<div style="margin-top:8px;font-size:11px;color:var(--muted2)">Fonte: ' + (issue.source || 'Doutor Oficina') + '</div>'
+          + '</div>';
+      }).join('')
+    : '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0">Nenhum problema crônico mapeado ainda para este modelo.</div>';
+
+  // -- Reclamações reais da plataforma
+  const complaintCards = complaints.length > 0
+    ? complaints.slice(0, 3).map(c =>
+        '<div class="complaint-card" style="margin-bottom:10px;background:var(--bg);cursor:pointer" onclick="showComplaintDetail(\'' + c.id + '\')">'
+        + '<div class="cc-top">'
+        + '<div><div class="cc-vname">' + c.title + '</div><div class="cc-vbrand">' + c.date + '</div></div>'
+        + '<span class="cc-status ' + c.status + '">' + c.statusLabel + '</span>'
+        + '</div>'
+        + '<div class="cc-text">' + (c.text || '').slice(0, 110) + '…</div>'
+        + '<div class="cc-footer">'
+        + '<div class="cc-tags">' + c.tags.map(t => '<span class="tag">' + t + '</span>').join('') + '</div>'
+        + '<div class="cc-votes">👍 ' + c.votes + '</div>'
+        + '</div></div>'
+      ).join('')
+    : '<div style="text-align:center;padding:24px 0">'
+      + '<div style="font-size:32px;margin-bottom:8px">💬</div>'
+      + '<div style="font-family:var(--font);font-weight:700;color:var(--navy);margin-bottom:4px">Seja o primeiro a relatar</div>'
+      + '<div style="font-size:13px;color:var(--muted);margin-bottom:14px">Nenhuma reclamação registrada para este veículo ainda.</div>'
+      + '<button class="btn-primary" onclick="requireAuth()" style="margin:0 auto">🚨 Registrar reclamação</button>'
+      + '</div>';
+
+  // -- Monta HTML final
+  el.innerHTML = '<button class="back-btn" onclick="goBack()">← Voltar</button>'
+
+    // Hero
+    + '<div class="profile-hero">'
+    + '<div class="profile-left">'
+    + '<span class="profile-emoji">' + (v.emoji || '🚗') + '</span>'
+    + '<div class="profile-brand-label">' + v.brand + '</div>'
+    + '<div class="profile-name">' + v.name + '</div>'
+    + '<div class="profile-sub">' + (v.version || '') + (v.year ? ' · ' + v.year : '') + '</div>'
+    + '<div class="profile-rating">'
+    + '<span class="big-stars">' + (displayRating ? starsHtml(displayRating) : '☆☆☆☆☆') + '</span>'
+    + '<span class="big-score">' + (displayRating ? displayRating.toFixed(1) : '—') + '</span>'
+    + '<span class="profile-rcount">' + (totalComplaints > 0 ? '(' + totalComplaints.toLocaleString('pt-BR') + ' relatos)' : '(sem relatos ainda)') + '</span>'
+    + '</div>'
+    + '<div class="profile-tags">'
+    + '<span class="ptag ' + badge.cls + '">' + badge.label + '</span>'
+    + weaknessTags
+    + '</div>'
+    + '</div>'
+    + '<div class="profile-right">'
+    + '<div class="info-card">'
+    + '<div class="ic-label">💰 Tabela FIPE</div>'
+    + '<div class="ic-value">' + (fipePrice || v.fipePrice || 'R$ —') + '</div>'
+    + '<div class="ic-sub">Referência atual</div>'
+    + '</div>'
+    + '<div class="info-card">'
+    + '<div class="ic-label">📋 Relatos na plataforma</div>'
+    + '<div class="ic-value ic-value-red">' + totalComplaints.toLocaleString('pt-BR') + '</div>'
+    + '<div class="ic-sub">' + (resolvedPct !== null ? resolvedPct + '% resolvidos' : 'Sem dados ainda') + '</div>'
+    + '</div>'
+    + '<button class="btn-primary" style="width:100%;justify-content:center" onclick="requireAuth()">🚨 Reclamar deste veículo</button>'
+    + '</div>'
+    + '</div>'
+
+    // Grid principal
+    + '<div class="profile-grid">'
+
+    // Coluna esquerda
+    + '<div>'
+
+    // Card Raio-X curado
+    + '<div class="profile-card">'
+    + '<div class="pc-title"><span class="dot"></span>⚠️ Raio-X do modelo'
+    + (summary ? '<span style="margin-left:auto;font-size:10px;font-weight:600;color:var(--muted);background:var(--bg2);padding:3px 9px;border-radius:20px;border:1px solid var(--border)">Curado · ' + (summary.source || 'Doutor Oficina') + '</span>' : '')
+    + '</div>'
+    + (summary
+      ? '<div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px;padding:12px 14px;background:var(--bg);border-radius:10px;border:1px solid var(--border)">' + summary.issue_description + '</div>'
+      : '')
+    + issueCards
+    + '</div>'
+
+    // Card Relatos da comunidade
+    + '<div class="profile-card">'
+    + '<div class="pc-title"><span class="dot"></span>💬 Relatos da comunidade'
+    + (complaints.length > 0 ? '<span style="margin-left:auto;font-size:11px;font-weight:700;color:var(--red)">' + complaints.length + ' relatos</span>' : '')
+    + '</div>'
+    + complaintCards
+    + (complaints.length > 3 ? '<button onclick="showPage(\'complaints\')" style="width:100%;background:none;border:1.5px solid var(--border2);border-radius:8px;padding:10px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;color:var(--navy);margin-top:6px">Ver todos os relatos →</button>' : '')
+    + '</div>'
+    + '</div>'
+
+    // Coluna direita
+    + '<div>'
+
+    // Card Veredicto
+    + '<div class="profile-card">'
+    + '<div class="pc-title"><span class="dot"></span>Veredicto</div>'
+    + (verdictText
+      ? '<div class="verdict ' + vClass + '"><span class="verdict-icon">' + vIcon + '</span><span class="verdict-text">' + verdictText + '</span></div>'
+      : '<div style="color:var(--muted);font-size:13px;padding:8px 0">Sem veredicto curado para este modelo ainda.</div>')
+    + (summary?.strengths?.length
+      ? '<div style="margin-top:14px">'
+        + '<div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Pontos fortes</div>'
+        + summary.strengths.map(s => '<div style="font-size:12.5px;color:var(--text2);padding:4px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px">✅ ' + s + '</div>').join('')
+        + '</div>'
+      : '')
+    + (summary?.weaknesses?.length
+      ? '<div style="margin-top:12px">'
+        + '<div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Pontos de atenção</div>'
+        + summary.weaknesses.map(w => '<div style="font-size:12.5px;color:var(--text2);padding:4px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px">⚠️ ' + w + '</div>').join('')
+        + '</div>'
+      : '')
+    + '</div>'
+
+    // Card Distribuição de notas
+    + '<div class="profile-card">'
+    + '<div class="pc-title"><span class="dot"></span>Distribuição de notas</div>'
+    + '<div class="dist-bars">' + distBars + '</div>'
+    + (distTotal === 0 ? '<div style="font-size:12px;color:var(--muted);margin-top:8px;text-align:center">Baseado em ' + totalComplaints + ' relato(s) — avalie após registrar sua reclamação</div>' : '')
+    + '</div>'
+
+    // Card FIPE comparativo
+    + '<div class="profile-card">'
+    + '<div class="pc-title"><span class="dot"></span>Comparar preço FIPE</div>'
+    + '<div class="fipe-row">'
+    + '<select class="form-select" id="cmp-brand" onchange="loadCmpModels()"><option>Carregando marcas…</option></select>'
+    + '<select class="form-select" id="cmp-model" disabled onchange="loadCmpYears()"><option>Selecione a marca</option></select>'
+    + '<select class="form-select" id="cmp-year" disabled onchange="loadCmpPrice()"><option>Selecione o modelo</option></select>'
+    + '</div>'
+    + '<div class="fipe-info" id="fipe-cmp" style="margin-top:12px">'
+    + '<div><div class="fipe-label">💰 Preço médio FIPE</div>'
+    + '<div class="fipe-price" id="fipe-cmp-val">—</div>'
+    + '<div class="fipe-label" id="fipe-cmp-ref" style="margin-top:2px">—</div></div>'
+    + '</div>'
+    + '</div>'
+
+    + '</div>' // fim coluna direita
+    + '</div>'; // fim profile-grid
+
+  loadFipeBrandsInto('cmp-brand', 'carros');
 }
 
 function renderVehicleProfileShell(v) {
@@ -3115,132 +3411,7 @@ Responda APENAS em JSON válido sem markdown:
 }
 
 
-function renderVehicleProfileFull(v, id) {
-  const probBars=v.problems.map((p,i)=>{
-    const pcts=[85,62,41];const colors=['bar-red','bar-orange','bar-yellow'];
-    const counts=[v.count,Math.floor(v.count*.73),Math.floor(v.count*.48)];
-    return`<div class="problem-item">
-      <span class="prob-name">${p}</span>
-      <div class="prob-bar-wrap"><div class="prob-bar-bg"><div class="prob-bar ${colors[i]||'bar-yellow'}" style="width:${pcts[i]||30}%"></div></div></div>
-      <span class="prob-count">${counts[i]}</span>
-    </div>`;
-  }).join('');
-  const distData=[{s:5,v:12},{s:4,v:22},{s:3,v:18},{s:2,v:28},{s:1,v:20}];
-  const distBars=distData.map(d=>`<div class="dist-row">
-    <span class="dist-label">${d.s}★</span>
-    <div class="dist-bar-bg"><div class="dist-bar" style="width:${d.v}%"></div></div>
-    <span class="dist-count">${d.v}%</span>
-  </div>`).join('');
-  const vClass=v.rating>=4?'':'verdict-'+(v.rating>=3?'warn':'danger');
-  const vIcon=v.rating>=4?'✅':v.rating>=3?'⚠️':'🚨';
-  const vText=v.rating>=4
-    ?`<strong>Recomendado.</strong> ${v.name} tem boa reputação entre os proprietários. Problemas são pontuais e de baixa gravidade.`
-    :v.rating>=3
-    ?`<strong>Atenção.</strong> ${v.name} apresenta reclamações relevantes. Exija garantia estendida.`
-    :`<strong>Alerta alto.</strong> ${v.name} concentra muitas reclamações graves. Considere alternativas.`;
-
-  document.getElementById('vehicle-profile-content').innerHTML=`
-    <div class="profile-hero">
-      <div class="profile-left">
-        <span class="profile-emoji">${v.emoji}</span>
-        <div class="profile-brand-label">${v.brand}</div>
-        <div class="profile-name">${v.name}</div>
-        <div class="profile-sub">${v.version} · ${v.year} · ${v.emoji==='🏍️'?'Moto':'Automóvel'}</div>
-        <div class="profile-rating">
-          <span class="big-stars">${starsHtml(v.rating)}</span>
-          <span class="big-score">${v.rating.toFixed(1)}</span>
-          <span class="profile-rcount">(${v.count.toLocaleString('pt-BR')} avaliações)</span>
-        </div>
-        <div class="profile-tags">
-          <span class="ptag">${v.badge}</span>
-          ${v.problems.map(p=>`<span class="ptag">${p}</span>`).join('')}
-        </div>
-      </div>
-      <div class="profile-right">
-        <div class="info-card">
-          <div class="ic-label">💰 Tabela FIPE</div>
-          <div class="ic-value">${fipePrices[id]||'R$ —'}</div>
-          <div class="ic-sub">Referência maio/2025</div>
-        </div>
-        <div class="info-card">
-          <div class="ic-label">📋 Reclamações</div>
-          <div class="ic-value ic-value-red">${v.count.toLocaleString('pt-BR')}</div>
-          <div class="ic-sub">68% resolvidas</div>
-        </div>
-        <button class="btn-primary" style="width:100%;justify-content:center" onclick="requireAuth()">🚨 Reclamar deste veículo</button>
-      </div>
-    </div>
-    <div class="profile-grid">
-      <div>
-        <div class="profile-card">
-          <div class="pc-title"><span class="dot"></span>Problemas mais relatados</div>
-          <div class="problems-list">${probBars}</div>
-        </div>
-        <div class="profile-card">
-          <div class="pc-title"><span class="dot"></span>Reclamações recentes</div>
-          ${mockComplaints.slice(0,3).map(c=>`
-            <div class="complaint-card" style="margin-bottom:10px;background:var(--bg)">
-              <div class="cc-top">
-                <div><div class="cc-vname">${c.title}</div><div class="cc-vbrand">${c.date}</div></div>
-                <span class="cc-status ${c.status}">${c.statusLabel}</span>
-              </div>
-              <div class="cc-text">${c.text.slice(0,110)}…</div>
-              <div class="cc-footer">
-                <div class="cc-tags">${c.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
-                <div class="cc-votes">👍 ${c.votes}</div>
-              </div>
-            </div>`).join('')}
-        </div>
-        <!-- BUSCA WEB IA -->
-        <div class="web-search-card">
-          <div class="web-search-header">
-            <div class="web-search-title">
-              🌐 Busca na internet
-              <span class="web-search-badge">IA</span>
-            </div>
-            <button class="web-search-btn" id="ws-btn-${v.id}" onclick="searchWebComplaints('${v.brand} ${v.name}','${v.id}')">
-              🔍 Buscar reclamações
-            </button>
-          </div>
-          <div class="web-search-loading" id="ws-loading-${v.id}">
-            <span class="ai-spinner"></span>
-            Pesquisando reclamações de <strong>${v.brand} ${v.name}</strong> na internet…
-          </div>
-          <div id="ws-results-${v.id}">
-            <div style="color:var(--muted);font-size:13px;text-align:center;padding:12px 0">
-              Clique em "Buscar reclamações" para pesquisar na internet e combinar com os dados da plataforma.
-            </div>
-          </div>
-        </div>
-      </div>
-      <div>
-        <div class="profile-card">
-          <div class="pc-title"><span class="dot"></span>Distribuição de notas</div>
-          <div class="dist-bars">${distBars}</div>
-        </div>
-        <div class="profile-card">
-          <div class="pc-title"><span class="dot"></span>Veredicto da comunidade</div>
-          <div class="verdict ${vClass}"><span class="verdict-icon">${vIcon}</span><span class="verdict-text">${vText}</span></div>
-        </div>
-        <div class="profile-card">
-          <div class="pc-title"><span class="dot"></span>Comparar preço na tabela FIPE</div>
-          <div class="fipe-row">
-            <select class="form-select" id="cmp-brand" onchange="loadCmpModels()"><option>Carregando marcas…</option></select>
-            <select class="form-select" id="cmp-model" disabled onchange="loadCmpYears()"><option>Selecione a marca</option></select>
-            <select class="form-select" id="cmp-year" disabled onchange="loadCmpPrice()"><option>Selecione o modelo</option></select>
-          </div>
-          <div class="fipe-info" id="fipe-cmp" style="margin-top:12px">
-            <div>
-              <div class="fipe-label">💰 Preço médio FIPE</div>
-              <div class="fipe-price" id="fipe-cmp-val">—</div>
-              <div class="fipe-label" id="fipe-cmp-ref" style="margin-top:2px">—</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>`;
-  loadFipeBrandsInto('cmp-brand','carros');
-}
+// renderVehicleProfileFull antiga removida — substituída pela nova versão com dados reais
 
 // ══ FIPE API ══
 // API FIPE v2
