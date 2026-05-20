@@ -2808,7 +2808,7 @@ async function renderVehicles(){
     const emoji = getEmoji(v.brand);
     const safeKey = `${v.brand}-${v.model}`.replace(/[^a-zA-Z0-9-]/g, '_');
     return `
-    <div class="vehicle-card" onclick="doFreeSearch('${v.brand} ${v.model}')">
+    <div class="vehicle-card" onclick="showVehicleProfileByBrandModel('${v.brand}', '${v.model}')">
       <div class="vc-top">
         <div style="display:flex;align-items:center;gap:8px">
           <span class="vc-emoji">${emoji}</span>
@@ -2905,6 +2905,24 @@ async function showVehicleProfile(id){
   showPage('vehicle');
   renderVehicleProfileSkeleton(v);
   await loadVehicleProfileData(v);
+}
+
+// Abre perfil direto por marca+modelo (usado pelos cards da home e comparador)
+async function showVehicleProfileByBrandModel(brand, model) {
+  const emoji = ({'honda':'🏍️','yamaha':'🏍️','kawasaki':'🏍️','triumph':'🏍️','bmw motorrad':'🏍️'}[brand.toLowerCase()] || '🚗');
+  const v = { id:'direct-'+brand+'-'+model, brand, name:model, version:'', year:'—', emoji, rating:0, count:0, badge:'', badgeClass:'', problems:[], fipePrice:null };
+  // Verifica se já está em dynamicVehicles, senão adiciona
+  const existing = dynamicVehicles.find(x => x.brand === brand && x.name === model);
+  if (!existing) {
+    dynamicVehicles.push(v);
+    setTimeout(() => {
+      const idx = dynamicVehicles.findIndex(x => x.id === v.id);
+      if (idx > -1) dynamicVehicles.splice(idx, 1);
+    }, 60000);
+  }
+  showPage('vehicle');
+  renderVehicleProfileSkeleton(existing || v);
+  await loadVehicleProfileData(existing || v);
 }
 
 // Renderiza skeleton enquanto carrega dados reais
@@ -4536,6 +4554,8 @@ async function searchFipeModels(val, append = false) {
 
   try {
     const allResults = [];
+    const valLower = val.toLowerCase().trim();
+    const words = valLower.split(/\s+/);
     const types = [
       { key: 'cars', label: 'carros', emoji: '🚗' },
       { key: 'motorcycles', label: 'motos', emoji: '🏍️' },
@@ -4543,21 +4563,39 @@ async function searchFipeModels(val, append = false) {
 
     for (const t of types) {
       if (allResults.length >= 20) break;
-      const brands = await fipeFetch(`${FIPE_V2}/${t.key}/brands`);
+      const brands = await fipeFetch(FIPE_V2 + '/' + t.key + '/brands');
       if (!Array.isArray(brands)) continue;
 
-      // Busca modelos de todas as marcas em paralelo
-      const modelSearches = brands.map(async brand => {
+      // Estratégia inteligente: tenta encontrar marca no texto da busca
+      // Ex: "Nissan Kicks" → busca só Nissan; "Kicks" → busca todas
+      const matchedBrands = brands.filter(b => {
+        const bName = (b.name || b.nome || '').toLowerCase();
+        return words.some(w => w.length > 2 && bName.includes(w));
+      });
+      // Se achou marca(s) específica(s), busca só elas; senão busca todas (limitado a 15)
+      const brandsToSearch = matchedBrands.length > 0
+        ? matchedBrands
+        : brands.slice(0, 15);
+
+      // Termo de modelo: remove a marca do texto se foi identificada
+      let modelTerm = valLower;
+      if (matchedBrands.length > 0) {
+        const brandWord = (matchedBrands[0].name || matchedBrands[0].nome || '').toLowerCase().split(' ')[0];
+        modelTerm = valLower.replace(brandWord, '').trim();
+      }
+      if (!modelTerm) modelTerm = valLower;
+
+      const modelSearches = brandsToSearch.map(async brand => {
         try {
-          const dm = await fipeFetch(`${FIPE_V2}/${t.key}/brands/${brand.code||brand.codigo}/models`);
+          const dm = await fipeFetch(FIPE_V2 + '/' + t.key + '/brands/' + (brand.code||brand.codigo) + '/models');
           const models = dm.models || dm.modelos || dm;
           return (Array.isArray(models) ? models : [])
-            .filter(m => (m.name||m.nome||'').toLowerCase().includes(cacheKey))
+            .filter(m => (m.name||m.nome||'').toLowerCase().includes(modelTerm))
             .map(m => ({
               brand: brand.name||brand.nome,
               model: m.name||m.nome,
               type: t.label, emoji: t.emoji,
-              label: `${brand.name||brand.nome} ${m.name||m.nome}`
+              label: (brand.name||brand.nome) + ' ' + (m.name||m.nome)
             }));
         } catch(e) { return []; }
       });
