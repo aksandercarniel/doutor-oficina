@@ -2765,47 +2765,61 @@ async function renderVehicles(){
   if (!grid) return;
   grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Carregando veículos…</div>';
 
-  // Busca top modelos com Raio-X cadastrado
-  let vehicles = [];
+  // Busca todos os registros de Raio-X (summary + issues) para os top modelos
+  let allRows = [];
   try {
     const { data } = await sb.from('vehicle_known_issues')
-      .select('vehicle_brand, vehicle_model, vehicle_emoji, vehicle_year, complaints_total, rating, top_problem, version_label')
-      .eq('is_summary', true)
-      .order('complaints_total', { ascending: false })
-      .limit(12);
-    vehicles = data || [];
+      .select('vehicle_brand, vehicle_model, is_summary, reliability_score, verdict, weaknesses, issue_title, severity, affected_years')
+      .order('is_summary', { ascending: false })
+      .order('severity', { ascending: true })
+      .limit(200);
+    allRows = data || [];
   } catch(e) { console.error(e); }
+
+  // Agrupa por marca+modelo
+  const vehicleMap = {};
+  allRows.forEach(row => {
+    const key = `${row.vehicle_brand}|${row.vehicle_model}`;
+    if (!vehicleMap[key]) vehicleMap[key] = { brand: row.vehicle_brand, model: row.vehicle_model, summary: null, issues: [] };
+    if (row.is_summary) vehicleMap[key].summary = row;
+    else vehicleMap[key].issues.push(row);
+  });
+
+  const vehicles = Object.values(vehicleMap).filter(v => v.summary).slice(0, 12);
 
   if (!vehicles.length) {
     grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Nenhum veículo encontrado.</div>';
     return;
   }
 
+  // Emojis por marca
+  const brandEmoji = { fiat:'🚗', chevrolet:'🚗', volkswagen:'🚗', hyundai:'🚗', toyota:'🚗', honda:'🏍️', yamaha:'🏍️', jeep:'🚗', ford:'🚗', nissan:'🚗', renault:'🚗', byd:'🚗', caoa:'🚗' };
+  const getEmoji = (brand) => brandEmoji[(brand||'').toLowerCase().split(' ')[0]] || '🚗';
+
   grid.innerHTML = vehicles.map(v => {
-    const emoji = v.vehicle_emoji || '🚗';
-    const rating = parseFloat(v.rating) || 0;
-    const count = v.complaints_total || 0;
-    const topProblem = v.top_problem || 'Não informado';
+    const s = v.summary;
+    const rating = parseFloat(s.reliability_score) || 0;
+    const topProblem = v.issues[0]?.issue_title || (s.weaknesses?.[0]) || 'Verificar manual';
     const trustPct = Math.round(rating / 5 * 100);
     const barColor = rating >= 4 ? 'var(--green)' : rating >= 3 ? 'var(--yellow)' : 'var(--red)';
     const trend = rating >= 4 ? '📈 Estável' : rating >= 3 ? '⚠️ +8% este mês' : '🔴 +15% este mês';
     const trendClass = rating >= 4 ? 'green' : rating >= 3 ? 'orange' : 'red';
     const resolved = Math.round(55 + rating * 5);
-    const brandSlug = encodeURIComponent(v.vehicle_brand);
-    const modelSlug = encodeURIComponent(v.vehicle_model);
+    const emoji = getEmoji(v.brand);
+    const safeKey = `${v.brand}-${v.model}`.replace(/[^a-zA-Z0-9-]/g, '_');
     return `
-    <div class="vehicle-card" onclick="doFreeSearch('${v.vehicle_brand} ${v.vehicle_model}')">
+    <div class="vehicle-card" onclick="doFreeSearch('${v.brand} ${v.model}')">
       <div class="vc-top">
         <div style="display:flex;align-items:center;gap:8px">
           <span class="vc-emoji">${emoji}</span>
-          <div class="vc-name">${v.vehicle_model}</div>
+          <div class="vc-name">${v.model}</div>
         </div>
         <span class="vc-badge badge-blue">✓ Raio-X</span>
       </div>
-      <div class="vc-brand">${v.vehicle_brand} · ${v.vehicle_year || '—'}</div>
-      <div class="vc-version">${v.version_label || ''}</div>
+      <div class="vc-brand">${v.brand}</div>
+      <div class="vc-version">${(s.verdict || '').slice(0, 60)}${(s.verdict||'').length > 60 ? '…' : ''}</div>
       <div class="vc-rating"><span class="stars">${starsHtml(rating)}</span><span class="star-val">${rating.toFixed(1)}</span></div>
-      <div class="vc-count">${count.toLocaleString('pt-BR')} reclamações</div>
+      <div class="vc-count">${v.issues.length} problema${v.issues.length !== 1 ? 's' : ''} mapeado${v.issues.length !== 1 ? 's' : ''}</div>
       <div class="vc-divider"></div>
       <div class="vc-info-grid">
         <div class="vc-info-item">
@@ -2830,15 +2844,24 @@ async function renderVehicles(){
       </div>
       <div class="vc-price">
         <span class="price-label">Tabela FIPE</span>
-        <span class="price-loading" id="fipe-card-${brandSlug}-${modelSlug}">carregando…</span>
+        <span class="price-loading" id="fipe-card-${safeKey}">carregando…</span>
       </div>
     </div>`;
   }).join('');
 
-  // Carrega preços FIPE em paralelo
+  // Carrega preços FIPE em paralelo usando o objeto correto que loadFipePriceForVehicle espera
   vehicles.forEach(v => {
-    const elId = `fipe-card-${encodeURIComponent(v.vehicle_brand)}-${encodeURIComponent(v.vehicle_model)}`;
-    loadFipePriceForVehicle(v.vehicle_brand, v.vehicle_model, elId);
+    const safeKey = `${v.brand}-${v.model}`.replace(/[^a-zA-Z0-9-]/g, '_');
+    const el = document.getElementById(`fipe-card-${safeKey}`);
+    if (!el) return;
+    const vObj = { brand: v.brand, name: v.model, emoji: getEmoji(v.brand) };
+    loadFipePriceForVehicle(vObj).then(result => {
+      if (!result) { el.textContent = '—'; el.className = 'price-val'; return; }
+      el.className = 'price-val';
+      el.textContent = result.isRange
+        ? `De ${result.price} até ${result.priceMax}`
+        : result.price || '—';
+    }).catch(() => { el.textContent = '—'; el.className = 'price-val'; });
   });
 }
 
