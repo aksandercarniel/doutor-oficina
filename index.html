@@ -677,31 +677,45 @@ footer{background:var(--navy);padding:36px 24px;margin-top:auto}
 .auth-error.show{display:block}
 
 /* ── NAV USER ── */
-.nav-user{display:flex;align-items:center;gap:8px;position:relative}
-.nav-avatar{
-  width:36px;height:36px;border-radius:50%;background:var(--red);
-  color:#fff;font-family:var(--font);font-weight:800;font-size:15px;
-  display:flex;align-items:center;justify-content:center;cursor:pointer;
-  border:2px solid rgba(255,255,255,.3);transition:border-color .2s;flex-shrink:0;
+.nav-user{display:flex;align-items:center;position:relative}
+.nav-user-trigger{
+  display:flex;align-items:center;gap:10px;
+  background:rgba(255,255,255,.06);
+  border:1.5px solid rgba(255,255,255,.12);
+  border-radius:50px;
+  padding:4px 12px 4px 16px;
+  cursor:pointer;font-family:var(--font);
+  transition:background .18s,border-color .18s;
 }
-.nav-avatar:hover{border-color:rgba(255,255,255,.7)}
-.nav-user-name{color:rgba(255,255,255,.8);font-size:13px;font-weight:600;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-user-trigger:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.22)}
+.nav-user-trigger:hover .nav-user-chevron{transform:translateY(1px)}
+.nav-avatar{
+  width:32px;height:32px;border-radius:50%;
+  color:#fff;font-family:var(--font);font-weight:700;font-size:13px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;letter-spacing:.3px;
+}
+.nav-user-name{color:#fff;font-size:13.5px;font-weight:600;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-user-chevron{color:rgba(255,255,255,.7);transition:transform .18s;flex-shrink:0}
 .user-dropdown{
-  position:absolute;top:calc(100% + 10px);right:0;
-  background:var(--white);border:1px solid var(--border);border-radius:12px;
-  box-shadow:var(--shadow-md);min-width:180px;z-index:300;
-  display:none;animation:fadeUp .15s ease;
+  position:absolute;top:calc(100% + 12px);right:0;
+  background:#fff;border:1px solid var(--border);border-radius:14px;
+  box-shadow:0 10px 40px rgba(13,31,60,.18),0 2px 8px rgba(13,31,60,.08);
+  min-width:220px;z-index:300;padding:6px;
+  display:none;animation:fadeUp .18s ease;
 }
 .user-dropdown.open{display:block}
 .udrop-item{
-  display:flex;align-items:center;gap:10px;padding:11px 16px;
-  font-family:var(--font);font-weight:600;font-size:13px;color:var(--text);
-  cursor:pointer;transition:background .15s;border:none;background:none;width:100%;text-align:left;
+  display:flex;align-items:center;gap:10px;padding:10px 14px;
+  font-family:var(--font);font-weight:600;font-size:13.5px;color:var(--text);
+  cursor:pointer;transition:background .15s;border:none;background:none;
+  width:100%;text-align:left;border-radius:8px;
 }
 .udrop-item:hover{background:var(--bg)}
-.udrop-item:first-child{border-radius:12px 12px 0 0}
-.udrop-item:last-child{border-radius:0 0 12px 12px;color:var(--red)}
-.udrop-divider{height:1px;background:var(--border);margin:2px 0}
+.udrop-item-special{color:var(--navy);font-weight:800}
+.udrop-item-logout{color:var(--muted);font-weight:600}
+.udrop-item-logout:hover{background:#fef2f4;color:var(--red)}
+.udrop-divider{height:1px;background:var(--border);margin:4px 6px}
 
 /* ── PAGE PERFIL USUÁRIO ── */
 #page-profile{display:none}
@@ -7391,6 +7405,28 @@ async function loadLawyerPanel() {
   }
 }
 
+function avatarColorFromName(name) {
+  // Paleta evitando vermelho (que é cor do botão Reclamar)
+  const palette = [
+    '#1e6feb', // azul
+    '#7c3aed', // roxo
+    '#0d9488', // teal
+    '#059669', // verde
+    '#d97706', // âmbar
+    '#0284c7', // azul céu
+    '#9333ea', // violeta
+    '#0891b2', // ciano
+    '#65a30d', // lima
+    '#c2410c'  // laranja queimado
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    hash |= 0;
+  }
+  return palette[Math.abs(hash) % palette.length];
+}
+
 function loginSuccess(user) {
   currentUser = user;
   closeAuth();
@@ -7413,20 +7449,24 @@ function updateNavAuth() {
     // Esconde botão de login mobile quando logado
     if (mobileLoginBtn) mobileLoginBtn.style.display = 'none';
     const initials = currentUser.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    const avatarBg = avatarColorFromName(currentUser.name);
     area.innerHTML = `
       <div class="nav-user">
-        <span class="nav-user-name">${currentUser.name.split(' ')[0]}</span>
-        <div class="nav-avatar" onclick="toggleDropdown()">${initials}</div>
+        <button class="nav-user-trigger" onclick="toggleDropdown()" aria-label="Menu do usuário">
+          <span class="nav-user-name">${currentUser.name.split(' ')[0]}</span>
+          <div class="nav-avatar" style="background:${avatarBg}">${initials}</div>
+          <svg class="nav-user-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
         <div class="user-dropdown" id="user-dropdown">
           <button class="udrop-item" onclick="showPage('profile')">👤 Meu perfil</button>
-          <button class="udrop-item" onclick="showPage('compare')">Comparar veículos</button>
+          <button class="udrop-item" onclick="showPage('compare')">⚖️ Comparar veículos</button>
           <div class="udrop-divider"></div>
           <button class="udrop-item" onclick="requireAuth()">🚨 Nova reclamação</button>
+          ${currentUser?.email === ADMIN_EMAIL ? `<div class="udrop-divider"></div><button class="udrop-item udrop-item-special" onclick="showPage('admin')">🛡️ Painel Admin</button>` : ''}
+          ${currentUser?.role === 'company' ? `<div class="udrop-divider"></div><button class="udrop-item udrop-item-special" onclick="showPage('company')">🏢 Painel da Empresa</button>` : ''}
+          ${currentUser?.role === 'lawyer' ? `<div class="udrop-divider"></div><button class="udrop-item udrop-item-special" onclick="showPage('lawyer-panel')">⚖️ Painel do Advogado</button>` : ''}
           <div class="udrop-divider"></div>
-          ${currentUser?.email === ADMIN_EMAIL ? `<button class="udrop-item" onclick="showPage('admin')" style="color:var(--navy);font-weight:800">🛡️ Painel Admin</button><div class="udrop-divider"></div>` : ''}
-          ${currentUser?.role === 'company' ? `<button class="udrop-item" onclick="showPage('company')">🏢 Painel da Empresa</button><div class="udrop-divider"></div>` : ''}
-          ${currentUser?.role === 'lawyer' ? `<button class="udrop-item" onclick="showPage('lawyer-panel')">⚖️ Painel do Advogado</button><div class="udrop-divider"></div>` : ''}
-          <button class="udrop-item" onclick="logout()">🚪 Sair</button>
+          <button class="udrop-item udrop-item-logout" onclick="logout()">Sair</button>
         </div>
       </div>`;
   } else {
