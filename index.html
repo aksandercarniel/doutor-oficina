@@ -829,10 +829,7 @@ footer{background:var(--navy);padding:36px 24px;margin-top:auto}
 }
 .profile-left{flex:1;min-width:240px}
 .profile-emoji{margin-bottom:12px;display:block;line-height:1}
-/* CSS genérico: ícone respeita o tamanho do container pai */
-.vehicle-icon-img{display:block;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain}
-/* No perfil principal, fixa altura maior (sobrescreve o genérico) */
-.profile-emoji .vehicle-icon-img{height:80px;max-width:130px;max-height:none}
+.profile-emoji .vehicle-icon-img{display:block;width:auto;height:80px;max-width:130px;object-fit:contain}
 .profile-brand-label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:1.2px;font-weight:700;margin-bottom:6px}
 .profile-name{font-family:var(--font);font-weight:900;font-size:38px;line-height:1;color:var(--navy);margin-bottom:5px}
 .profile-sub{color:var(--muted);font-size:14px;margin-bottom:14px;font-family:var(--font-body)}
@@ -5250,7 +5247,7 @@ function renderSearchList(tab) {
       const yearLabel = r._yearRange || (r._yearFromName ? String(r._yearFromName) : (r._yearLoading ? 'carregando ano…' : ''));
       const fipeLine = r._mock ? `${r.version||''} · ${r.year||''}` : (yearLabel ? `Tabela FIPE · ${yearLabel}` : 'Tabela FIPE');
       html += `<div onclick="selectSuggestion(${idx})" style="padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer;display:flex;gap:14px;align-items:flex-start" onmouseover="this.querySelector('.sr-title').style.textDecoration='underline'" onmouseout="this.querySelector('.sr-title').style.textDecoration='none'">
-        <div style="width:40px;height:40px;background:var(--bg2);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:4px">${vehicleIcon(r.emoji, r.name || r.model)}</div>
+        <div style="width:40px;height:40px;background:var(--bg2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${r.emoji||'🚗'}</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${r.brand} · ${type}${dataBadge}</div>
           <div class="sr-title" style="font-family:var(--font);font-weight:700;font-size:16px;color:var(--navy);margin-bottom:4px">${name}</div>
