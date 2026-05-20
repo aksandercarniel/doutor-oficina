@@ -4889,7 +4889,9 @@ function startVoiceSearch() {
 // ── BUSCA ESTILO BUSCADOR ──
 let _searchResults = { val:'', fipe:[], complaints:[], mock:[], companies:[] };
 
+let _currentSearchTab = 'all';
 function filterSearchResults(tab) {
+  _currentSearchTab = tab;
   ['all','vehicles','companies','complaints'].forEach(t => {
     const b = document.getElementById('tab-'+t);
     if (b) {
@@ -4949,12 +4951,14 @@ function renderSearchList(tab) {
       const name = r.model||r.name||r.brand;
       const type = r._mock?(r.emoji==='🏍️'?'Moto':r.emoji==='🚚'?'Caminhão':'Carro'):(r.type==='carros'?'Carro':r.type==='motos'?'Moto':'Caminhão');
       const dataBadge = (r._hasData || r._mock) ? '<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;margin-left:6px">✓ Raio-X</span>' : '';
+      const yearLabel = r._yearRange || (r._yearFromName ? String(r._yearFromName) : (r._yearLoading ? 'carregando ano…' : ''));
+      const fipeLine = r._mock ? `${r.version||''} · ${r.year||''}` : (yearLabel ? `Tabela FIPE · ${yearLabel}` : 'Tabela FIPE');
       html += `<div onclick="selectSuggestion(${idx})" style="padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer;display:flex;gap:14px;align-items:flex-start" onmouseover="this.querySelector('.sr-title').style.textDecoration='underline'" onmouseout="this.querySelector('.sr-title').style.textDecoration='none'">
         <div style="width:40px;height:40px;background:var(--bg2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${r.emoji||'🚗'}</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${r.brand} · ${type}${dataBadge}</div>
           <div class="sr-title" style="font-family:var(--font);font-weight:700;font-size:16px;color:var(--navy);margin-bottom:4px">${name}</div>
-          <div style="font-size:13px;color:var(--muted)">${r._mock?`${r.version||''} · ${r.year||''}`:'Tabela FIPE'}</div>
+          <div style="font-size:13px;color:var(--muted)">${fipeLine}</div>
         </div>
         <div style="font-size:12px;color:var(--muted);flex-shrink:0;padding-top:4px">Ver perfil →</div>
       </div>`;
@@ -5064,9 +5068,82 @@ async function showSearchResults(val, fipeResults, complaintResults, mockResults
   if (ct) ct.textContent = allCompanies.length ? `(${allCompanies.length})` : '';
   if (crt) crt.textContent = (complaintResults?.length||0) ? `(${complaintResults.length})` : '';
   
+  // Marca top 15 sem ano-no-nome como "carregando ano" para mostrar feedback visual
+  const toEnrich = prioritizedFipe.slice(0, 15).filter(r => !r._yearFromName);
+  toEnrich.forEach(r => { r._yearLoading = true; });
+
   // Detecta qual aba abrir por padrão baseado no tipo de busca
   const defaultTab = detectDefaultTab(val, prioritizedFipe, allCompanies, complaintResults);
   filterSearchResults(defaultTab);
+
+  // BACKGROUND: busca anos reais e re-renderiza/re-ordena conforme chegam
+  if (toEnrich.length) {
+    enrichFipeWithYears(toEnrich, val, defaultTab);
+  }
+}
+
+// Busca ano (range) de cada versão FIPE em sequência e re-ordena/re-renderiza
+async function enrichFipeWithYears(items, originalVal, defaultTab) {
+  const typeMap = { carros: 'cars', motos: 'motorcycles', caminhoes: 'trucks' };
+  const currentYear = new Date().getFullYear();
+
+  for (const item of items) {
+    if (item._yearFromName) { item._yearLoading = false; continue; }
+    try {
+      const t = typeMap[item.type] || 'cars';
+      // Reusa cache: brands + models já foram chamados antes
+      const brands = await fipeFetch(FIPE_V2 + '/' + t + '/brands');
+      const brandMatch = (brands || []).find(b =>
+        (b.name||b.nome||'').toLowerCase() === (item.brand||'').toLowerCase()
+      );
+      if (!brandMatch) { item._yearLoading = false; continue; }
+      const bCode = brandMatch.code || brandMatch.codigo;
+      const dm = await fipeFetch(FIPE_V2 + '/' + t + '/brands/' + bCode + '/models');
+      const models = dm.models || dm.modelos || dm;
+      const modelMatch = (Array.isArray(models) ? models : []).find(m =>
+        (m.name||m.nome||'') === item.model
+      );
+      if (!modelMatch) { item._yearLoading = false; continue; }
+      const mCode = modelMatch.code || modelMatch.codigo;
+      const years = await fipeFetch(FIPE_V2 + '/' + t + '/brands/' + bCode + '/models/' + mCode + '/years');
+
+      // Coleta anos válidos (ignora "32000" = zero km)
+      const validYears = [];
+      (years || []).forEach(y => {
+        const name = y.name || y.nome || '';
+        const match = name.match(/\b(19|20)\d{2}\b/);
+        if (match) {
+          const yr = parseInt(match[0]);
+          if (yr >= 1990 && yr <= currentYear + 1) validYears.push(yr);
+        }
+      });
+
+      if (validYears.length) {
+        const minY = Math.min(...validYears);
+        const maxY = Math.max(...validYears);
+        item._yearFromName = maxY; // usa max para ordenação
+        item._yearRange = minY === maxY ? String(maxY) : `${minY}–${maxY}`;
+        item._hasYear = 1;
+      }
+      item._yearLoading = false;
+    } catch(e) {
+      item._yearLoading = false;
+    }
+
+    // Re-ordena e re-renderiza incrementalmente (a cada 3 items processados)
+    if (items.indexOf(item) % 3 === 2 || item === items[items.length - 1]) {
+      const searchPageVisible = document.getElementById('page-search')?.style.display !== 'none';
+      if (searchPageVisible && _searchResults?.val === originalVal) {
+        _searchResults.fipe.sort((a, b) => {
+          if (b._priority !== a._priority) return b._priority - a._priority;
+          if (b._hasYear !== a._hasYear) return b._hasYear - a._hasYear;
+          if (b._yearFromName !== a._yearFromName) return b._yearFromName - a._yearFromName;
+          return b._oldnessScore - a._oldnessScore;
+        });
+        renderSearchList(_currentSearchTab || defaultTab);
+      }
+    }
+  }
 }
 
 // Detecta qual aba deve abrir por padrão baseado na intenção da busca
