@@ -3164,23 +3164,29 @@ async function loadFipePriceForVehicle(v, opts) {
       }
     }
 
-    // Busca específica: escolhe ano mais representativo (2-3 anos atrás)
+    // Busca específica: escolhe o ano mais recente disponível na FIPE para esta versão
+    // (cada versão tem range próprio — "Strada Ranch Turbo" só existe 2025+, "Strada Fire 8V" só até ~2010)
     const currentYear = new Date().getFullYear();
-    const targetYear = currentYear - 2;
-    
-    let yearMatch = years.find(function(y) {
-      const yName = (y.name || y.nome || '').split(' ')[0];
-      return parseInt(yName) === targetYear;
-    });
-    
-    if (!yearMatch) {
-      const nonZeroYears = years.filter(function(y) {
-        const yName = (y.name || y.nome || '');
-        return !yName.toLowerCase().includes('zero') && !yName.includes('32000');
-      });
-      yearMatch = nonZeroYears[0] || years[1] || years[0];
+
+    // Extrai ano numérico de cada item, ignorando "32000" (zero km)
+    const yearsWithNum = (years || []).map(y => {
+      const yName = (y.name || y.nome || '');
+      const match = yName.match(/\b(19|20)\d{2}\b/);
+      const yNum = match ? parseInt(match[0]) : 0;
+      const isZeroKm = yName.toLowerCase().includes('zero') || yName.includes('32000');
+      return { y, yNum, isZeroKm };
+    }).filter(x => x.yNum > 0 && !x.isZeroKm && x.yNum <= currentYear + 1);
+
+    // Pega o mais recente (ano máximo)
+    let yearMatch;
+    if (yearsWithNum.length) {
+      const maxYear = Math.max(...yearsWithNum.map(x => x.yNum));
+      yearMatch = yearsWithNum.find(x => x.yNum === maxYear).y;
+    } else {
+      // Fallback extremo: primeiro item disponível
+      yearMatch = years[0];
     }
-    
+
     const yearCode = yearMatch.code || yearMatch.codigo;
     const yearLabel = (yearMatch.name || yearMatch.nome || '').split(' ')[0];
     
