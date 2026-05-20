@@ -4898,7 +4898,12 @@ function onSearchKeydown(e) {
 }
 
 document.addEventListener('click', e => {
-  if (!e.target.closest('.search-bar-inner')) hideSuggestions();
+  // Fecha sugestões só se clicou fora do input, do dropdown e do container da busca
+  if (!e.target.closest('.search-bar-inner') &&
+      !e.target.closest('.nav-search') &&
+      !e.target.closest('#smart-suggestions')) {
+    hideSuggestions();
+  }
 });
 
 // ══ BUSCA POR VOZ ══
