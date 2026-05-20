@@ -360,8 +360,9 @@ header{
 @keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
 
 /* ── STATS ── */
-.stats{background:rgba(13,31,60,.92);padding:14px 24px}
-.stats-inner{max-width:1280px;margin:0 auto;display:flex;justify-content:center;align-items:center;gap:40px;flex-wrap:nowrap}
+.stats{padding:24px}
+.stats-inner{max-width:1100px;margin:0 auto;background:rgba(13,31,60,.95);border-radius:16px;padding:22px 32px;display:flex;justify-content:center;align-items:center;gap:40px;flex-wrap:nowrap;box-shadow:0 8px 24px rgba(13,31,60,.12)}
+@media(max-width:640px){.stats{padding:16px 12px}.stats-inner{padding:18px 16px;gap:14px;border-radius:14px}}
 .stat{text-align:center}
 .stat-n{font-family:var(--font);font-weight:900;font-size:30px;color:#fff;line-height:1}
 .stat-l{color:rgba(255,255,255,.55);font-size:11px;font-weight:600;margin-top:4px;letter-spacing:.5px;text-transform:uppercase}
@@ -1209,20 +1210,20 @@ footer{background:var(--navy);padding:36px 24px;margin-top:auto}
         <button class="btn-outline" onclick="document.getElementById('ranking-section').scrollIntoView({behavior:'smooth'})">📊 Ver ranking de confiabilidade</button>
       </div>
       <div class="hero-badge-wrap">
-        <div class="hero-badge"><span class="live-dot"></span>12.483 reclamações registradas</div>
+        <div class="hero-badge"><span class="live-dot"></span><span id="hero-badge-count">—</span> reclamações registradas</div>
       </div>
     </div>
   </section>
 
   <div class="stats">
     <div class="stats-inner">
-      <div class="stat"><div class="stat-n">12.483</div><div class="stat-l">Reclamações</div></div>
+      <div class="stat"><div class="stat-n" id="stat-complaints">—</div><div class="stat-l">Reclamações</div></div>
       <div class="stat-div"></div>
-      <div class="stat"><div class="stat-n">847</div><div class="stat-l">Modelos avaliados</div></div>
+      <div class="stat"><div class="stat-n" id="stat-models">—</div><div class="stat-l">Modelos avaliados</div></div>
       <div class="stat-div"></div>
-      <div class="stat"><div class="stat-n">68%</div><div class="stat-l">Resolvidas</div></div>
+      <div class="stat"><div class="stat-n" id="stat-resolved">—</div><div class="stat-l">Resolvidas</div></div>
       <div class="stat-div"></div>
-      <div class="stat"><div class="stat-n">94</div><div class="stat-l">Marcas cadastradas</div></div>
+      <div class="stat"><div class="stat-n" id="stat-brands">—</div><div class="stat-l">Marcas cadastradas</div></div>
     </div>
   </div>
 
@@ -1892,6 +1893,54 @@ async function sbGetSession() {
 }
 
 // ══ SUPABASE RECLAMAÇÕES ══
+
+// Carrega contadores reais da home (4 stats da faixa azul)
+async function loadHomeStats() {
+  try {
+    // Total de reclamações (head:true evita baixar os rows, só conta)
+    const { count: totalComplaints } = await sb.from('complaints')
+      .select('*', { count: 'exact', head: true });
+
+    // Reclamações resolvidas
+    const { count: resolvedCount } = await sb.from('complaints')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'resolved');
+
+    // Modelos avaliados (rows com is_summary=true = um por modelo)
+    const { count: totalModels } = await sb.from('vehicle_known_issues')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_summary', true);
+
+    // Marcas distintas — Supabase não tem distinct nativo, busca todas e conta no cliente
+    const { data: brandsData } = await sb.from('vehicle_known_issues')
+      .select('vehicle_brand')
+      .eq('is_summary', true);
+    const uniqueBrands = new Set((brandsData || []).map(r => (r.vehicle_brand||'').toLowerCase().trim()).filter(Boolean));
+    const totalBrands = uniqueBrands.size;
+
+    // % resolvidas
+    const resolvedPct = totalComplaints > 0
+      ? Math.round((resolvedCount / totalComplaints) * 100)
+      : 0;
+
+    // Atualiza UI
+    const fmt = (n) => (n || 0).toLocaleString('pt-BR');
+    const el = (id) => document.getElementById(id);
+    if (el('stat-complaints')) el('stat-complaints').textContent = fmt(totalComplaints);
+    if (el('stat-models')) el('stat-models').textContent = fmt(totalModels);
+    if (el('stat-resolved')) el('stat-resolved').textContent = (totalComplaints > 0 ? resolvedPct : 0) + '%';
+    if (el('stat-brands')) el('stat-brands').textContent = fmt(totalBrands);
+    if (el('hero-badge-count')) el('hero-badge-count').textContent = fmt(totalComplaints);
+  } catch(e) {
+    console.warn('Falha ao carregar stats da home:', e);
+    // Em caso de erro, mostra zeros (não os números fake)
+    ['stat-complaints','stat-models','stat-resolved','stat-brands'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && el.textContent === '—') el.textContent = '0';
+    });
+  }
+}
+
 async function sbLoadComplaints(filters = {}) {
   let query = sb.from('complaints').select('*').order('created_at', { ascending: false }).limit(20);
   if (filters.status) query = query.eq('status', filters.status === 's-open' ? 'open' : filters.status === 's-progress' ? 'in_progress' : 'resolved');
@@ -7392,6 +7441,7 @@ initCompare();
 initSearch();
 sbLoadBrands();
 getTopVehiclesFromSupabase(); // pré-aquece cache para autocomplete
+loadHomeStats(); // popula a faixa de stats com dados reais
 setTimeout(() => { const i = document.getElementById('search-free-input'); if(i) i.value=''; }, 50);
 // Placeholder menor no mobile
 if (window.innerWidth <= 640) {
