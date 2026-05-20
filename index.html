@@ -2849,19 +2849,28 @@ async function renderVehicles(){
     </div>`;
   }).join('');
 
-  // Carrega preços FIPE em paralelo usando o objeto correto que loadFipePriceForVehicle espera
+  // Carrega preços FIPE — com retry automático após 4s se falhar
+  const applyFipe = (el, result) => {
+    el.className = 'price-val';
+    el.textContent = result?.isRange
+      ? 'De ' + result.price + ' até ' + result.priceMax
+      : (result?.price || '—');
+  };
   vehicles.forEach(v => {
-    const safeKey = `${v.brand}-${v.model}`.replace(/[^a-zA-Z0-9-]/g, '_');
-    const el = document.getElementById(`fipe-card-${safeKey}`);
+    const safeKey = (v.brand + '-' + v.model).replace(/[^a-zA-Z0-9-]/g, '_');
+    const el = document.getElementById('fipe-card-' + safeKey);
     if (!el) return;
     const vObj = { brand: v.brand, name: v.model, emoji: getEmoji(v.brand) };
-    loadFipePriceForVehicle(vObj).then(result => {
-      if (!result) { el.textContent = '—'; el.className = 'price-val'; return; }
-      el.className = 'price-val';
-      el.textContent = result.isRange
-        ? `De ${result.price} até ${result.priceMax}`
-        : result.price || '—';
-    }).catch(() => { el.textContent = '—'; el.className = 'price-val'; });
+    loadFipePriceForVehicle(vObj)
+      .then(result => applyFipe(el, result))
+      .catch(() => {
+        // Retry após 4s limpando cache desta URL
+        setTimeout(() => {
+          loadFipePriceForVehicle(vObj)
+            .then(result => applyFipe(el, result))
+            .catch(() => { el.textContent = '—'; el.className = 'price-val'; });
+        }, 4000);
+      });
   });
 }
 
@@ -3034,6 +3043,31 @@ async function loadFipePriceForVehicle(v) {
   const model = (v.name || '').trim();
   if (!brand || !model) return null;
 
+  // Aliases: modelos cujo nome no Doutor Oficina difere da FIPE
+  const FIPE_MODEL_ALIASES = {
+    'hb20s': 'hb20s',
+    'saveiro': 'saveiro',
+    'spin': 'spin',
+    's10': 's10',
+    'hilux': 'hilux',
+    'toro': 'toro',
+    'mobi': 'mobi',
+    'corolla cross': 'corolla cross',
+    'ranger': 'ranger',
+    'fastback': 'fastback',
+    'onix plus': 'onix plus',
+    'fit': 'fit',
+    'kwid': 'kwid',
+    'etios': 'etios',
+    'kicks': 'kicks',
+    'virtus': 'virtus',
+    'duster': 'duster',
+    'yaris': 'yaris',
+    'compass': 'compass',
+    'pulse': 'pulse',
+    'cronos': 'cronos',
+  };
+
   try {
     const motoEmoji = '🏍️';
     const truckEmoji = '🚚';
@@ -3042,8 +3076,10 @@ async function loadFipePriceForVehicle(v) {
     const brands = await fipeFetch(FIPE_V2 + '/' + fipeType + '/brands');
     if (!Array.isArray(brands)) return null;
 
+    const brandKey = brand.toLowerCase().split(' ')[0];
     const brandMatch = brands.find(function(b) {
-      return (b.name || b.nome || '').toLowerCase().includes(brand.toLowerCase().split(' ')[0]);
+      const bName = (b.name || b.nome || '').toLowerCase();
+      return bName === brandKey || bName.startsWith(brandKey) || bName.includes(brandKey);
     });
     if (!brandMatch) return null;
     const brandCode = brandMatch.code || brandMatch.codigo;
@@ -3052,10 +3088,16 @@ async function loadFipePriceForVehicle(v) {
     const modelsList = Array.isArray(modelsData) ? modelsData : (modelsData && (modelsData.models || modelsData.modelos) || []);
     if (!modelsList.length) return null;
 
-    const modelKeyword = model.toLowerCase().split(' ')[0];
-    const modelMatch = modelsList.find(function(m) {
-      return (m.name || m.nome || '').toLowerCase().includes(modelKeyword);
-    });
+    // Busca com alias e múltiplas estratégias de matching
+    const modelLower = model.toLowerCase();
+    const aliasKey = FIPE_MODEL_ALIASES[modelLower] || modelLower.split(' ')[0];
+    const modelMatch =
+      // 1. Exato (sem espaços, case insensitive)
+      modelsList.find(m => (m.name||m.nome||'').toLowerCase().replace(/\s+/g,'') === modelLower.replace(/\s+/g,'')) ||
+      // 2. Começa com o alias
+      modelsList.find(m => (m.name||m.nome||'').toLowerCase().startsWith(aliasKey)) ||
+      // 3. Contém o alias
+      modelsList.find(m => (m.name||m.nome||'').toLowerCase().includes(aliasKey));
     if (!modelMatch) return null;
     const modelCode = modelMatch.code || modelMatch.codigo;
 
@@ -3581,23 +3623,30 @@ const FIPE_V2 = 'https://fipe.parallelum.com.br/api/v2';
 // Mapa de tipo para v2
 const FIPE_TYPE = { carros: 'cars', motos: 'motorcycles', caminhoes: 'trucks' };
 
+const _fipeCache = {};
 async function fipeFetch(url) {
+  if (_fipeCache[url]) return _fipeCache[url];
+  const _timeout = (ms) => new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms));
+  const _tryFetch = async (u, ms=6000) => {
+    const res = await Promise.race([
+      fetch(u, { headers: { 'Accept': 'application/json' }, mode: 'cors' }),
+      _timeout(ms)
+    ]);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return res.json();
+  };
   try {
-    const res = await fetch(url, {
-      headers: { 'Accept': 'application/json' },
-      mode: 'cors'
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
+    const data = await _tryFetch(url);
+    _fipeCache[url] = data;
+    return data;
   } catch(e) {
-    // Tenta via proxy se falhar
     try {
-      const proxy = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-      const res2 = await fetch(proxy, { headers: { 'Accept': 'application/json' } });
-      if (!res2.ok) throw new Error(`Proxy HTTP ${res2.status}`);
-      return await res2.json();
+      const proxy = 'https://corsproxy.io/?' + encodeURIComponent(url);
+      const data = await _tryFetch(proxy, 8000);
+      _fipeCache[url] = data;
+      return data;
     } catch(e2) {
-      throw new Error('FIPE indisponível: ' + e2.message);
+      throw new Error('FIPE indisponivel: ' + e2.message);
     }
   }
 }
