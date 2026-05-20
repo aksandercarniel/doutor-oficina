@@ -4493,6 +4493,29 @@ function goStep1WithPlate() {
 
 // ══ BUSCA INTELIGENTE ══
 let searchData = [];
+// Cache de top veículos do Supabase (alimenta "Mais buscados" e autocomplete local)
+let _topVehiclesCache = null;
+async function getTopVehiclesFromSupabase() {
+  if (_topVehiclesCache) return _topVehiclesCache;
+  try {
+    const { data } = await sb.from('vehicle_known_issues')
+      .select('vehicle_brand, vehicle_model, vehicle_type, reliability_score')
+      .eq('is_summary', true)
+      .order('reliability_score', { ascending: false })
+      .limit(30);
+    const typeEmoji = (t) => t === 'moto' ? '🏍️' : t === 'caminhao' ? '🚚' : '🚗';
+    _topVehiclesCache = (data || []).map(v => ({
+      brand: v.vehicle_brand,
+      model: v.vehicle_model,
+      type: v.vehicle_type || 'carro',
+      emoji: typeEmoji(v.vehicle_type),
+      rating: parseFloat(v.reliability_score) || 0,
+      hasRaioX: true
+    }));
+  } catch(e) { _topVehiclesCache = []; }
+  return _topVehiclesCache;
+}
+
 function getSearchData() {
   if (searchData.length === 0) {
     searchData = [
@@ -4590,42 +4613,71 @@ function showSmartSuggestions(val) {
     if (searchHistory.length > 0) {
       html += `<div class="sug-section">🕐 Buscas recentes</div>`;
       searchHistory.slice(0,4).forEach(h => {
-        html += `<div class="sug-history" onclick="selectHistory('${h}')">🕐 ${h}</div>`;
+        html += `<div class="sug-history" onclick="selectHistory('${h.replace(/'/g, "\\'")}')">🕐 ${h}</div>`;
       });
       html += '<div class="sug-divider"></div>';
     }
+    // "Mais buscados": top veículos do Supabase (mesma fonte dos cards da home)
+    // Renderiza estrutura imediata; preenche quando cache estiver pronto
     html += `<div class="sug-section">⭐ Mais buscados</div>`;
-    dynamicVehicles.slice(0,5).forEach((v,i) => {
-      sugItems.push({ action:'vehicle', id:v.id, label:`${v.brand} ${v.name}` });
-      html += `<div class="sug-item" onclick="selectSuggestion(${sugItems.length-1})">
-        <div class="sug-item-icon">${v.emoji}</div>
-        <div class="sug-item-info">
-          <div class="sug-item-name">${v.brand} ${v.name}</div>
-          <div class="sug-item-sub">${v.count.toLocaleString('pt-BR')} reclamações · ${v.version}</div>
-        </div>
-        <span class="sug-item-badge ${v.badgeClass}">${v.badge}</span>
-      </div>`;
-    });
+    const topCached = _topVehiclesCache;
+    if (topCached && topCached.length) {
+      topCached.slice(0,5).forEach(v => {
+        sugItems.push({
+          action: 'fipe-direct',  // novo tipo: abre perfil sem refazer busca
+          brand: v.brand,
+          model: v.model,
+          type: v.type === 'moto' ? 'motos' : v.type === 'caminhao' ? 'caminhoes' : 'carros',
+          label: `${v.brand} ${v.model}`
+        });
+        html += `<div class="sug-item" onclick="selectSuggestion(${sugItems.length-1})">
+          <div class="sug-item-icon">${v.emoji}</div>
+          <div class="sug-item-info">
+            <div class="sug-item-name">${v.brand} ${v.model}</div>
+            <div class="sug-item-sub">⭐ ${v.rating.toFixed(1)} · Raio-X disponível</div>
+          </div>
+          <span class="sug-item-badge badge-blue">✓ Raio-X</span>
+        </div>`;
+      });
+    } else {
+      html += `<div style="padding:10px 14px;color:var(--muted);font-size:12px">Carregando…</div>`;
+      // Quando carregar, re-renderiza
+      getTopVehiclesFromSupabase().then(() => {
+        if (document.activeElement?.id === 'search-free-input' && !document.getElementById('search-free-input').value) {
+          showSmartSuggestions('');
+        }
+      });
+    }
     content.innerHTML = html;
     box.style.display = 'block';
     return;
   }
 
-  // Filtra mock local
-  const vMatches = getSearchData().filter(s => s.type === 'vehicle' && s.label.toLowerCase().includes(val.toLowerCase())).slice(0,4);
-  const pMatches = getSearchData().filter(s => s.type === 'problem' && s.label.toLowerCase().includes(val.toLowerCase())).slice(0,3);
+  // Filtra veículos do Supabase (Raio-X) que casam com a busca
+  const valLower = val.toLowerCase();
+  const topVehicles = _topVehiclesCache || [];
+  const vMatches = topVehicles.filter(v =>
+    `${v.brand} ${v.model}`.toLowerCase().includes(valLower)
+  ).slice(0, 4);
+  const pMatches = getSearchData().filter(s => s.type === 'problem' && s.label.toLowerCase().includes(valLower)).slice(0,3);
 
   if (vMatches.length) {
     html += `<div class="sug-section">🚗 Veículos</div>`;
     vMatches.forEach(v => {
-      sugItems.push({ action:'vehicle', id:v.id, label:v.label });
+      sugItems.push({
+        action: 'fipe-direct',
+        brand: v.brand,
+        model: v.model,
+        type: v.type === 'moto' ? 'motos' : v.type === 'caminhao' ? 'caminhoes' : 'carros',
+        label: `${v.brand} ${v.model}`
+      });
       html += `<div class="sug-item" onclick="selectSuggestion(${sugItems.length-1})">
         <div class="sug-item-icon">${v.emoji}</div>
         <div class="sug-item-info">
-          <div class="sug-item-name">${highlightMatch(v.label, val)}</div>
-          <div class="sug-item-sub">${v.count?.toLocaleString('pt-BR')} reclamações · ${v.sub}</div>
+          <div class="sug-item-name">${highlightMatch(`${v.brand} ${v.model}`, val)}</div>
+          <div class="sug-item-sub">⭐ ${v.rating.toFixed(1)} · Raio-X disponível</div>
         </div>
-        <span class="sug-item-badge ${v.badgeClass}">${v.badge}</span>
+        <span class="sug-item-badge badge-blue">✓ Raio-X</span>
       </div>`;
     });
   }
@@ -4771,6 +4823,9 @@ function selectSuggestion(idx) {
   fipeSugCache = {}; // limpa cache para próxima busca ser fresca
   if (item.action === 'vehicle') {
     showVehicleProfile(item.id);
+  } else if (item.action === 'fipe-direct') {
+    // Top do Supabase: abre perfil direto por marca+modelo (resolve códigos FIPE no perfil)
+    showVehicleProfileByBrandModel(item.brand, item.model);
   } else if (item.action === 'fipe') {
     // Navega para perfil dinâmico com dados da FIPE
     const prevIdx = dynamicVehicles.findIndex(v => v.id === 'dynamic');
@@ -7343,6 +7398,7 @@ renderRanking();
 initCompare();
 initSearch();
 sbLoadBrands();
+getTopVehiclesFromSupabase(); // pré-aquece cache para autocomplete
 setTimeout(() => { const i = document.getElementById('search-free-input'); if(i) i.value=''; }, 50);
 // Placeholder menor no mobile
 if (window.innerWidth <= 640) {
