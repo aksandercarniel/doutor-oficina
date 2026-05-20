@@ -828,7 +828,8 @@ footer{background:var(--navy);padding:36px 24px;margin-top:auto}
   box-shadow:var(--shadow);
 }
 .profile-left{flex:1;min-width:240px}
-.profile-emoji{font-size:56px;margin-bottom:12px;display:block}
+.profile-emoji{font-size:56px;margin-bottom:12px;display:block;line-height:1}
+.profile-emoji svg{display:block;width:auto;height:auto;max-width:104px}
 .profile-brand-label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:1.2px;font-weight:700;margin-bottom:6px}
 .profile-name{font-family:var(--font);font-weight:900;font-size:38px;line-height:1;color:var(--navy);margin-bottom:5px}
 .profile-sub{color:var(--muted);font-size:14px;margin-bottom:14px;font-family:var(--font-body)}
@@ -2901,6 +2902,49 @@ async function showVehicleProfileByBrandModel(brand, model) {
   await loadVehicleProfileData(v);
 }
 
+// Retorna SVG silhueta sólida (estilo "glyph") para o tipo de veículo
+// Cinza médio para não competir com o conteúdo principal
+function profileIcon(emoji) {
+  const color = 'var(--muted)';
+  if (emoji === '🏍️') {
+    // Moto perfil lateral
+    return `<svg viewBox="0 0 100 64" width="96" height="64" fill="${color}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="22" cy="48" r="12"/>
+      <circle cx="22" cy="48" r="5" fill="#fff"/>
+      <circle cx="78" cy="48" r="12"/>
+      <circle cx="78" cy="48" r="5" fill="#fff"/>
+      <path d="M30 40 L42 26 L58 26 L64 32 L74 38 L70 46 L62 42 L50 42 L42 50 L34 46 Z"/>
+      <path d="M44 22 L52 18 L64 18 L62 26 L48 26 Z"/>
+      <rect x="58" y="14" width="14" height="4" rx="1.5"/>
+      <path d="M62 14 L66 6 L68 6 L66 14 Z"/>
+    </svg>`;
+  }
+  if (emoji === '🚚') {
+    // Caminhão baú
+    return `<svg viewBox="0 0 110 64" width="104" height="60" fill="${color}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect x="4" y="14" width="60" height="34" rx="2"/>
+      <path d="M64 22 L82 22 L96 34 L96 48 L64 48 Z"/>
+      <rect x="70" y="26" width="14" height="8" rx="1" fill="#fff"/>
+      <circle cx="22" cy="52" r="8"/>
+      <circle cx="22" cy="52" r="3" fill="#fff"/>
+      <circle cx="44" cy="52" r="8"/>
+      <circle cx="44" cy="52" r="3" fill="#fff"/>
+      <circle cx="84" cy="52" r="8"/>
+      <circle cx="84" cy="52" r="3" fill="#fff"/>
+    </svg>`;
+  }
+  // Carro hatch perfil lateral (default)
+  return `<svg viewBox="0 0 110 64" width="104" height="60" fill="${color}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M6 44 L10 34 C12 28 16 24 22 22 L40 14 C46 11 54 10 62 11 L78 13 C86 14 92 18 96 24 L102 32 C104 35 105 38 105 42 L105 50 C105 52 103 54 101 54 L92 54 C92 49 88 45 83 45 C78 45 74 49 74 54 L34 54 C34 49 30 45 25 45 C20 45 16 49 16 54 L8 54 C7 54 6 53 6 52 Z"/>
+    <path d="M28 22 L42 16 C46 14 50 13 54 13 L54 26 L26 26 Z" fill="#fff"/>
+    <path d="M58 13 L70 14 C76 15 80 18 84 22 L88 26 L58 26 Z" fill="#fff"/>
+    <circle cx="25" cy="52" r="9"/>
+    <circle cx="25" cy="52" r="4" fill="#fff"/>
+    <circle cx="83" cy="52" r="9"/>
+    <circle cx="83" cy="52" r="4" fill="#fff"/>
+  </svg>`;
+}
+
 // Renderiza skeleton enquanto carrega dados reais
 function renderVehicleProfileSkeleton(v) {
   _currentVehicle = v; // rastreia veículo atual para o botão Reclamar
@@ -2909,7 +2953,7 @@ function renderVehicleProfileSkeleton(v) {
     <button class="back-btn" onclick="goBack()">← Voltar</button>
     <div class="profile-hero">
       <div class="profile-left">
-        <span class="profile-emoji">${v.emoji || '🚗'}</span>
+        <span class="profile-emoji">${profileIcon(v.emoji)}</span>
         <div class="profile-brand-label">${v.brand || ''}</div>
         <div class="profile-name">${v.name || ''}</div>
         ${(v.version || v.year) ? `<div class="profile-sub">${[v.version, v.year].filter(x => x && x !== '—').join(' · ')}</div>` : ''}
@@ -3327,7 +3371,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice) 
     // Hero
     + '<div class="profile-hero">'
     + '<div class="profile-left">'
-    + '<span class="profile-emoji">' + (v.emoji || '🚗') + '</span>'
+    + '<span class="profile-emoji">' + profileIcon(v.emoji) + '</span>'
     + '<div class="profile-brand-label">' + v.brand + '</div>'
     + '<div class="profile-name">' + v.name + '</div>'
     + ((v.version || v.year) ? ('<div class="profile-sub">' + [v.version, v.year].filter(x => x && x !== '—').join(' · ') + '</div>') : '')
@@ -3444,7 +3488,7 @@ function renderVehicleProfileShell(v) {
   document.getElementById('vehicle-profile-content').innerHTML = `
     <div class="profile-hero">
       <div class="profile-left">
-        <span class="profile-emoji">${v.emoji}</span>
+        <span class="profile-emoji">${profileIcon(v.emoji)}</span>
         <div class="profile-brand-label">${v.brand}</div>
         <div class="profile-name">${v.name}</div>
         <div class="profile-sub">${v.version} · ${v.year} · ${v.emoji==='🏍️'?'Moto':v.emoji==='🚚'?'Caminhão':'Automóvel'}</div>
