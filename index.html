@@ -380,7 +380,9 @@ header{
 .vc-emoji{font-size:28px}
 .vc-badge{font-family:var(--font);font-size:10px;font-weight:700;letter-spacing:.8px;padding:3px 10px;border-radius:20px;text-transform:uppercase}
 .badge-green{background:var(--green-light);color:var(--green)}
+.ptag.badge-green{border-color:#a8e0c8}
 .badge-yellow{background:var(--yellow-light);color:var(--yellow)}
+.ptag.badge-yellow{border-color:#f0d896}
 .badge-red{background:var(--red-light);color:var(--red)}
 .vc-name{font-family:var(--font);font-weight:900;font-size:19px;color:var(--navy);margin-bottom:2px}
 .vc-brand{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:600}
@@ -2910,7 +2912,7 @@ function renderVehicleProfileSkeleton(v) {
         <span class="profile-emoji">${v.emoji || '🚗'}</span>
         <div class="profile-brand-label">${v.brand || ''}</div>
         <div class="profile-name">${v.name || ''}</div>
-        <div class="profile-sub">${v.version || ''} · ${v.year || ''}</div>
+        ${(v.version || v.year) ? `<div class="profile-sub">${[v.version, v.year].filter(x => x && x !== '—').join(' · ')}</div>` : ''}
         <div class="profile-rating">
           <span class="big-stars" style="color:var(--muted2)">☆☆☆☆☆</span>
           <span class="big-score" style="color:var(--muted2)">—</span>
@@ -3265,7 +3267,11 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice) 
       }).join('')
     : '<div style="color:var(--muted);font-size:13px;padding:8px 0">Sem avaliações ainda — seja o primeiro!</div>';
 
-  // -- Tags de pontos fracos do curado
+  // -- Tags de pontos fortes (verdes) e fracos (vermelhos) do curado
+  // Equilibra a percepção: o usuário vê o bom E o ruim do veículo
+  const strengthTags = summary?.strengths
+    ? summary.strengths.slice(0, 2).map(s => '<span class="ptag badge-green">' + s + '</span>').join('')
+    : '';
   const weaknessTags = summary?.weaknesses
     ? summary.weaknesses.slice(0, 3).map(w => '<span class="ptag">' + w + '</span>').join('')
     : '';
@@ -3324,7 +3330,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice) 
     + '<span class="profile-emoji">' + (v.emoji || '🚗') + '</span>'
     + '<div class="profile-brand-label">' + v.brand + '</div>'
     + '<div class="profile-name">' + v.name + '</div>'
-    + '<div class="profile-sub">' + (v.version || '') + (v.year ? ' · ' + v.year : '') + '</div>'
+    + ((v.version || v.year) ? ('<div class="profile-sub">' + [v.version, v.year].filter(x => x && x !== '—').join(' · ') + '</div>') : '')
     + '<div class="profile-rating">'
     + '<span class="big-stars">' + (displayRating ? starsHtml(displayRating) : '☆☆☆☆☆') + '</span>'
     + '<span class="big-score">' + (displayRating ? displayRating.toFixed(1) : '—') + '</span>'
@@ -3332,6 +3338,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice) 
     + '</div>'
     + '<div class="profile-tags">'
     + '<span class="ptag ' + badge.cls + '">' + badge.label + '</span>'
+    + strengthTags
     + weaknessTags
     + '</div>'
     + '</div>'
