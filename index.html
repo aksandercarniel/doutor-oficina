@@ -86,7 +86,7 @@ header{
 /* Mobile: esconde só os links, mantém a busca */
 @media(max-width:640px){
   .nav-link{display:none}
-  .nav{height:56px;padding:0 14px}
+  .nav{height:56px;padding:0 14px;gap:10px}
   .nav-search{max-width:none;flex:1}
   .btn-nav-reclamar{display:none!important}
   .nav-mobile-actions{display:flex!important;align-items:center;gap:10px}
@@ -95,10 +95,11 @@ header{
   .nav-search input{height:36px!important;border-radius:50px 0 0 50px!important}
   .nav-search button{height:36px!important;width:36px!important;border-radius:0 50px 50px 0!important}
   .logo-desktop{display:none!important}
-  .logo-mobile{display:block!important}
+  .logo-mobile{display:block!important;height:36px!important}
   .nav-user-name{display:none}
-  .nav-user-trigger{padding:3px 8px 3px 4px;gap:6px}
+  .nav-user-trigger{height:36px;padding:0 6px 0 3px;gap:4px;box-sizing:border-box}
   .nav-avatar{width:30px;height:30px;font-size:12px}
+  .nav-user-chevron{width:14px;height:14px}
 }
 @media(max-height:500px) and (orientation:landscape){
   .nav{height:50px}
