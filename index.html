@@ -714,13 +714,22 @@ footer{background:var(--navy);padding:36px 24px;margin-top:auto}
   color:#fff;font-family:var(--font);font-weight:900;font-size:32px;
   display:flex;align-items:center;justify-content:center;flex-shrink:0;
 }
-.user-info{flex:1}
-.user-real-name{font-family:var(--font);font-weight:900;font-size:28px;color:var(--navy);margin-bottom:4px}
-.user-email{color:var(--muted);font-size:14px;margin-bottom:12px}
+.user-info{flex:1;min-width:0}
+.user-real-name{font-family:var(--font);font-weight:900;font-size:28px;color:var(--navy);margin-bottom:4px;line-height:1.15;word-break:break-word}
+.user-email{color:var(--muted);font-size:14px;margin-bottom:12px;word-break:break-word}
 .user-stats{display:flex;gap:24px;flex-wrap:wrap}
-.ustat{text-align:center}
+.ustat{text-align:center;flex:1;min-width:80px}
 .ustat-n{font-family:var(--font);font-weight:900;font-size:22px;color:var(--red)}
 .ustat-l{color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+@media(max-width:640px){
+  .user-hero{padding:20px 18px;gap:14px;flex-direction:column;align-items:center;text-align:center}
+  .user-big-avatar{width:64px;height:64px;font-size:24px}
+  .user-real-name{font-size:20px}
+  .user-email{font-size:13px}
+  .user-stats{gap:12px;justify-content:center;width:100%}
+  .ustat-n{font-size:20px}
+  .ustat-l{font-size:10px;letter-spacing:.3px}
+}
 .my-complaints-list{display:flex;flex-direction:column;gap:10px}
 
 /* ── FILTROS ── */
