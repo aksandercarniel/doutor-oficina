@@ -2934,6 +2934,7 @@ async function showVehicleProfileByBrandModel(brand, model) {
 
 // Renderiza skeleton enquanto carrega dados reais
 function renderVehicleProfileSkeleton(v) {
+  _currentVehicle = v; // rastreia veículo atual para o botão Reclamar
   const el = document.getElementById('vehicle-profile-content');
   el.innerHTML = `
     <button class="back-btn" onclick="goBack()">← Voltar</button>
@@ -2961,7 +2962,7 @@ function renderVehicleProfileSkeleton(v) {
           <div class="ic-value ic-value-red" id="sk-count">—</div>
           <div class="ic-sub" id="sk-resolved">buscando…</div>
         </div>
-        <button class="btn-primary" style="width:100%;justify-content:center" onclick="requireAuth()">🚨 Reclamar deste veículo</button>
+        <button class="btn-primary" style="width:100%;justify-content:center" onclick="requireAuthForCurrentVehicle()">🚨 Reclamar deste veículo</button>
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;padding:20px 0;color:var(--muted);font-size:13px">
@@ -3245,6 +3246,7 @@ async function loadFipePriceForVehicle(v, opts) {
 
 // Renderiza a página completa com dados reais
 function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice) {
+  _currentVehicle = v; // rastreia veículo atual para o botão Reclamar
   const el = document.getElementById('vehicle-profile-content');
   if (!el) return;
 
@@ -3343,7 +3345,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice) 
       + '<div style="font-size:32px;margin-bottom:8px">💬</div>'
       + '<div style="font-family:var(--font);font-weight:700;color:var(--navy);margin-bottom:4px">Seja o primeiro a relatar</div>'
       + '<div style="font-size:13px;color:var(--muted);margin-bottom:14px">Nenhuma reclamação registrada para este veículo ainda.</div>'
-      + '<button class="btn-primary" onclick="requireAuth()" style="margin:0 auto">🚨 Registrar reclamação</button>'
+      + '<button class="btn-primary" onclick="requireAuthForCurrentVehicle()" style="margin:0 auto">🚨 Registrar reclamação</button>'
       + '</div>';
 
   // -- Monta HTML final
@@ -3382,7 +3384,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice) 
     + '<div class="ic-value ic-value-red">' + totalComplaints.toLocaleString('pt-BR') + '</div>'
     + '<div class="ic-sub">' + (resolvedPct !== null ? resolvedPct + '% resolvidos' : 'Sem dados ainda') + '</div>'
     + '</div>'
-    + '<button class="btn-primary" style="width:100%;justify-content:center" onclick="requireAuth()">🚨 Reclamar deste veículo</button>'
+    + '<button class="btn-primary" style="width:100%;justify-content:center" onclick="requireAuthForCurrentVehicle()">🚨 Reclamar deste veículo</button>'
     + '</div>'
     + '</div>'
 
@@ -3492,7 +3494,7 @@ function renderVehicleProfileShell(v) {
           <div class="ic-value ic-value-red" id="dyn-complaints">—</div>
           <div class="ic-sub" id="dyn-resolved">buscando…</div>
         </div>
-        <button class="btn-primary" style="width:100%;justify-content:center" onclick="requireAuth()">🚨 Reclamar deste veículo</button>
+        <button class="btn-primary" style="width:100%;justify-content:center" onclick="requireAuthForCurrentVehicle()">🚨 Reclamar deste veículo</button>
       </div>
     </div>
     <div class="profile-grid">
@@ -3863,11 +3865,54 @@ async function loadCmpPrice(){
 
 // ══ MODAL ══
 let currentStep=0,selectedRating=0;
-function openModal(){
+async function openModal(vehicleContext){
   document.getElementById('modal').classList.add('open');
   document.body.style.overflow='hidden';
   resetComplaintForm();
-  goStep(0);loadBrands('carros');
+  goStep(0);
+  await loadBrands(vehicleContext?.type || 'carros');
+  // Se recebeu contexto de veículo, pré-popula marca/modelo
+  if (vehicleContext && (vehicleContext.fipeBrandCode || vehicleContext.brand)) {
+    await prefillComplaintWithVehicle(vehicleContext);
+  }
+}
+
+// Pré-popula sel-brand → sel-model com base num veículo (vindo dos cards/perfil)
+async function prefillComplaintWithVehicle(ctx) {
+  try {
+    const selBrand = document.getElementById('sel-brand');
+    const selModel = document.getElementById('sel-model');
+    if (!selBrand || !selModel) return;
+
+    // 1. Setar marca — preferir código FIPE, senão buscar pelo nome
+    let brandCode = ctx.fipeBrandCode;
+    if (!brandCode && ctx.brand) {
+      // Tenta achar nas options já carregadas pelo loadBrands
+      const opts = Array.from(selBrand.options);
+      const m = opts.find(o => o.text.toLowerCase() === ctx.brand.toLowerCase()
+                          || o.text.toLowerCase().includes(ctx.brand.toLowerCase().split(' ')[0]));
+      if (m) brandCode = m.value;
+    }
+    if (!brandCode) return;
+    selBrand.value = brandCode;
+
+    // 2. Carregar modelos e setar o modelo
+    await loadModels();
+    if (ctx.fipeModelCode) {
+      selModel.value = ctx.fipeModelCode;
+      await loadYears();
+    } else if (ctx.model) {
+      const opts = Array.from(selModel.options);
+      const modelKey = ctx.model.toLowerCase();
+      const m = opts.find(o => o.text.toLowerCase() === modelKey)
+             || opts.find(o => o.text.toLowerCase().startsWith(modelKey))
+             || opts.find(o => o.text.toLowerCase().includes(modelKey.split(' ')[0]));
+      if (m) {
+        selModel.value = m.value;
+        await loadYears();
+      }
+    }
+  } catch(e) { console.warn('Falha ao pré-popular formulário:', e); }
 }
 
 function resetComplaintForm() {
@@ -6335,6 +6380,15 @@ async function sbShowPrice() {
     const brandTxt = document.getElementById('sb-brand').options[document.getElementById('sb-brand').selectedIndex]?.text || '';
     const modelTxt = document.getElementById('sb-model').options[document.getElementById('sb-model').selectedIndex]?.text || '';
     const typeEmoji = {'carros':'🚗','motos':'🏍️','caminhoes':'🚚'}[type] || '🚗';
+    // Registra veículo atual para o botão Reclamar pré-preencher
+    _currentVehicle = {
+      brand: brandTxt,
+      name: modelTxt,
+      emoji: typeEmoji,
+      fipeBrandCode: brand,
+      fipeModelCode: model,
+      fipeType: type
+    };
     res.innerHTML = `
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid rgba(0,168,120,.15)">
         <span style="font-size:36px">${typeEmoji}</span>
@@ -6367,7 +6421,7 @@ async function sbShowPrice() {
         </div>
       </div>
       <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn-primary" style="font-size:13px;padding:10px 18px" onclick="requireAuth()">🚨 Reclamar deste veículo</button>
+        <button class="btn-primary" style="font-size:13px;padding:10px 18px" onclick="requireAuthForCurrentVehicle()">🚨 Reclamar deste veículo</button>
         <button class="btn-outline" style="font-size:13px;padding:10px 18px" onclick="document.getElementById('ranking-section').scrollIntoView({behavior:'smooth'})">📊 Ver ranking</button>
       </div>
     `;
@@ -7136,7 +7190,12 @@ function loginSuccess(user) {
   updateNavAuth();
   const si = document.getElementById('search-free-input');
   if (si) si.value = '';
-  if (pendingComplaint) { pendingComplaint = false; openModal(); }
+  if (pendingComplaint) {
+    pendingComplaint = false;
+    const ctx = pendingVehicleContext;
+    pendingVehicleContext = null;
+    openModal(ctx);
+  }
 }
 
 function updateNavAuth() {
@@ -7181,11 +7240,29 @@ document.addEventListener('click', function(e) {
 
 // Verifica se usuário logou, senão pede login antes de reclamar
 let pendingComplaint = false;
-function requireAuth() {
-  if (currentUser) { openModal(); }
+let pendingVehicleContext = null; // {brand, model, fipeBrandCode, fipeModelCode, type}
+let _currentVehicle = null; // veículo atualmente exibido no perfil
+
+function requireAuth(vehicleContext) {
+  // Aceita contexto do veículo para pré-preencher o formulário
+  // Pode vir como objeto direto ou ser undefined (botões antigos sem contexto)
+  pendingVehicleContext = vehicleContext || null;
+  if (currentUser) { openModal(pendingVehicleContext); pendingVehicleContext = null; }
   else { pendingComplaint = true; openAuth('login'); }
 }
 
+// Wrapper: usado pelos botões "Reclamar deste veículo" para passar o veículo atual
+function requireAuthForCurrentVehicle() {
+  const v = _currentVehicle;
+  if (!v) return requireAuth();
+  requireAuth({
+    brand: v.brand || '',
+    model: v.name || v.model || '',
+    fipeBrandCode: v.fipeBrandCode || null,
+    fipeModelCode: v.fipeModelCode || null,
+    type: v.fipeType || 'carros'
+  });
+}
 // ══ PERFIL ══
 
 // ══ FILTROS ══
