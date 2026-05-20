@@ -2860,7 +2860,7 @@ async function renderVehicles(){
       if (!el) continue;
       const vObj = { brand: v.brand, name: v.model, emoji: typeEmoji(v.type) };
       try {
-        const result = await loadFipePriceForVehicle(vObj);
+        const result = await loadFipePriceForVehicle(vObj, { fastMode: true });
         if (result) {
           el.className = 'price-val';
           el.textContent = result.isRange
@@ -3045,7 +3045,9 @@ async function loadKnownIssues(brand, model) {
 }
 
 // Busca preço FIPE para o veículo dinâmico
-async function loadFipePriceForVehicle(v) {
+async function loadFipePriceForVehicle(v, opts) {
+  opts = opts || {};
+  const fastMode = opts.fastMode === true; // Pula busca de faixa (De/Até) — 1 req ao invés de 6
   if (v.fipePrice) return { price: v.fipePrice, year: v.year || null, ref: 'Referência atual', isRange: false };
 
   // Tem códigos completos
@@ -3097,7 +3099,8 @@ async function loadFipePriceForVehicle(v) {
     if (!Array.isArray(years) || !years.length) return null;
 
     // Detecta se é busca genérica (só marca+modelo, sem versão específica)
-    const isGenericSearch = model.split(' ').length === 1; // ex: "Strada" vs "Strada 1.3 mpi"
+    // fastMode pula a faixa "De/Até" e busca só 1 preço — usado nos cards da home
+    const isGenericSearch = !fastMode && model.split(' ').length === 1; // ex: "Strada" vs "Strada 1.3 mpi"
 
     if (isGenericSearch) {
       // Busca genérica: retorna faixa de preço (mínimo e máximo)
