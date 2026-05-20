@@ -3615,24 +3615,89 @@ const FIPE_V2 = 'https://fipe.parallelum.com.br/api/v2';
 // Mapa de tipo para v2
 const FIPE_TYPE = { carros: 'cars', motos: 'motorcycles', caminhoes: 'trucks' };
 
-async function fipeFetch(url) {
+// Cache em memória (zera a cada carga) + localStorage (persiste 7 dias)
+const _fipeMemCache = {};
+const _FIPE_LS_KEY = 'fipe_cache_v1';
+const _FIPE_LS_TTL = 7 * 24 * 60 * 60 * 1000; // 7 dias
+let _fipeLsCache = null;
+
+function _loadFipeLsCache() {
+  if (_fipeLsCache) return _fipeLsCache;
   try {
-    const res = await fetch(url, {
-      headers: { 'Accept': 'application/json' },
-      mode: 'cors'
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.json();
-  } catch(e) {
-    // Tenta via proxy se falhar
-    try {
-      const proxy = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-      const res2 = await fetch(proxy, { headers: { 'Accept': 'application/json' } });
-      if (!res2.ok) throw new Error(`Proxy HTTP ${res2.status}`);
-      return await res2.json();
-    } catch(e2) {
-      throw new Error('FIPE indisponível: ' + e2.message);
+    const raw = localStorage.getItem(_FIPE_LS_KEY);
+    _fipeLsCache = raw ? JSON.parse(raw) : {};
+    // Limpa entradas expiradas
+    const now = Date.now();
+    let dirty = false;
+    for (const k in _fipeLsCache) {
+      if (now - _fipeLsCache[k].t > _FIPE_LS_TTL) { delete _fipeLsCache[k]; dirty = true; }
     }
+    if (dirty) localStorage.setItem(_FIPE_LS_KEY, JSON.stringify(_fipeLsCache));
+  } catch(e) { _fipeLsCache = {}; }
+  return _fipeLsCache;
+}
+function _saveFipeLs(url, data) {
+  try {
+    const c = _loadFipeLsCache();
+    c[url] = { d: data, t: Date.now() };
+    // Limita tamanho: se passar de 500 entradas, remove as 100 mais antigas
+    const keys = Object.keys(c);
+    if (keys.length > 500) {
+      keys.sort((a,b) => c[a].t - c[b].t).slice(0, 100).forEach(k => delete c[k]);
+    }
+    localStorage.setItem(_FIPE_LS_KEY, JSON.stringify(c));
+  } catch(e) {}
+}
+
+async function fipeFetch(url) {
+  // 1. Cache em memória (mais rápido)
+  if (_fipeMemCache[url]) return _fipeMemCache[url];
+
+  // 2. Cache localStorage (sobrevive reloads)
+  const ls = _loadFipeLsCache();
+  if (ls[url] && (Date.now() - ls[url].t < _FIPE_LS_TTL)) {
+    _fipeMemCache[url] = ls[url].d;
+    return ls[url].d;
+  }
+
+  // 3. Helper: fetch com timeout via AbortController
+  const _fetchWithTimeout = async (u, ms) => {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), ms);
+    try {
+      const res = await fetch(u, { headers: { 'Accept': 'application/json' }, mode: 'cors', signal: ctrl.signal });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return await res.json();
+    } finally {
+      clearTimeout(tid);
+    }
+  };
+
+  // 4. Tentativa direta com retry exponencial (3 tentativas: 8s, 10s, 12s)
+  const delays = [8000, 10000, 12000];
+  let lastErr;
+  for (let i = 0; i < delays.length; i++) {
+    try {
+      const data = await _fetchWithTimeout(url, delays[i]);
+      _fipeMemCache[url] = data;
+      _saveFipeLs(url, data);
+      return data;
+    } catch(e) {
+      lastErr = e;
+      // Pequeno backoff entre tentativas
+      if (i < delays.length - 1) await new Promise(r => setTimeout(r, 400 * (i + 1)));
+    }
+  }
+
+  // 5. Último recurso: proxy CORS
+  try {
+    const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
+    const data = await _fetchWithTimeout(proxyUrl, 12000);
+    _fipeMemCache[url] = data;
+    _saveFipeLs(url, data);
+    return data;
+  } catch(e2) {
+    throw new Error('FIPE indisponível: ' + (lastErr?.message || e2.message));
   }
 }
 
