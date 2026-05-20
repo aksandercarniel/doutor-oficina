@@ -4986,7 +4986,38 @@ async function showSearchResults(val, fipeResults, complaintResults, mockResults
     modelsWithData = data || [];
   } catch(e) {}
 
+  // Heurística instantânea: pontuação de "modernidade" pelo nome
+  // Termos antigos: motores Fire, mpi, valores de cv baixos típicos de geração antiga
+  // Termos modernos: nomes comerciais recentes, turbos, automáticos novos
+  const detectOldness = (modelName) => {
+    const n = modelName.toLowerCase();
+    let score = 0;
+    // Penalidades (mais velho = mais negativo)
+    if (/\bfire\b/.test(n) && /8v/.test(n)) score -= 5;          // Fire 8V = motor antigo
+    if (/\bmpi\b/.test(n)) score -= 3;                            // injeção monoponto = anos 90/00
+    if (/\b(67|70|75|80)cv\b/.test(n)) score -= 3;                // potências baixas típicas antigas
+    if (/\bcarburad/.test(n)) score -= 8;                         // carburador = muito antigo
+    if (/\b(1\.0|1\.3) 8v\b/.test(n)) score -= 4;                 // motores 8V de base
+    // Bônus (mais novo)
+    if (/\bturbo\b/.test(n)) score += 4;
+    if (/\b(endurance|volcano|ranch|freedom|locker|adventure|cabine dupla|cd)\b/.test(n)) score += 2;
+    if (/\b(16v|gdi|tsi|t-jet)\b/.test(n)) score += 3;
+    if (/\b(at|cvt|automatiz|automátic|dualogic)\b/.test(n)) score += 2;
+    if (/\bflex\b/.test(n)) score += 1;                           // flex existe desde ~2003, leve bônus
+    return score;
+  };
+
+  // Extrai ano do próprio nome do modelo, quando a FIPE traz no formato "... 2020", "(2018)" etc.
+  // Retorna o ano como número, ou 0 se não encontrar
+  const extractYearFromName = (modelName) => {
+    const matches = (modelName || '').match(/\b(19[89]\d|20[0-3]\d)\b/g);
+    if (!matches || !matches.length) return 0;
+    // Pega o maior ano (caso o nome tenha range tipo "2010/2011")
+    return Math.max(...matches.map(m => parseInt(m)));
+  };
+
   // Prioriza resultados FIPE: exato > com Raio-X > demais
+  // Dentro do mesmo nível: COM ano no nome (recente→antigo) > SEM ano no nome (heurística)
   const prioritizedFipe = (fipeResults || []).map(r => {
     const modelName = (r.model || r.brand || '').toLowerCase();
     const brandName = (r.brand || '').toLowerCase();
@@ -4999,13 +5030,27 @@ async function showSearchResults(val, fipeResults, complaintResults, mockResults
       (m.vehicle_brand || '').toLowerCase() === brandName &&
       modelName.includes((m.vehicle_model || '').toLowerCase())
     );
+
+    const yearFromName = extractYearFromName(modelName);
     
     return {
       ...r,
       _priority: exactMatch ? 3 : hasData ? 2 : 1,
-      _hasData: hasData
+      _hasData: hasData,
+      _yearFromName: yearFromName,              // 0 se não conseguiu extrair
+      _hasYear: yearFromName > 0 ? 1 : 0,       // 1 se tem ano, 0 se não tem
+      _oldnessScore: detectOldness(modelName)
     };
-  }).sort((a, b) => b._priority - a._priority);
+  }).sort((a, b) => {
+    // 1º critério: prioridade (exato/raio-x)
+    if (b._priority !== a._priority) return b._priority - a._priority;
+    // 2º critério: tem ano no nome > não tem (joga os "sem ano" para o fim)
+    if (b._hasYear !== a._hasYear) return b._hasYear - a._hasYear;
+    // 3º critério: ano mais recente primeiro (só entre os que TÊM ano)
+    if (b._yearFromName !== a._yearFromName) return b._yearFromName - a._yearFromName;
+    // 4º critério: heurística de modernidade (para os sem ano)
+    return b._oldnessScore - a._oldnessScore;
+  });
 
   _searchResults = { val, fipe:prioritizedFipe, complaints:complaintResults||[], mock:mockResults||[], companies:allCompanies };
   showPage('search');
