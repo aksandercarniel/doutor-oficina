@@ -3065,11 +3065,22 @@ async function loadFipePriceForVehicle(v) {
     if (isGenericSearch) {
       // Busca genérica: retorna faixa de preço (mínimo e máximo)
       const currentYear = new Date().getFullYear();
+      
+      // Filtra apenas anos válidos e recentes (últimos 3 anos)
       const recentYears = years.filter(function(y) {
-        const yName = (y.name || y.nome || '');
-        const yNum = parseInt(yName.split(' ')[0]);
-        return yNum >= (currentYear - 3) && yNum <= currentYear && !yName.toLowerCase().includes('zero') && !yName.includes('32000');
-      }).slice(0, 5); // pega até 5 anos recentes
+        const yName = (y.name || y.nome || '').trim();
+        // Pega primeiro número de 4 dígitos na string
+        const yearMatch = yName.match(/\b(20\d{2})\b/);
+        if (!yearMatch) return false;
+        
+        const yNum = parseInt(yearMatch[1]);
+        const isZeroKm = yName.toLowerCase().includes('zero') || yName.includes('32000');
+        const isRecent = yNum >= (currentYear - 3) && yNum <= currentYear;
+        
+        return isRecent && !isZeroKm;
+      }).slice(0, 6); // Limita a 6 anos para não fazer muitas requisições
+      
+      if (recentYears.length === 0) return null; // Sem anos válidos
       
       let minPrice = Infinity;
       let maxPrice = 0;
@@ -3083,15 +3094,16 @@ async function loadFipePriceForVehicle(v) {
           const fipeData = await fipeFetch(FIPE_V2 + '/' + fipeType + '/brands/' + brandCode + '/models/' + modelCode + '/years/' + yearCode);
           if (fipeData && (fipeData.price || fipeData.Valor)) {
             const priceStr = fipeData.price || fipeData.Valor;
+            // Remove tudo exceto dígitos e vírgula, depois converte
             const priceNum = parseFloat(priceStr.replace(/[^\d,]/g, '').replace(',', '.'));
             
-            if (priceNum < minPrice) {
+            if (priceNum > 0 && priceNum < minPrice) {
               minPrice = priceNum;
-              minPriceYear = fipeData.modelYear || (y.name || y.nome || '').split(' ')[0];
+              minPriceYear = fipeData.modelYear || (y.name || y.nome || '').match(/\b(20\d{2})\b/)[1];
             }
             if (priceNum > maxPrice) {
               maxPrice = priceNum;
-              maxPriceYear = fipeData.modelYear || (y.name || y.nome || '').split(' ')[0];
+              maxPriceYear = fipeData.modelYear || (y.name || y.nome || '').match(/\b(20\d{2})\b/)[1];
             }
           }
         } catch(e) {}
@@ -3099,7 +3111,7 @@ async function loadFipePriceForVehicle(v) {
       
       if (maxPrice > 0 && minPrice < Infinity) {
         const formatPrice = function(p) {
-          return 'R$ ' + p.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.').replace(',', ',00').replace(',00', '');
+          return 'R$ ' + Math.round(p).toLocaleString('pt-BR');
         };
         
         return {
@@ -4906,7 +4918,60 @@ async function showSearchResults(val, fipeResults, complaintResults, mockResults
   if (vt) vt.textContent = ((prioritizedFipe.length)+(mockResults?.length||0)) ? `(${(prioritizedFipe.length)+(mockResults?.length||0)})` : '';
   if (ct) ct.textContent = allCompanies.length ? `(${allCompanies.length})` : '';
   if (crt) crt.textContent = (complaintResults?.length||0) ? `(${complaintResults.length})` : '';
-  filterSearchResults('all');
+  
+  // Detecta qual aba abrir por padrão baseado no tipo de busca
+  const defaultTab = detectDefaultTab(val, prioritizedFipe, allCompanies, complaintResults);
+  filterSearchResults(defaultTab);
+}
+
+// Detecta qual aba deve abrir por padrão baseado na intenção da busca
+function detectDefaultTab(searchTerm, vehicles, companies, complaints) {
+  const term = searchTerm.toLowerCase().trim();
+  
+  // Lista de palavras que indicam busca por problema/reclamação
+  const problemKeywords = [
+    'problema', 'defeito', 'falha', 'quebrou', 'barulho', 'ruído', 'vazamento',
+    'motor', 'câmbio', 'suspensão', 'freio', 'elétrica', 'ar condicionado',
+    'parou', 'travou', 'não liga', 'não funciona', 'reclamação'
+  ];
+  
+  // Lista de marcas conhecidas (indica busca por empresa)
+  const brandKeywords = [
+    'chevrolet', 'fiat', 'volkswagen', 'ford', 'toyota', 'hyundai', 'honda',
+    'nissan', 'renault', 'jeep', 'peugeot', 'citroen', 'mitsubishi', 'bmw',
+    'mercedes', 'audi', 'volvo', 'caoa', 'chery', 'byd', 'gwm', 'yamaha',
+    'concessionária', 'concessionaria', 'revendedor', 'loja'
+  ];
+  
+  // Verifica se é busca por problema/reclamação
+  const isProblemSearch = problemKeywords.some(kw => term.includes(kw));
+  if (isProblemSearch && complaints && complaints.length > 0) {
+    return 'complaints';
+  }
+  
+  // Verifica se é busca por marca/empresa
+  const isBrandSearch = brandKeywords.some(kw => term.includes(kw));
+  if (isBrandSearch && companies && companies.length > 0) {
+    return 'companies';
+  }
+  
+  // Se tem veículos, prioriza veículos (caso padrão para modelo)
+  if (vehicles && vehicles.length > 0) {
+    return 'vehicles';
+  }
+  
+  // Fallback: abre a aba com mais resultados
+  const counts = {
+    vehicles: vehicles ? vehicles.length : 0,
+    companies: companies ? companies.length : 0,
+    complaints: complaints ? complaints.length : 0
+  };
+  
+  if (counts.vehicles > 0) return 'vehicles';
+  if (counts.companies > 0) return 'companies';
+  if (counts.complaints > 0) return 'complaints';
+  
+  return 'all';
 }
 
 async function doFreeSearch() {
