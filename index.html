@@ -3050,17 +3050,54 @@ async function loadFipePriceForVehicle(v, opts) {
   const fastMode = opts.fastMode === true; // Pula busca de faixa (De/Até) — 1 req ao invés de 6
   if (v.fipePrice) return { price: v.fipePrice, year: v.year || null, ref: 'Referência atual', isRange: false };
 
-  // Tem códigos completos
+  const fipeTypeMap = { carros: 'cars', motos: 'motorcycles', caminhoes: 'trucks' };
+
+  // Tem códigos completos (brand + model + year)
   if (v.fipeBrandCode && v.fipeModelCode && v.fipeYearCode) {
     try {
       const type = v.fipeType || 'carros';
-      const fipeTypeMap = { carros: 'cars', motos: 'motorcycles', caminhoes: 'trucks' };
       const t = fipeTypeMap[type] || 'cars';
       const url = FIPE_V2 + '/' + t + '/brands/' + v.fipeBrandCode + '/models/' + v.fipeModelCode + '/years/' + v.fipeYearCode;
       const res = await fipeFetch(url);
       if (res && res.price) {
         const yearLabel = res.modelYear || res.year || v.year || '';
         return { price: res.price, year: yearLabel, ref: res.referenceMonth || 'Referência atual', isRange: false };
+      }
+    } catch(e) {}
+  }
+
+  // Tem códigos brand+model mas sem year — busca anos e pega o mais recente
+  // (caminho usado quando usuário clica em uma versão específica dos resultados de busca)
+  if (v.fipeBrandCode && v.fipeModelCode) {
+    try {
+      const type = v.fipeType || 'carros';
+      const t = fipeTypeMap[type] || 'cars';
+      const years = await fipeFetch(FIPE_V2 + '/' + t + '/brands/' + v.fipeBrandCode + '/models/' + v.fipeModelCode + '/years');
+      if (Array.isArray(years) && years.length) {
+        const currentYear = new Date().getFullYear();
+        const yearsWithNum = years.map(y => {
+          const yName = (y.name || y.nome || '');
+          const match = yName.match(/\b(19|20)\d{2}\b/);
+          const yNum = match ? parseInt(match[0]) : 0;
+          const isZeroKm = yName.toLowerCase().includes('zero') || yName.includes('32000');
+          return { y, yNum, isZeroKm };
+        }).filter(x => x.yNum > 0 && !x.isZeroKm && x.yNum <= currentYear + 1);
+
+        if (yearsWithNum.length) {
+          const maxYear = Math.max(...yearsWithNum.map(x => x.yNum));
+          const yearMatch = yearsWithNum.find(x => x.yNum === maxYear).y;
+          const yearCode = yearMatch.code || yearMatch.codigo;
+          const yearLabel = (yearMatch.name || yearMatch.nome || '').split(' ')[0];
+          const res = await fipeFetch(FIPE_V2 + '/' + t + '/brands/' + v.fipeBrandCode + '/models/' + v.fipeModelCode + '/years/' + yearCode);
+          if (res && (res.price || res.Valor)) {
+            return {
+              price: res.price || res.Valor,
+              year: res.modelYear || yearLabel,
+              ref: res.referenceMonth || 'Referência atual',
+              isRange: false
+            };
+          }
+        }
       }
     } catch(e) {}
   }
@@ -4609,7 +4646,8 @@ async function searchFipeModels(val, append = false) {
       // Busca modelos de todas as marcas em paralelo
       const modelSearches = brands.map(async brand => {
         try {
-          const dm = await fipeFetch(`${FIPE_V2}/${t.key}/brands/${brand.code||brand.codigo}/models`);
+          const bCode = brand.code||brand.codigo;
+          const dm = await fipeFetch(`${FIPE_V2}/${t.key}/brands/${bCode}/models`);
           const models = dm.models || dm.modelos || dm;
           return (Array.isArray(models) ? models : [])
             .filter(m => (m.name||m.nome||'').toLowerCase().includes(cacheKey))
@@ -4617,7 +4655,9 @@ async function searchFipeModels(val, append = false) {
               brand: brand.name||brand.nome,
               model: m.name||m.nome,
               type: t.label, emoji: t.emoji,
-              label: `${brand.name||brand.nome} ${m.name||m.nome}`
+              label: `${brand.name||brand.nome} ${m.name||m.nome}`,
+              fipeBrandCode: bCode,
+              fipeModelCode: m.code||m.codigo
             }));
         } catch(e) { return []; }
       });
@@ -4699,7 +4739,11 @@ function selectSuggestion(idx) {
       version: item.label,
       year: '—', rating:0, count:0,
       badge:'Novo', badgeClass:'badge-yellow',
-      problems:[], fipePrice:null
+      problems:[], fipePrice:null,
+      // Guarda códigos FIPE para que loadFipePriceForVehicle use a versão específica
+      fipeBrandCode: item.fipeBrandCode,
+      fipeModelCode: item.fipeModelCode,
+      fipeType: item.type
     });
     showVehicleProfile('dynamic');
   } else {
@@ -4953,7 +4997,10 @@ function renderSearchList(tab) {
     allVehicles.forEach(r => {
       const idx = sugItems.length;
       if (r._mock) sugItems.push({ action:'vehicle', id:r.id, label:`${r.brand} ${r.name}` });
-      else sugItems.push({ action:'fipe', brand:r.brand, model:r.model, type:r.type, label:r.label });
+      else sugItems.push({
+        action:'fipe', brand:r.brand, model:r.model, type:r.type, label:r.label,
+        fipeBrandCode: r.fipeBrandCode, fipeModelCode: r.fipeModelCode
+      });
       const name = r.model||r.name||r.brand;
       const type = r._mock?(r.emoji==='🏍️'?'Moto':r.emoji==='🚚'?'Caminhão':'Carro'):(r.type==='carros'?'Carro':r.type==='motos'?'Moto':'Caminhão');
       const dataBadge = (r._hasData || r._mock) ? '<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;margin-left:6px">✓ Raio-X</span>' : '';
