@@ -3342,10 +3342,11 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice) 
     selectedIssues = sortedIssues.slice(0, 1);
     selectedStrengths = strengthsArr.slice(0, 2);
   } else if (summaryRating >= 3) {
-    // Médio: 2 problemas (1 grave + 1 atenção) + 1 positivo
-    const grave = sortedIssues.find(i => i.severity === 'grave');
+    // Médio: 2 problemas (1 atenção + 1 grave) + 1 positivo
+    // Atenção primeiro para combinar com o card-resumo amarelo
     const atencao = sortedIssues.find(i => i.severity !== 'grave');
-    selectedIssues = [grave, atencao].filter(Boolean).slice(0, 2);
+    const grave = sortedIssues.find(i => i.severity === 'grave');
+    selectedIssues = [atencao, grave].filter(Boolean).slice(0, 2);
     selectedStrengths = strengthsArr.slice(0, 1);
   } else {
     // Ruim ou sem rating: 2 problemas (Críticos) + 1 positivo
@@ -3384,13 +3385,13 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice) 
     const cardsS = selectedStrengths.map(renderStrengthCard);
 
     if (summaryRating >= 4) {
-      // Bom: Positivo → Positivo → Problema
+      // Bom: Positivo → Positivo → Atenção (começa otimista, igual ao resumo verde)
       raioXCards = (cardsS[0] || '') + (cardsS[1] || '') + (cardsP[0] || '');
     } else if (summaryRating >= 3) {
-      // Médio: Positivo → Problema → Problema
-      raioXCards = (cardsS[0] || '') + (cardsP[0] || '') + (cardsP[1] || '');
+      // Médio: Atenção → Positivo → Crítico (começa amarelo, igual ao resumo amarelo)
+      raioXCards = (cardsP[0] || '') + (cardsS[0] || '') + (cardsP[1] || '');
     } else {
-      // Ruim ou sem rating: Problema → Problema → Positivo
+      // Ruim: Crítico → Crítico → Positivo (começa vermelho, igual ao resumo vermelho)
       raioXCards = (cardsP[0] || '') + (cardsP[1] || '') + (cardsS[0] || '');
     }
   } else {
