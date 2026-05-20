@@ -2860,7 +2860,7 @@ async function renderVehicles(){
       if (!el) continue;
       const vObj = { brand: v.brand, name: v.model, emoji: typeEmoji(v.type) };
       try {
-        const result = await loadFipePriceForVehicle(vObj, { fastMode: true });
+        const result = await loadFipePriceForVehicle(vObj);
         if (result) {
           el.className = 'price-val';
           el.textContent = result.isRange
@@ -3098,9 +3098,9 @@ async function loadFipePriceForVehicle(v, opts) {
     const years = await fipeFetch(FIPE_V2 + '/' + fipeType + '/brands/' + brandCode + '/models/' + modelCode + '/years');
     if (!Array.isArray(years) || !years.length) return null;
 
-    // Detecta se é busca genérica (só marca+modelo, sem versão específica)
-    // fastMode pula a faixa "De/Até" e busca só 1 preço — usado nos cards da home
-    const isGenericSearch = !fastMode && model.split(' ').length === 1; // ex: "Strada" vs "Strada 1.3 mpi"
+    // Sempre busca 1 preço real (do ano específico ou do mais recente disponível)
+    // A faixa "De/Até" foi removida — usuário prefere ver o preço atual de uma versão real
+    const isGenericSearch = false;
 
     if (isGenericSearch) {
       // Busca genérica: retorna faixa de preço (mínimo e máximo)
