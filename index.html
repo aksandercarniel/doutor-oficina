@@ -2557,11 +2557,6 @@ async function searchCompanyAutocomplete(val) {
   if (!box) return;
   if (val.length < 2) { box.style.display = 'none'; return; }
 
-  // Busca no mock
-  const mockMatches = mockCompanies.filter(c =>
-    c.name.toLowerCase().includes(val.toLowerCase())
-  );
-
   // Busca no Supabase
   let sbMatches = [];
   try {
@@ -2569,7 +2564,7 @@ async function searchCompanyAutocomplete(val) {
     sbMatches = data || [];
   } catch(e) {}
 
-  const all = [...mockMatches, ...sbMatches].slice(0, 6);
+  const all = sbMatches.slice(0, 6);
 
   if (!all.length) { box.style.display = 'none'; return; }
 
@@ -2728,7 +2723,7 @@ async function applyFilters() {
   const brand  = document.getElementById('filter-brand').value;
   const state  = document.getElementById('filter-state').value;
   const data = await sbLoadComplaints({ status, brand, state });
-  renderComplaintsList(data.length ? data : mockComplaints);
+  renderComplaintsList(data);
 }
 
 // ══ OVERRIDE: renderProfile com Supabase ══
@@ -2747,8 +2742,10 @@ async function toggleVote(btn, id, current) {
   }
 }
 
-// ══ DADOS MOCK ══
-// Mocks removidos — plataforma usa apenas dados reais do Supabase e FIPE
+// ══ DADOS DINÂMICOS ══
+// Repositório local de veículos da sessão (populado via FIPE quando o usuário pesquisa)
+// Não é mock — são dados reais buscados sob demanda
+const dynamicVehicles = [];
 const rankingData=[
   {pos:1,emoji:'🏍️',brand:'Honda',name:'CG 160',score:4.5},
   {pos:2,emoji:'🚗',brand:'Toyota',name:'Corolla',score:4.1},
@@ -2764,31 +2761,69 @@ const fipePrices={'1':'R$ 142.990','2':'R$ 61.490','3':'R$ 78.900','4':'R$ 18.59
 // ══ RENDER ══
 function starsHtml(r){let s='';for(let i=1;i<=5;i++)s+=i<=Math.round(r)?'★':'☆';return s}
 
-function renderVehicles(){
-  document.getElementById('vehicles-grid').innerHTML=mockVehicles.map(v=>{
-    const resolved = Math.round(55 + v.rating * 5);
-    const trend = v.rating >= 4 ? '📈 Estável' : v.rating >= 3 ? '⚠️ +8% este mês' : '🔴 +15% este mês';
-    const trendClass = v.rating >= 4 ? 'green' : v.rating >= 3 ? 'orange' : 'red';
-    const barColor = v.rating >= 4 ? 'var(--green)' : v.rating >= 3 ? 'var(--yellow)' : 'var(--red)';
-    const trustPct = Math.round(v.rating / 5 * 100);
+async function renderVehicles(){
+  const grid = document.getElementById('vehicles-grid');
+  if (!grid) return;
+  grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Carregando veículos…</div>';
+
+  // Busca todos os registros (summary + issues) e agrupa por marca+modelo
+  let allRows = [];
+  try {
+    const { data } = await sb.from('vehicle_known_issues')
+      .select('vehicle_brand, vehicle_model, vehicle_type, is_summary, reliability_score, verdict, weaknesses, issue_title, severity')
+      .order('is_summary', { ascending: false })
+      .order('severity', { ascending: true })
+      .limit(300);
+    allRows = data || [];
+  } catch(e) { console.error('Erro ao buscar veículos:', e); }
+
+  // Agrupa por marca+modelo: cada grupo = 1 summary + N issues
+  const groups = {};
+  allRows.forEach(row => {
+    const key = `${row.vehicle_brand}|${row.vehicle_model}`;
+    if (!groups[key]) groups[key] = { brand: row.vehicle_brand, model: row.vehicle_model, type: row.vehicle_type, summary: null, issues: [] };
+    if (row.is_summary) groups[key].summary = row;
+    else groups[key].issues.push(row);
+  });
+
+  const vehicles = Object.values(groups).filter(v => v.summary).slice(0, 12);
+  if (!vehicles.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Nenhum veículo encontrado no Raio-X.</div>';
+    return;
+  }
+
+  const typeEmoji = (t) => t === 'moto' ? '🏍️' : t === 'caminhao' ? '🚚' : '🚗';
+
+  grid.innerHTML = vehicles.map(v => {
+    const s = v.summary;
+    const rating = parseFloat(s.reliability_score) || 0;
+    const topProblem = v.issues[0]?.issue_title || s.weaknesses?.[0] || 'Verificar manual';
+    const trustPct = Math.round(rating / 5 * 100);
+    const barColor = rating >= 4 ? 'var(--green)' : rating >= 3 ? 'var(--yellow)' : 'var(--red)';
+    const trend = rating >= 4 ? '📈 Estável' : rating >= 3 ? '⚠️ +8% este mês' : '🔴 +15% este mês';
+    const trendClass = rating >= 4 ? 'green' : rating >= 3 ? 'orange' : 'red';
+    const resolved = Math.round(55 + rating * 5);
+    const emoji = typeEmoji(v.type);
+    const verdict = (s.verdict || '').slice(0, 70) + ((s.verdict||'').length > 70 ? '…' : '');
+    const safeKey = `${v.brand}-${v.model}`.replace(/[^a-zA-Z0-9-]/g, '_');
     return `
-    <div class="vehicle-card" onclick="showVehicleProfile('${v.id}')">
+    <div class="vehicle-card" onclick="showVehicleProfileByBrandModel('${v.brand.replace(/'/g,"\\'")}','${v.model.replace(/'/g,"\\'")}')">
       <div class="vc-top">
         <div style="display:flex;align-items:center;gap:8px">
-          <span class="vc-emoji">${v.emoji}</span>
-          <div class="vc-name">${v.name}</div>
+          <span class="vc-emoji">${emoji}</span>
+          <div class="vc-name">${v.model}</div>
         </div>
-        <span class="vc-badge ${v.badgeClass}">${v.badge}</span>
+        <span class="vc-badge badge-blue">✓ Raio-X</span>
       </div>
-      <div class="vc-brand">${v.brand} · ${v.year}</div>
-      <div class="vc-version">${v.version}</div>
-      <div class="vc-rating"><span class="stars">${starsHtml(v.rating)}</span><span class="star-val">${v.rating.toFixed(1)}</span></div>
-      <div class="vc-count">${v.count.toLocaleString('pt-BR')} reclamações</div>
+      <div class="vc-brand">${v.brand}</div>
+      <div class="vc-version">${verdict}</div>
+      <div class="vc-rating"><span class="stars">${starsHtml(rating)}</span><span class="star-val">${rating.toFixed(1)}</span></div>
+      <div class="vc-count">${v.issues.length} problema${v.issues.length !== 1 ? 's' : ''} mapeado${v.issues.length !== 1 ? 's' : ''}</div>
       <div class="vc-divider"></div>
       <div class="vc-info-grid">
         <div class="vc-info-item">
           <span class="vc-info-label">⚠️ Mais relatado</span>
-          <span class="vc-info-value red">${v.problems[0]}</span>
+          <span class="vc-info-value red">${topProblem}</span>
         </div>
         <div class="vc-info-item">
           <span class="vc-info-label">✅ Resolvidas</span>
@@ -2808,37 +2843,52 @@ function renderVehicles(){
       </div>
       <div class="vc-price">
         <span class="price-label">Tabela FIPE</span>
-        <span class="price-loading" id="fipe-card-${v.id}">carregando…</span>
+        <span class="price-loading" id="fipe-card-${safeKey}">carregando…</span>
       </div>
-    </div>`}).join('');
-  mockVehicles.forEach(v=>{
-    setTimeout(()=>{
-      const el=document.getElementById('fipe-card-'+v.id);
-      if(el){el.className='price-val';el.textContent=fipePrices[v.id]||'—'}
-    },300+Math.random()*700);
-  });
+    </div>`;
+  }).join('');
+
+  // Carrega preços FIPE em fila (não paralelo) para evitar rate limit
+  (async () => {
+    // Pré-aquece cache de marcas
+    try { await fipeFetch(FIPE_V2 + '/cars/brands'); } catch(e) {}
+
+    for (let i = 0; i < vehicles.length; i++) {
+      const v = vehicles[i];
+      const safeKey = `${v.brand}-${v.model}`.replace(/[^a-zA-Z0-9-]/g, '_');
+      const el = document.getElementById('fipe-card-' + safeKey);
+      if (!el) continue;
+      const vObj = { brand: v.brand, name: v.model, emoji: typeEmoji(v.type) };
+      try {
+        const result = await loadFipePriceForVehicle(vObj);
+        if (result) {
+          el.className = 'price-val';
+          el.textContent = result.isRange
+            ? `De ${result.price} até ${result.priceMax}`
+            : (result.price || '—');
+        } else {
+          el.className = 'price-val';
+          el.textContent = '—';
+        }
+      } catch(e) {
+        el.className = 'price-val';
+        el.textContent = '—';
+      }
+      if (i < vehicles.length - 1) await new Promise(r => setTimeout(r, 200));
+    }
+  })();
 }
 
-function renderComplaints(){
-  document.getElementById('complaints-list').innerHTML=mockComplaints.map(c=>`
-    <div class="complaint-card">
-      <div class="cc-top">
-        <div class="cc-vehicle">
-          <span class="cc-emoji">${c.emoji}</span>
-          <div><div class="cc-vname">${c.model}</div><div class="cc-vbrand">${c.brand}</div></div>
-        </div>
-        <div class="cc-meta">
-          <span class="cc-status ${c.status}">${c.statusLabel}</span>
-          <span class="cc-date">${c.date}</span>
-        </div>
-      </div>
-      <div class="cc-title">${c.title}</div>
-      <div class="cc-text">${c.text}</div>
-      <div class="cc-footer">
-        <div class="cc-tags">${c.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
-        <div class="cc-votes">👍 ${c.votes} acham útil</div>
-      </div>
-    </div>`).join('');
+async function renderComplaints(){
+  const list = document.getElementById('complaints-list');
+  if (!list) return;
+  list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted)">Carregando reclamações…</div>';
+  try {
+    const data = await sbLoadComplaints();
+    renderComplaintsList(data);
+  } catch(e) {
+    list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted)">Erro ao carregar reclamações.</div>';
+  }
 }
 
 function renderRanking(){
@@ -2856,7 +2906,27 @@ function renderRanking(){
 
 // ══ VEHICLE PROFILE ══
 async function showVehicleProfile(id){
-  const v = mockVehicles.find(x => x.id === id) || mockVehicles[0];
+  const v = dynamicVehicles.find(x => x.id === id) || { id, emoji:'🚗', brand:'', name:'', version:'', year:'—', rating:0, count:0, badge:'', badgeClass:'', problems:[], fipePrice:null };
+  showPage('vehicle');
+  renderVehicleProfileSkeleton(v);
+  await loadVehicleProfileData(v);
+}
+
+// Abre perfil direto por marca+modelo (usado pelos cards da home)
+async function showVehicleProfileByBrandModel(brand, model) {
+  const motoBrands = ['honda','yamaha','kawasaki','suzuki','triumph','bmw motorrad','harley-davidson','royal enfield'];
+  const emoji = motoBrands.includes(brand.toLowerCase()) ? '🏍️' : '🚗';
+  const id = 'direct-' + brand + '-' + model;
+  const v = { id, brand, name: model, version:'', year:'—', emoji, rating:0, count:0, badge:'', badgeClass:'', problems:[], fipePrice:null };
+  // Limpa eventuais entradas anteriores com mesmo id e adiciona
+  const existingIdx = dynamicVehicles.findIndex(x => x.id === id);
+  if (existingIdx > -1) dynamicVehicles.splice(existingIdx, 1);
+  dynamicVehicles.push(v);
+  // Auto-limpa após 5 minutos para não acumular
+  setTimeout(() => {
+    const idx = dynamicVehicles.findIndex(x => x.id === id);
+    if (idx > -1) dynamicVehicles.splice(idx, 1);
+  }, 300000);
   showPage('vehicle');
   renderVehicleProfileSkeleton(v);
   await loadVehicleProfileData(v);
@@ -3873,7 +3943,7 @@ Retorne entre 3 e 5 resultados relevantes. Foque em problemas reais e recentes.`
     }
 
     // Resultados da plataforma (mock) + web
-    const platformComplaints = [...mockComplaints, ...myComplaints].slice(0, 2);
+    const platformComplaints = [...myComplaints].slice(0, 2);
     const allResults = [
       ...platformComplaints.map(c => ({ ...c, isPlatform: true })),
     ];
@@ -4270,7 +4340,7 @@ let searchData = [];
 function getSearchData() {
   if (searchData.length === 0) {
     searchData = [
-      ...mockVehicles.map(v => ({ type:'vehicle', label:`${v.brand} ${v.name}`, sub:`${v.version} · ${v.year}`, emoji:v.emoji, badge:v.badge, badgeClass:v.badgeClass, id:v.id, count:v.count })),
+      ...dynamicVehicles.map(v => ({ type:'vehicle', label:`${v.brand} ${v.name}`, sub:`${v.version} · ${v.year}`, emoji:v.emoji, badge:v.badge, badgeClass:v.badgeClass, id:v.id, count:v.count })),
       { type:'problem', label:'Problema no motor', sub:'315 reclamações', emoji:'⚙️' },
       { type:'problem', label:'Câmbio com solavanco', sub:'287 reclamações', emoji:'⚡' },
       { type:'problem', label:'Ar-condicionado não gela', sub:'198 reclamações', emoji:'❄️' },
@@ -4317,20 +4387,16 @@ function setQuickFilter(btn, filter) {
   applySearchWithFilter(document.getElementById('search-free-input').value, filter);
 }
 
-function applySearchWithFilter(query, filter) {
-  let results = [...mockComplaints];
-  if (query) results = results.filter(c =>
-    c.brand?.toLowerCase().includes(query.toLowerCase()) ||
-    c.model?.toLowerCase().includes(query.toLowerCase()) ||
-    c.title?.toLowerCase().includes(query.toLowerCase()) ||
-    c.tags?.some(t => t.toLowerCase().includes(query.toLowerCase()))
-  );
-  if (filter === 'carros') results = results.filter(c => c.emoji === '🚗');
-  else if (filter === 'motos') results = results.filter(c => c.emoji === '🏍️');
-  else if (filter === 'caminhoes') results = results.filter(c => c.emoji === '🚚');
-  else if (filter === 'critico') results = results.filter(c => c.status === 's-open');
-  else if (filter === 'resolvidos') results = results.filter(c => c.status === 's-resolved');
-  renderComplaintsList(results.length ? results : mockComplaints);
+async function applySearchWithFilter(query, filter) {
+  const typeMap = { carros:'carro', motos:'moto', caminhoes:'caminhao' };
+  const statusMap = { critico:'open', resolvidos:'resolved' };
+  const filters = {
+    brand: query || '',
+    status: statusMap[filter] || '',
+    type: typeMap[filter] || ''
+  };
+  const results = await sbLoadComplaints(filters);
+  renderComplaintsList(results);
   document.getElementById('complaints-list')?.scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
@@ -4338,8 +4404,8 @@ function onSearchInput(val) {
   fipeSugCache = {};
   sugItems = [];
   // Remove veículo dinâmico para não interferir na próxima busca
-  const dynIdx = mockVehicles.findIndex(v => v.id === 'dynamic');
-  if (dynIdx > -1) mockVehicles.splice(dynIdx, 1);
+  const dynIdx = dynamicVehicles.findIndex(v => v.id === 'dynamic');
+  if (dynIdx > -1) dynamicVehicles.splice(dynIdx, 1);
   clearTimeout(searchDebounceTimer);
   searchDebounceTimer = setTimeout(() => showSmartSuggestions(val), 150);
 }
@@ -4373,7 +4439,7 @@ function showSmartSuggestions(val) {
       html += '<div class="sug-divider"></div>';
     }
     html += `<div class="sug-section">⭐ Mais buscados</div>`;
-    mockVehicles.slice(0,5).forEach((v,i) => {
+    dynamicVehicles.slice(0,5).forEach((v,i) => {
       sugItems.push({ action:'vehicle', id:v.id, label:`${v.brand} ${v.name}` });
       html += `<div class="sug-item" onclick="selectSuggestion(${sugItems.length-1})">
         <div class="sug-item-icon">${v.emoji}</div>
@@ -4509,10 +4575,10 @@ function renderFipeSuggestions(val, results, append = false) {
   if (results.length === 1 && !append) {
     hideSuggestions();
     const r = results[0];
-    const prevIdx = mockVehicles.findIndex(v => v.id === 'dynamic');
-    if (prevIdx > -1) mockVehicles.splice(prevIdx, 1);
+    const prevIdx = dynamicVehicles.findIndex(v => v.id === 'dynamic');
+    if (prevIdx > -1) dynamicVehicles.splice(prevIdx, 1);
     const typeEmoji = {'carros':'🚗','motos':'🏍️','caminhoes':'🚚'}[r.type] || '🚗';
-    mockVehicles.push({ id:'dynamic', _dynamic:true, emoji:typeEmoji, brand:r.brand, name:r.model||r.brand, version:r.label, year:'—', rating:0, count:0, badge:'Novo', badgeClass:'badge-yellow', problems:[], fipePrice:null });
+    dynamicVehicles.push({ id:'dynamic', _dynamic:true, emoji:typeEmoji, brand:r.brand, name:r.model||r.brand, version:r.label, year:'—', rating:0, count:0, badge:'Novo', badgeClass:'badge-yellow', problems:[], fipePrice:null });
     showVehicleProfile('dynamic');
     return;
   }
@@ -4548,10 +4614,10 @@ function selectSuggestion(idx) {
     showVehicleProfile(item.id);
   } else if (item.action === 'fipe') {
     // Navega para perfil dinâmico com dados da FIPE
-    const prevIdx = mockVehicles.findIndex(v => v.id === 'dynamic');
-    if (prevIdx > -1) mockVehicles.splice(prevIdx, 1);
+    const prevIdx = dynamicVehicles.findIndex(v => v.id === 'dynamic');
+    if (prevIdx > -1) dynamicVehicles.splice(prevIdx, 1);
     const typeEmoji = {'carros':'🚗','motos':'🏍️','caminhoes':'🚚'}[item.type] || '🚗';
-    mockVehicles.push({
+    dynamicVehicles.push({
       id:'dynamic', _dynamic:true,
       emoji: typeEmoji,
       brand: item.brand,
@@ -4676,7 +4742,7 @@ Se não conseguir identificar: {"found":false}`,
       input.value = `${result.brand} ${result.model} ${result.year}`;
 
       // Tenta encontrar nos mocks
-      const found = mockVehicles.find(v =>
+      const found = dynamicVehicles.find(v =>
         v.name.toLowerCase().includes(result.model.toLowerCase()) ||
         v.brand.toLowerCase().includes(result.brand.toLowerCase())
       );
@@ -4685,8 +4751,8 @@ Se não conseguir identificar: {"found":false}`,
         showVehicleProfile(found.id);
       } else {
         // Cria perfil dinâmico
-        const prevIdx = mockVehicles.findIndex(v => v.id === 'dynamic');
-        if (prevIdx > -1) mockVehicles.splice(prevIdx, 1);
+        const prevIdx = dynamicVehicles.findIndex(v => v.id === 'dynamic');
+        if (prevIdx > -1) dynamicVehicles.splice(prevIdx, 1);
         const typeEmoji = {'carros':'🚗','motos':'🏍️','caminhoes':'🚚'}[result.type] || '🚗';
         const dynamicVehicle = {
           id: 'dynamic', _dynamic: true,
@@ -4699,7 +4765,7 @@ Se não conseguir identificar: {"found":false}`,
           badge: 'Novo', badgeClass: 'badge-yellow',
           problems: [], fipePrice: null
         };
-        mockVehicles.push(dynamicVehicle);
+        dynamicVehicles.push(dynamicVehicle);
         showVehicleProfile('dynamic');
       }
     } else {
@@ -4841,8 +4907,7 @@ async function showSearchResults(val, fipeResults, complaintResults, mockResults
     const { data } = await sb.from('companies').select('*').ilike('name', `%${val}%`).limit(10);
     companyResults = data || [];
   } catch(e) {}
-  const mockCompanyResults = mockCompanies.filter(c => c.name.toLowerCase().includes(valLower));
-  const allCompanies = [...mockCompanyResults, ...companyResults];
+  const allCompanies = companyResults || [];
 
   // Busca quais modelos têm Raio-X cadastrado
   let modelsWithData = [];
@@ -4959,16 +5024,16 @@ async function doFreeSearch() {
   }
 
   // 1. Veículos locais (mock)
-  const mockResults = mockVehicles.filter(v => {
+  const mockResults = dynamicVehicles.filter(v => {
     const t = `${v.brand} ${v.name} ${v.version}`.toLowerCase();
     return t.includes(valLower) || words.some(w => t.includes(w));
   });
 
-  // 2. Reclamações locais
-  const complaintResults = mockComplaints.filter(c => {
-    const t = `${c.brand||''} ${c.model||''} ${c.title||''} ${(c.tags||[]).join(' ')}`.toLowerCase();
-    return t.includes(valLower) || words.some(w => t.includes(w));
-  });
+  // 2. Reclamações reais do Supabase
+  let complaintResults = [];
+  try {
+    complaintResults = await sbLoadComplaints({ brand: val });
+  } catch(e) { complaintResults = []; }
 
   // 3. FIPE
   const cacheKey = valLower;
@@ -4983,10 +5048,10 @@ async function doFreeSearch() {
   if (totalVehicles === 1 && !complaintResults.length) {
     if (mockResults.length === 1) { showVehicleProfile(mockResults[0].id); return; }
     const r = fipeResults[0];
-    const prevIdx = mockVehicles.findIndex(v => v.id === 'dynamic');
-    if (prevIdx > -1) mockVehicles.splice(prevIdx, 1);
+    const prevIdx = dynamicVehicles.findIndex(v => v.id === 'dynamic');
+    if (prevIdx > -1) dynamicVehicles.splice(prevIdx, 1);
     const typeEmoji = {'carros':'🚗','motos':'🏍️','caminhoes':'🚚'}[r.type]||'🚗';
-    mockVehicles.push({ id:'dynamic', _dynamic:true, emoji:typeEmoji, brand:r.brand, name:r.model||r.brand, version:r.label, year:'—', rating:0, count:0, badge:'Novo', badgeClass:'badge-yellow', problems:[], fipePrice:null });
+    dynamicVehicles.push({ id:'dynamic', _dynamic:true, emoji:typeEmoji, brand:r.brand, name:r.model||r.brand, version:r.label, year:'—', rating:0, count:0, badge:'Novo', badgeClass:'badge-yellow', problems:[], fipePrice:null });
     showVehicleProfile('dynamic');
     return;
   }
@@ -6087,14 +6152,14 @@ async function doFipeSearch() {
   if (!brand) { alert('Selecione ao menos a marca.'); return; }
 
   // Remove veículo dinâmico anterior se existir
-  const prevIdx = mockVehicles.findIndex(v => v.id === 'dynamic');
-  if (prevIdx > -1) mockVehicles.splice(prevIdx, 1);
+  const prevIdx = dynamicVehicles.findIndex(v => v.id === 'dynamic');
+  if (prevIdx > -1) dynamicVehicles.splice(prevIdx, 1);
 
   // Tenta encontrar nos dados mock primeiro
-  const found = mockVehicles.find(v =>
+  const found = dynamicVehicles.find(v =>
     v.name.toLowerCase().includes(modelTxt.split(' ')[0].toLowerCase()) &&
     v.brand.toLowerCase().includes(brandTxt.split(' ')[0].toLowerCase())
-  ) || mockVehicles.find(v =>
+  ) || dynamicVehicles.find(v =>
     v.name.toLowerCase().includes(modelTxt.split(' ')[0].toLowerCase())
   );
 
@@ -6141,13 +6206,13 @@ async function doFipeSearch() {
     };
 
     // Adiciona temporariamente e mostra o perfil
-    mockVehicles.push(dynamicVehicle);
+    dynamicVehicles.push(dynamicVehicle);
     fipePrices['dynamic'] = dynamicVehicle.fipePrice || '—';
     showVehicleProfile('dynamic');
     // Remove da lista após uso
     setTimeout(() => {
-      const idx = mockVehicles.findIndex(v => v.id === 'dynamic');
-      if (idx > -1) mockVehicles.splice(idx, 1);
+      const idx = dynamicVehicles.findIndex(v => v.id === 'dynamic');
+      if (idx > -1) dynamicVehicles.splice(idx, 1);
     }, 60000);
 
   } catch(e) {
@@ -6914,7 +6979,7 @@ function renderComplaintsList(list) {
 
 // ══ COMPARADOR ══
 function initCompare() {
-  const opts = mockVehicles.map(v => `<option value="${v.id}">${v.emoji} ${v.brand} ${v.name} (${v.year})</option>`).join('');
+  const opts = dynamicVehicles.map(v => `<option value="${v.id}">${v.emoji} ${v.brand} ${v.name} (${v.year})</option>`).join('');
   document.getElementById('cmp-v1').innerHTML = '<option value="">Selecione…</option>' + opts;
   document.getElementById('cmp-v2').innerHTML = '<option value="">Selecione…</option>' + opts;
 }
@@ -6927,8 +6992,8 @@ function renderComparison() {
     res.innerHTML = id1 === id2 && id1 ? `<div style="color:var(--red);font-family:var(--font);font-weight:700;padding:16px;text-align:center">Selecione dois veículos diferentes.</div>` : '';
     return;
   }
-  const v1 = mockVehicles.find(v => v.id === id1);
-  const v2 = mockVehicles.find(v => v.id === id2);
+  const v1 = dynamicVehicles.find(v => v.id === id1);
+  const v2 = dynamicVehicles.find(v => v.id === id2);
   const winner = v1.rating >= v2.rating ? v1 : v2;
 
   function ratingClass(v) { return v >= 4 ? 'good' : v >= 3 ? 'mid' : 'bad'; }
@@ -7002,9 +7067,9 @@ async function restoreFromHash() {
   // Tenta carregar reclamações reais, cai no mock se falhar
   try {
     const realComplaints = await sbLoadComplaints();
-    renderComplaintsList(realComplaints.length ? realComplaints : mockComplaints);
+    renderComplaintsList(realComplaints);
   } catch(e) {
-    renderComplaintsList(mockComplaints);
+    renderComplaintsList([]);
   }
   // Restaura página do hash (após sessão estar pronta)
   await restoreFromHash();
