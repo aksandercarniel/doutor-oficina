@@ -2910,7 +2910,7 @@ function renderVehicleProfileSkeleton(v) {
         <span class="profile-emoji">${v.emoji || '🚗'}</span>
         <div class="profile-brand-label">${v.brand || ''}</div>
         <div class="profile-name">${v.name || ''}</div>
-        ${(v.version || v.year) ? `<div class="profile-sub">${[v.version, v.year].filter(x => x && x !== '—').join(' · ')}</div>` : ''}
+        <div class="profile-sub">${v.version || ''} · ${v.year || ''}</div>
         <div class="profile-rating">
           <span class="big-stars" style="color:var(--muted2)">☆☆☆☆☆</span>
           <span class="big-score" style="color:var(--muted2)">—</span>
@@ -3324,7 +3324,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice) 
     + '<span class="profile-emoji">' + (v.emoji || '🚗') + '</span>'
     + '<div class="profile-brand-label">' + v.brand + '</div>'
     + '<div class="profile-name">' + v.name + '</div>'
-    + ((v.version || v.year) ? ('<div class="profile-sub">' + [v.version, v.year].filter(x => x && x !== '—').join(' · ') + '</div>') : '')
+    + '<div class="profile-sub">' + (v.version || '') + (v.year ? ' · ' + v.year : '') + '</div>'
     + '<div class="profile-rating">'
     + '<span class="big-stars">' + (displayRating ? starsHtml(displayRating) : '☆☆☆☆☆') + '</span>'
     + '<span class="big-score">' + (displayRating ? displayRating.toFixed(1) : '—') + '</span>'
