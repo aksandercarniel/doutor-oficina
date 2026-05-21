@@ -123,10 +123,10 @@ header{
   .logo-mobile{display:block!important;height:34px!important;width:auto!important}
   .nav-user-name{display:none}
   .nav-user-trigger{
-    height:36px;padding:0 6px 0 3px;gap:4px;box-sizing:border-box;
-    background:var(--bg)!important;border-color:var(--border)!important;
+    height:36px;padding:0 4px;gap:4px;box-sizing:border-box;
+    background:transparent!important;border:none!important;
   }
-  .nav-user-trigger:hover{background:var(--bg2)!important;border-color:var(--border2)!important}
+  .nav-user-trigger:hover{background:transparent!important}
   .nav-avatar{width:30px;height:30px;font-size:12px}
   .nav-user-chevron{width:14px;height:14px;color:var(--muted)!important}
   /* Ícones do botão Reclamar e login mobile: garantir contraste em fundo branco */
@@ -7492,25 +7492,8 @@ async function loadLawyerPanel() {
 }
 
 function avatarColorFromName(name) {
-  // Paleta evitando vermelho (que é cor do botão Reclamar)
-  const palette = [
-    '#1e6feb', // azul
-    '#7c3aed', // roxo
-    '#0d9488', // teal
-    '#059669', // verde
-    '#d97706', // âmbar
-    '#0284c7', // azul céu
-    '#9333ea', // violeta
-    '#0891b2', // ciano
-    '#65a30d', // lima
-    '#c2410c'  // laranja queimado
-  ];
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    hash |= 0;
-  }
-  return palette[Math.abs(hash) % palette.length];
+  // Cor fixa pra todos os avatares
+  return '#1e6feb';
 }
 
 function loginSuccess(user) {
