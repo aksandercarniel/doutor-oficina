@@ -1148,6 +1148,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
           oninput="onSearchInput(this.value)"
           onkeydown="onSearchKeydown(event)"
           onfocus="onSearchFocus()"
+          onblur="onSearchBlur()"
           autocomplete="off"
           autocorrect="off"
           autocapitalize="off"
@@ -4960,6 +4961,11 @@ function onSearchFocus() {
   showSmartSuggestions(document.getElementById('search-free-input').value);
 }
 
+function onSearchBlur() {
+  // Delay pra permitir que cliques em sugestões disparem antes do dropdown fechar
+  setTimeout(hideSuggestions, 150);
+}
+
 function highlightMatch(text, query) {
   if (!query) return text;
   const re = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
@@ -5283,6 +5289,12 @@ document.addEventListener('click', e => {
     hideSuggestions();
   }
 });
+
+// Fecha sugestões ao rolar a página
+window.addEventListener('scroll', () => {
+  const box = document.getElementById('smart-suggestions');
+  if (box && box.style.display !== 'none') hideSuggestions();
+}, { passive: true });
 
 // ══ BUSCA POR VOZ ══
 let recognition = null;
