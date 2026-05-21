@@ -115,16 +115,18 @@ header{
   .nav-search input::placeholder{color:var(--muted)!important}
   #search-free-input::placeholder{color:var(--muted)!important;font-size:13px}
   .nav-search input:focus{
-    border-color:var(--navy2)!important;
-    box-shadow:0 0 0 3px rgba(13,31,60,.05)!important;
+    border-color:var(--navy)!important;
+    box-shadow:0 0 0 3px rgba(13,31,60,.08)!important;
     background:#fff!important;
+  }
+  .nav-search:focus-within button{
+    border-color:var(--navy)!important;
   }
   .nav-search button{
     height:36px!important;width:42px!important;border-radius:0 50px 50px 0!important;
     background:var(--bg)!important;color:var(--muted)!important;
     border:1.5px solid var(--border)!important;border-left:none!important;
   }
-  .nav-search:focus-within button{border-color:var(--navy2)!important;box-shadow:0 0 0 3px rgba(13,31,60,.05)!important}
   #voice-btn:hover{background:var(--bg2)!important;color:var(--navy)!important}
   /* Garante que o SVG não encolha dentro do botão flex */
   #voice-btn svg{flex-shrink:0!important}
@@ -211,8 +213,8 @@ header{
   .nav-search input::placeholder{color:var(--muted)}
   #search-free-input::placeholder{color:var(--muted)}
   .nav-search input:focus{
-    border-color:var(--navy2)!important;
-    box-shadow:0 0 0 3px rgba(13,31,60,.05)!important;
+    border-color:var(--navy)!important;
+    box-shadow:0 0 0 3px rgba(13,31,60,.08)!important;
     background:#fff!important;
   }
   .nav-search button{
@@ -221,7 +223,6 @@ header{
     border:1.5px solid var(--border);
     border-left:none;
   }
-  .nav-search:focus-within button{border-color:var(--navy2)!important;box-shadow:0 0 0 3px rgba(13,31,60,.05)!important}
   #voice-btn:hover{background:var(--bg2)!important;color:var(--navy)!important}
   .nav-link{color:var(--text2)}
   .nav-link:hover{color:var(--navy);background:var(--bg)}
