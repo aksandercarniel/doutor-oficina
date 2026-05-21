@@ -6528,25 +6528,49 @@ async function requestPasswordReset() {
 
 
 // ── MENU MOBILE ──
-function toggleMobileMenu() {
+function isMobileMenuOpen() {
+  const menu = document.getElementById('mobile-menu');
+  return !!(menu && menu.classList.contains('open'));
+}
+function openMobileMenu() {
   const menu = document.getElementById('mobile-menu');
   const overlay = document.getElementById('mobile-menu-overlay');
-  if (!menu) return;
-  const isOpen = menu.classList.contains('open');
-  if (isOpen) {
-    menu.classList.remove('open');
-    overlay.classList.remove('open');
-    document.body.style.overflow = '';
-  } else {
-    renderMobileMenu();
-    // força reflow pra garantir que o transform inicial (translateX(100%))
-    // seja aplicado antes da transição pro estado .open
-    void menu.offsetWidth;
-    menu.classList.add('open');
-    overlay.classList.add('open');
-    document.body.style.overflow = 'hidden';
-  }
+  if (!menu || !overlay) return;
+  renderMobileMenu();
+  // força reflow pra garantir que o transform inicial (translateX(100%))
+  // seja aplicado antes da transição pro estado .open
+  void menu.offsetWidth;
+  menu.classList.add('open');
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
 }
+function closeMobileMenu() {
+  const menu = document.getElementById('mobile-menu');
+  const overlay = document.getElementById('mobile-menu-overlay');
+  if (!menu || !overlay) return;
+  menu.classList.remove('open');
+  overlay.classList.remove('open');
+  document.body.style.overflow = '';
+}
+function toggleMobileMenu() {
+  if (isMobileMenuOpen()) closeMobileMenu();
+  else openMobileMenu();
+}
+
+// Esc fecha o drawer
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && isMobileMenuOpen()) {
+    closeMobileMenu();
+  }
+});
+
+// Resize pra desktop fecha o drawer e limpa o lock de scroll
+// (o CSS já esconde visualmente via @media, mas precisamos zerar body.overflow)
+window.addEventListener('resize', () => {
+  if (window.innerWidth > 640 && isMobileMenuOpen()) {
+    closeMobileMenu();
+  }
+});
 
 function renderMobileMenu() {
   const el = document.getElementById('mobile-menu-items');
