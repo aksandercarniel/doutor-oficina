@@ -4683,7 +4683,11 @@ function showPage(page, params={}){
     return;
   }
   // Reseta a searchbar FIPE ao navegar (fecha painel mobile, limpa selects/cache, desmarca tipo)
-  if(typeof sbResetSearchBar === 'function') sbResetSearchBar({full: true});
+  // e re-seleciona "Carros" como padrão pra usuário cair direto na escolha de marca.
+  if(typeof sbResetSearchBar === 'function') {
+    sbResetSearchBar({full: true});
+    if(typeof sbSelectType === 'function') sbSelectType('carros');
+  }
   ['home','vehicle','profile','compare','search','admin','lawyers','resolution','company','ranking-companies','complaint','company-profile','mediation','lawyer-panel','mediation-channel'].forEach(p=>{
     const el=document.getElementById('page-'+p);
     if(el) el.style.display=p===page?'block':'none';
@@ -8082,8 +8086,10 @@ renderVehicles();
 renderRanking();
 initCompare();
 initSearch();
-// sbLoadBrands() removido da init: marcas carregam apenas quando o usuário
-// escolhe um tipo (carro/moto/caminhão) via sbSelectType().
+// Pré-seleciona "Carros" na init: usuário cai direto na escolha de marca,
+// sem precisar entender que precisa clicar no ícone primeiro. Moto/caminhão
+// continuam clicáveis pra trocar.
+sbSelectType('carros');
 getTopVehiclesFromSupabase(); // pré-aquece cache para autocomplete
 setTimeout(() => { const i = document.getElementById('search-free-input'); if(i) i.value=''; }, 50);
 // Placeholder menor no mobile
