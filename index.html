@@ -1468,7 +1468,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
     <div class="section-inner">
       <div class="section-header">
         <h2 class="section-title">Veículos mais <span class="accent">avaliados</span></h2>
-        <a href="#" class="see-all">Ver todos →</a>
+        <a href="#" class="see-all" id="vehicles-toggle" onclick="event.preventDefault();toggleVehiclesExpanded();return false;">Ver todos →</a>
       </div>
       <div class="vehicles-grid" id="vehicles-grid"></div>
     </div>
@@ -2981,6 +2981,15 @@ const fipePrices={'1':'R$ 142.990','2':'R$ 61.490','3':'R$ 78.900','4':'R$ 18.59
 // ══ RENDER ══
 function starsHtml(r){let s='';for(let i=1;i<=5;i++)s+=i<=Math.round(r)?'★':'☆';return s}
 
+// Estado de expansão da seção "Veículos mais avaliados" (4 cards collapsed / 12 expanded)
+let _vehiclesExpanded = false;
+function toggleVehiclesExpanded(){
+  _vehiclesExpanded = !_vehiclesExpanded;
+  const toggle = document.getElementById('vehicles-toggle');
+  if (toggle) toggle.textContent = _vehiclesExpanded ? 'Ver menos ↑' : 'Ver todos →';
+  renderVehicles();
+}
+
 async function renderVehicles(){
   const grid = document.getElementById('vehicles-grid');
   if (!grid) return;
@@ -3006,7 +3015,8 @@ async function renderVehicles(){
     else groups[key].issues.push(row);
   });
 
-  const vehicles = Object.values(groups).filter(v => v.summary).slice(0, 12);
+  const limit = _vehiclesExpanded ? 12 : 4;
+  const vehicles = Object.values(groups).filter(v => v.summary).slice(0, limit);
   if (!vehicles.length) {
     grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Nenhum veículo encontrado no Raio-X.</div>';
     return;
