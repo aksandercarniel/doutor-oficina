@@ -370,6 +370,10 @@ header{
 .sfipe-row{
   display:flex;gap:10px;align-items:center;flex-wrap:nowrap;
 }
+.sfipe-title{
+  font-family:var(--font);font-weight:800;font-size:14px;color:var(--navy);
+  line-height:1.15;flex-shrink:0;
+}
 .sfipe-types{display:flex;gap:6px;flex-shrink:0}
 .sfipe-type{
   width:44px;height:40px;display:flex;align-items:center;justify-content:center;
@@ -414,15 +418,23 @@ header{
 .sbr-value{font-family:var(--font);font-weight:800;font-size:17px;color:var(--navy)}
 .sbr-green{color:var(--green)!important}
 
-/* Mobile: ícones em cima full-width, selects empilhados embaixo.
-   Estado fechado: só mostra os ícones (selects ficam escondidos
-   até o usuário tocar num tipo, dispando .is-open via JS). */
+/* Mobile: linha 1 = título à esquerda + ícones à direita.
+   Linha 2 = selects empilhados (só aparece quando .is-open).
+   Truque: container vira flex-wrap pra forçar selects pra próxima linha. */
 @media(max-width:768px){
   .search-bar-wrap{position:static}
-  .sfipe-row{flex-direction:column;align-items:stretch;gap:10px}
-  .sfipe-types{justify-content:space-between}
-  .sfipe-type{flex:1;height:48px;font-size:26px}
-  .sfipe-selects{flex-direction:column;width:100%;display:none}
+  .sfipe-row{flex-wrap:wrap;align-items:center;gap:10px}
+  .sfipe-title{
+    font-size:13px;line-height:1.15;
+    max-width:5.5em; /* força quebra natural: "Buscar / veículo" */
+    margin-right:auto; /* empurra ícones pra direita */
+  }
+  .sfipe-types{flex:0 0 auto;gap:6px}
+  .sfipe-type{width:64px;height:48px;font-size:26px}
+  .sfipe-selects{
+    flex-direction:column;width:100%;display:none;
+    flex-basis:100%; /* força quebrar pra linha de baixo */
+  }
   .sfipe-row.is-open .sfipe-selects{display:flex}
 }
 @media(max-width:900px) and (orientation:landscape){
@@ -1160,6 +1172,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 <div class="search-bar-wrap">
   <div class="search-bar-inner">
     <div class="sfipe-row" id="sb-row">
+      <div class="sfipe-title">Buscar veículo</div>
       <div class="sfipe-types" role="tablist" aria-label="Tipo de veículo">
         <button type="button" class="sfipe-type is-active" data-type="carros" onclick="sbSelectType('carros')" role="tab" aria-selected="true" aria-label="Carros">🚗</button>
         <button type="button" class="sfipe-type" data-type="motos" onclick="sbSelectType('motos')" role="tab" aria-selected="false" aria-label="Motos">🏍️</button>
