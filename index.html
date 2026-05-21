@@ -303,7 +303,6 @@ header{
   border-top:none;border-radius:0 0 14px 14px;
   box-shadow:0 8px 24px rgba(13,31,60,.12);
   max-height:380px;overflow-y:auto;
-  box-sizing:border-box;
 }
 .nav-smart-suggestions{
   top:calc(100% + 4px);
@@ -312,18 +311,13 @@ header{
   min-width:280px;
   max-width:calc(100vw - 24px);
 }
-@media(max-width:640px){
-  /* No mobile o painel obedece à largura do input pra não vazar pra fora da nav.
-     Sem min-width fixo, e width herdado do ancestral .nav-search via left/right:0. */
-  .nav-smart-suggestions{min-width:0;max-width:none;left:0;right:0}
-}
 .search-bar-inner{position:relative}
 .sug-section{padding:10px 14px 4px;font-size:11px;font-weight:800;color:var(--muted2);text-transform:uppercase;letter-spacing:.8px}
 .sug-item{display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;transition:background .15s}
 .sug-item:hover,.sug-item.selected{background:var(--bg)}
 .sug-item-icon{width:32px;height:32px;border-radius:8px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
 .sug-item-info{flex:1;min-width:0}
-.sug-item-name{font-family:var(--font);font-weight:700;font-size:14px;color:var(--navy);overflow-wrap:anywhere}
+.sug-item-name{font-family:var(--font);font-weight:700;font-size:14px;color:var(--navy)}
 .sug-item-sub{font-size:12px;color:var(--muted);margin-top:1px}
 .sug-item-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0}
 .sug-divider{height:1px;background:var(--border);margin:4px 0}
