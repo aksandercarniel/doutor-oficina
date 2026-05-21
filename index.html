@@ -4683,10 +4683,11 @@ function showPage(page, params={}){
     return;
   }
   // Reseta a searchbar FIPE ao navegar (fecha painel mobile, limpa selects/cache, desmarca tipo)
-  // e re-seleciona "Carros" como padrão pra usuário cair direto na escolha de marca.
+  // e re-seleciona "Carros" como padrão. keepClosed mantém o painel fechado no mobile —
+  // no desktop nada muda (painel sempre visível).
   if(typeof sbResetSearchBar === 'function') {
     sbResetSearchBar({full: true});
-    if(typeof sbSelectType === 'function') sbSelectType('carros');
+    if(typeof sbSelectType === 'function') sbSelectType('carros', {keepClosed: true});
   }
   ['home','vehicle','profile','compare','search','admin','lawyers','resolution','company','ranking-companies','complaint','company-profile','mediation','lawyer-panel','mediation-channel'].forEach(p=>{
     const el=document.getElementById('page-'+p);
@@ -6838,7 +6839,7 @@ function _sbHideResult() {
 // - Atualiza estado visual dos botões (.is-active + aria-selected)
 // - No mobile, abre o painel de selects (.is-open na .sfipe-row)
 // - Reseta Marca/Modelo/Ano e recarrega marcas do novo tipo
-function sbSelectType(type) {
+function sbSelectType(type, opts) {
   const tSel = document.getElementById('sb-type');
   const row = document.getElementById('sb-row');
   if (!tSel || !row) return;
@@ -6853,8 +6854,13 @@ function sbSelectType(type) {
     btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
   });
 
-  // Abre o painel (efeito visível só no mobile via CSS)
-  row.classList.add('is-open');
+  // Abre o painel (efeito visível só no mobile via CSS).
+  // opts.keepClosed=true ativa o tipo sem abrir o painel — usado no init/navegação
+  // pra que no mobile a searchbar comece compacta, mas no desktop nada muda
+  // (lá o painel está sempre visível).
+  if (!opts || !opts.keepClosed) {
+    row.classList.add('is-open');
+  }
 
   // Só recarrega marcas se o tipo realmente mudou
   if (prevType !== type) {
@@ -8088,8 +8094,9 @@ initCompare();
 initSearch();
 // Pré-seleciona "Carros" na init: usuário cai direto na escolha de marca,
 // sem precisar entender que precisa clicar no ícone primeiro. Moto/caminhão
-// continuam clicáveis pra trocar.
-sbSelectType('carros');
+// continuam clicáveis pra trocar. No mobile o painel começa fechado
+// (keepClosed) — só abre quando o usuário toca num ícone.
+sbSelectType('carros', {keepClosed: true});
 getTopVehiclesFromSupabase(); // pré-aquece cache para autocomplete
 setTimeout(() => { const i = document.getElementById('search-free-input'); if(i) i.value=''; }, 50);
 // Placeholder menor no mobile
