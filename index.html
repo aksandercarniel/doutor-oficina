@@ -1032,13 +1032,36 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .mobile-menu-item:active{background:var(--bg)}
 .mobile-menu-item.danger{color:var(--red)}
 .mobile-menu-item svg{flex-shrink:0;opacity:.7}
-.mobile-menu-divider{display:none}
 
 
 .password-wrap{position:relative;display:flex;align-items:center}
 .password-wrap .auth-input{padding-right:44px;width:100%}
 .eye-btn{position:absolute;right:12px;background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;padding:4px;line-height:1}
 .eye-btn:hover{color:var(--navy)}
+
+/* ── CANAL DE MEDIAÇÃO ── */
+.mediation-grid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:14px;
+  align-items:start;
+}
+@media(min-width:768px){
+  .mediation-grid{
+    grid-template-columns:1fr 280px;
+    gap:20px;
+  }
+}
+.mediation-card{
+  background:var(--white);
+  border:1.5px solid var(--border);
+  border-radius:16px;
+  padding:16px;
+  margin-bottom:16px;
+}
+@media(min-width:768px){
+  .mediation-card{padding:24px}
+}
 
 
 </style>
@@ -6623,14 +6646,8 @@ function renderMobileMenu() {
   if (!el) return;
   let html = '';
 
-  // Reclamar (sempre)
+  // (Reclamar não vai aqui — já existe o botão redondo vermelho fixo no header mobile)
   const ico = (path) => `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
-
-  html += `<button class="mobile-menu-item" onclick="toggleMobileMenu();requireAuth()">
-    ${ico('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="10" y1="10" x2="14" y2="10"/>')} Reclamar
-  </button>`;
-
-  html += '<div class="mobile-menu-divider"></div>';
 
   if (currentUser) {
     html += `<button class="mobile-menu-item" onclick="toggleMobileMenu();showPage('profile')">
@@ -6641,12 +6658,10 @@ function renderMobileMenu() {
         ${ico('<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>')} Minha empresa
       </button>`;
     }
-    html += '<div class="mobile-menu-divider"></div>';
   } else {
     html += `<button class="mobile-menu-item" onclick="toggleMobileMenu();openAuth('login')">
       ${ico('<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>')} Entrar
     </button>`;
-    html += '<div class="mobile-menu-divider"></div>';
   }
 
   html += `<button class="mobile-menu-item" onclick="toggleMobileMenu();showPage('lawyers')">
@@ -6654,7 +6669,6 @@ function renderMobileMenu() {
   </button>`;
 
   if (currentUser) {
-    html += '<div class="mobile-menu-divider"></div>';
     html += `<button class="mobile-menu-item danger" onclick="toggleMobileMenu();logout()">
       ${ico('<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>')} Sair
     </button>`;
@@ -7246,11 +7260,11 @@ async function openMediationChannel(mediationId) {
     el.innerHTML = `
       <button onclick="goBack()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body);margin-bottom:24px;display:flex;align-items:center;gap:6px">← Voltar</button>
 
-      <div style="display:grid;grid-template-columns:1fr 280px;gap:20px;align-items:start">
+      <div class="mediation-grid">
 
         <!-- Coluna principal: mensagens -->
         <div>
-          <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px">
+          <div class="mediation-card">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px">
               <div>
                 <div style="font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">⚖️ Canal de Mediação</div>
