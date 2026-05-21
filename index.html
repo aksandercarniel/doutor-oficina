@@ -4682,6 +4682,8 @@ function showPage(page, params={}){
     alert('Acesso restrito.');
     return;
   }
+  // Reseta a searchbar FIPE ao navegar (fecha painel mobile, limpa selects/cache, desmarca tipo)
+  if(typeof sbResetSearchBar === 'function') sbResetSearchBar({full: true});
   ['home','vehicle','profile','compare','search','admin','lawyers','resolution','company','ranking-companies','complaint','company-profile','mediation','lawyer-panel','mediation-channel'].forEach(p=>{
     const el=document.getElementById('page-'+p);
     if(el) el.style.display=p===page?'block':'none';
@@ -7050,7 +7052,7 @@ async function sbOnYearChange() {
 // Mantém o Tipo selecionado (assumindo que o usuário continua buscando
 // o mesmo tipo de veículo), limpa Marca/Modelo/Ano e seus caches,
 // e fecha o painel expandido no mobile.
-function sbResetSearchBar() {
+function sbResetSearchBar(opts) {
   const { bSel, mSel, ySel } = _sbEls();
   if (!bSel) return; // searchbar não está no DOM ainda
   bSel.value = '';
@@ -7061,6 +7063,17 @@ function sbResetSearchBar() {
   _sbHideResult();
   const row = document.getElementById('sb-row');
   if (row) row.classList.remove('is-open');
+  // Reset completo: também desmarca o tipo (usado em navegação geral, não pós-busca)
+  if (opts && opts.full) {
+    const tHidden = document.getElementById('sb-type');
+    if (tHidden) tHidden.value = '';
+    if (row) row.querySelectorAll('.sfipe-type').forEach(btn => {
+      btn.classList.remove('is-active');
+      btn.setAttribute('aria-selected', 'false');
+    });
+    // Limpa lista de marcas pra próxima escolha de tipo recarregar
+    _sbResetSelect(bSel, 'Selecione a marca', true);
+  }
 }
 async function sbShowPrice() {
   const type = document.getElementById('sb-type').value;
