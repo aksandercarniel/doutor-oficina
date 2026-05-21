@@ -305,7 +305,7 @@ header{
   background:var(--white);border:1.5px solid var(--border2);
   border-top:none;border-radius:0 0 14px 14px;
   box-shadow:0 8px 24px rgba(13,31,60,.12);
-  max-height:380px;overflow-y:auto;
+  max-height:min(640px, calc(100vh - 120px));overflow-y:auto;
 }
 .nav-smart-suggestions{
   top:calc(100% + 4px);
