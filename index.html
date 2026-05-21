@@ -6958,7 +6958,19 @@ async function sbOnYearChange() {
 }
 
 
-// Modelo selecionado → mostra preço FIPE
+// Reset da searchbar — chamada após cada busca bem-sucedida.
+// Mantém o Tipo selecionado (assumindo que o usuário continua buscando
+// o mesmo tipo de veículo), limpa Marca/Modelo/Ano e seus caches.
+function sbResetSearchBar() {
+  const { bSel, mSel, ySel } = _sbEls();
+  if (!bSel) return; // searchbar não está no DOM ainda
+  bSel.value = '';
+  _sbResetSelect(mSel, 'Selecione a marca', true);
+  _sbResetSelect(ySel, 'Selecione a marca', true);
+  delete mSel._fullModels;
+  delete ySel._anoMap;
+  _sbHideResult();
+}
 async function sbShowPrice() {
   const type = document.getElementById('sb-type').value;
   const brand = document.getElementById('sb-brand').value;
@@ -7063,6 +7075,7 @@ async function doFipeSearch() {
 
   if (found) {
     showVehicleProfile(found.id);
+    sbResetSearchBar();
     return;
   }
 
@@ -7107,6 +7120,7 @@ async function doFipeSearch() {
     dynamicVehicles.push(dynamicVehicle);
     fipePrices['dynamic'] = dynamicVehicle.fipePrice || '—';
     showVehicleProfile('dynamic');
+    sbResetSearchBar();
     // Remove da lista após uso
     setTimeout(() => {
       const idx = dynamicVehicles.findIndex(v => v.id === 'dynamic');
