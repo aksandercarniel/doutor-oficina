@@ -284,7 +284,7 @@ header{
   position:relative;
   z-index:10;
 }
-.search-bar-inner{max-width:700px;margin:0 auto;padding:8px 24px}
+.search-bar-inner{max-width:920px;margin:0 auto;padding:8px 24px}
 .search-tabs{display:flex;gap:6px;margin-bottom:14px}
 /* ── BUSCA MELHORADA ── */
 .voice-btn{
@@ -367,20 +367,21 @@ header{
 }
 .sug-tag:hover{border-color:var(--navy);color:var(--navy);background:var(--white)}
 .search-fipe-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
-.sfipe-group{display:flex;flex-direction:column;flex:1;min-width:130px}
+.sfipe-group{display:flex;flex-direction:column;flex:1 1 0;min-width:0}
 .sfipe-label{font-family:var(--font);font-weight:700;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
 .sfipe-select{
-  height:36px;background:var(--bg);border:1.5px solid var(--border2);border-radius:8px;
+  width:100%;height:36px;background:var(--bg);border:1.5px solid var(--border2);border-radius:8px;
   font-family:var(--font-body);font-size:14px;color:var(--text);
-  padding:0 36px 0 14px;outline:none;cursor:pointer;
+  padding:0 32px 0 12px;outline:none;cursor:pointer;
   appearance:none;-webkit-appearance:none;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236b7a99' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 14px center;background-color:var(--bg);
+  background-repeat:no-repeat;background-position:right 12px center;background-color:var(--bg);
   transition:border-color .2s,box-shadow .2s;
+  text-overflow:ellipsis;white-space:nowrap;overflow:hidden;
 }
 .sfipe-select:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(13,31,60,.07);background:var(--white)}
-.sfipe-select:disabled{opacity:.45;cursor:not-allowed}
-.sfipe-select option{background:var(--white)}
+.sfipe-select:disabled{opacity:.55;cursor:not-allowed;background-color:var(--bg)}
+.sfipe-select option{background:var(--white);color:var(--text)}
 .search-fipe-row .sb-btn{border-radius:10px;align-self:flex-end}
 .sb-fipe-result{
   margin-top:14px;display:none;
@@ -393,11 +394,16 @@ header{
 .sbr-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;font-family:var(--font)}
 .sbr-value{font-family:var(--font);font-weight:800;font-size:17px;color:var(--navy)}
 .sbr-green{color:var(--green)!important}
-@media(max-width:640px){
+/* Tablet: grid 2x2 evita truncamento em larguras intermediárias */
+@media(max-width:900px){
+  .search-fipe-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .sfipe-group{min-width:0}
+  .search-fipe-row .sb-btn{grid-column:1/-1;width:100%}
+}
+/* Mobile pequeno: 1 coluna */
+@media(max-width:480px){
   .search-bar-wrap{position:static}
-  .search-fipe-row{flex-direction:column}
-  .sfipe-group{min-width:100%}
-  .search-fipe-row .sb-btn{width:100%}
+  .search-fipe-row{grid-template-columns:1fr}
 }
 @media(max-width:900px) and (orientation:landscape){
   .search-bar-wrap{position:static}
@@ -1135,25 +1141,25 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
   <div class="search-bar-inner">
     <div class="search-fipe-row">
       <div class="sfipe-group">
-        <select class="sfipe-select" id="sb-type" onchange="sbLoadBrands()">
+        <select class="sfipe-select" id="sb-type" onchange="sbOnTypeChange()">
           <option value="carros">🚗 Carros</option>
           <option value="motos">🏍️ Motos</option>
           <option value="caminhoes">🚚 Caminhões</option>
         </select>
       </div>
       <div class="sfipe-group">
-        <select class="sfipe-select" id="sb-brand" onchange="sbLoadYearsFromBrand()" disabled>
+        <select class="sfipe-select" id="sb-brand" onchange="sbOnBrandChange()" disabled>
           <option>⏳ Carregando marcas…</option>
         </select>
       </div>
       <div class="sfipe-group">
-        <select class="sfipe-select" id="sb-year" onchange="sbLoadModelsFromYear()" disabled>
-          <option>Selecione o ano</option>
+        <select class="sfipe-select" id="sb-model" onchange="sbOnModelChange()" disabled>
+          <option>Selecione a marca</option>
         </select>
       </div>
       <div class="sfipe-group">
-        <select class="sfipe-select" id="sb-model" onchange="if(this.value){ doFipeSearch(); }" disabled>
-          <option>Selecione o ano</option>
+        <select class="sfipe-select" id="sb-year" onchange="sbOnYearChange()" disabled>
+          <option>Selecione a marca</option>
         </select>
       </div>
     </div>
@@ -6739,90 +6745,215 @@ function renderMobileMenu() {
 function renderSuggestions(val) { onSearchInput(val); }
 
 // ── FIPE SEARCH BAR ──
+// ══════════════════════════════════════════════════════════════
+// FIPE SEARCHBAR — fluxo bidirecional Tipo/Marca/Modelo/Ano
+// Ordem mental (Tipo→Marca→Modelo→Ano) com atalho: usuário pode
+// pular Modelo e selecionar Ano direto, que filtra a lista de Modelo.
+// ══════════════════════════════════════════════════════════════
+
+// Helpers de UI ───────────────────────────────────────────────
+function _sbEls() {
+  return {
+    tSel: document.getElementById('sb-type'),
+    bSel: document.getElementById('sb-brand'),
+    mSel: document.getElementById('sb-model'),
+    ySel: document.getElementById('sb-year'),
+    result: document.getElementById('sb-fipe-result')
+  };
+}
+function _sbResetSelect(sel, placeholder, disable=true) {
+  sel.innerHTML = `<option value="">${placeholder}</option>`;
+  sel.disabled = disable;
+}
+function _sbHideResult() {
+  const r = document.getElementById('sb-fipe-result');
+  if (r) r.classList.remove('show');
+}
+
+// Trigger 1: Tipo mudou ───────────────────────────────────────
+function sbOnTypeChange() {
+  const { bSel, mSel, ySel } = _sbEls();
+  _sbResetSelect(bSel, '⏳ Carregando marcas…', true);
+  _sbResetSelect(mSel, 'Selecione a marca', true);
+  _sbResetSelect(ySel, 'Selecione a marca', true);
+  _sbHideResult();
+  sbLoadBrands();
+}
+
+// Carrega marcas do Tipo atual
 async function sbLoadBrands() {
-  const type = document.getElementById('sb-type').value;
-  const bSel = document.getElementById('sb-brand');
-  const ySel = document.getElementById('sb-year');
-  const mSel = document.getElementById('sb-model');
-  bSel.innerHTML = '<option>⏳ Carregando marcas…</option>'; bSel.disabled = true;
-  ySel.innerHTML = '<option>Selecione a marca</option>'; ySel.disabled = true;
-  mSel.innerHTML = '<option>Selecione o ano</option>'; mSel.disabled = true;
-  document.getElementById('sb-fipe-result').classList.remove('show');
+  const { tSel, bSel } = _sbEls();
+  const type = tSel.value;
+  bSel.innerHTML = '<option>⏳ Carregando marcas…</option>';
+  bSel.disabled = true;
   try {
     const d = await fipeFetch(fipeUrl(type, 'brands'));
     bSel.innerHTML = '<option value="">Selecione a marca</option>' +
       d.map(m => `<option value="${m.code||m.codigo}">${m.name||m.nome}</option>`).join('');
     bSel.disabled = false;
   } catch(e) {
-    console.error('FIPE erro:', e);
+    console.error('FIPE marcas erro:', e);
     bSel.innerHTML = '<option value="">⚠️ Clique para tentar novamente</option>';
     bSel.disabled = false;
-    bSel.onchange = () => { bSel.onchange = null; sbLoadBrands(); };
+    bSel.onchange = () => { bSel.onchange = () => sbOnBrandChange(); sbLoadBrands(); };
   }
 }
 
-// Marca → Anos usando endpoint direto da v2
-async function sbLoadYearsFromBrand() {
-  const type = document.getElementById('sb-type').value;
-  const brand = document.getElementById('sb-brand').value;
-  const ySel = document.getElementById('sb-year');
-  const mSel = document.getElementById('sb-model');
-  if (!brand) return;
+// Trigger 2: Marca mudou ──────────────────────────────────────
+// Carrega Modelos E Anos em paralelo. Ambos ficam habilitados,
+// usuário escolhe a ordem que preferir.
+async function sbOnBrandChange() {
+  const { tSel, bSel, mSel, ySel } = _sbEls();
+  const type = tSel.value;
+  const brand = bSel.value;
+  _sbHideResult();
+
+  if (!brand) {
+    _sbResetSelect(mSel, 'Selecione a marca', true);
+    _sbResetSelect(ySel, 'Selecione a marca', true);
+    return;
+  }
+
+  // Loading state em ambos
+  mSel.innerHTML = '<option>⏳ Carregando modelos…</option>'; mSel.disabled = true;
   ySel.innerHTML = '<option>⏳ Carregando anos…</option>'; ySel.disabled = true;
-  mSel.innerHTML = '<option>Selecione o ano</option>'; mSel.disabled = true;
-  document.getElementById('sb-fipe-result').classList.remove('show');
+
+  // Dispara as duas requisições em paralelo
+  const [modelsRes, yearsRes] = await Promise.allSettled([
+    fipeFetch(fipeUrl(type, 'brands', brand, 'models')),
+    fipeFetch(fipeUrl(type, 'brands', brand, 'years'))
+  ]);
+
+  // Modelos — extrai array (a API pode retornar {models:[...]} ou [...] direto)
+  if (modelsRes.status === 'fulfilled') {
+    const raw = modelsRes.value;
+    const arr = Array.isArray(raw) ? raw : (raw?.models || raw?.modelos || []);
+    const modelMap = new Map();
+    arr.forEach(m => {
+      const key = String(m.code||m.codigo);
+      if (!modelMap.has(key)) modelMap.set(key, m.name||m.nome);
+    });
+    mSel._fullModels = modelMap; // guarda lista completa pra restaurar depois
+    _sbRenderModels(modelMap);
+  } else {
+    console.error('FIPE modelos erro:', modelsRes.reason);
+    mSel.innerHTML = '<option value="">⚠️ Erro ao carregar modelos</option>';
+    mSel.disabled = false;
+  }
+
+  // Anos — agrupa por ano (vários combustíveis = vários códigos)
+  if (yearsRes.status === 'fulfilled') {
+    const anoMap = new Map();
+    (Array.isArray(yearsRes.value) ? yearsRes.value : []).forEach(a => {
+      const ano = (a.name||a.nome||'').split(' ')[0];
+      if (!anoMap.has(ano)) anoMap.set(ano, []);
+      anoMap.get(ano).push(a.code||a.codigo);
+    });
+    ySel._anoMap = anoMap;
+    ySel.innerHTML = '<option value="">Selecione o ano</option>' +
+      [...anoMap.keys()].map(ano => `<option value="${ano}">${ano}</option>`).join('');
+    ySel.disabled = false;
+  } else {
+    console.error('FIPE anos erro:', yearsRes.reason);
+    ySel.innerHTML = '<option value="">⚠️ Erro ao carregar anos</option>';
+    ySel.disabled = false;
+  }
+}
+
+function _sbRenderModels(modelMap) {
+  const mSel = document.getElementById('sb-model');
+  mSel.innerHTML = '<option value="">Selecione o modelo</option>' +
+    [...modelMap.entries()].map(([code, name]) => `<option value="${code}">${name}</option>`).join('');
+  mSel.disabled = false;
+}
+
+// Trigger 3: Modelo mudou ─────────────────────────────────────
+// - Recarrega anos disponíveis do modelo
+// - Se o ano antigo existir na nova lista, mantém e dispara busca
+// - Senão, limpa o ano e aguarda escolha
+async function sbOnModelChange() {
+  const { tSel, bSel, mSel, ySel } = _sbEls();
+  const type = tSel.value;
+  const brand = bSel.value;
+  const model = mSel.value;
+  _sbHideResult();
+
+  if (!model) return;
+
+  const prevYear = ySel.value; // ano possivelmente já escolhido
+  ySel.innerHTML = '<option>⏳ Atualizando anos…</option>'; ySel.disabled = true;
+
   try {
-    const d = await fipeFetch(fipeUrl(type, 'brands', brand, 'years'));
-    // Agrupa por ano (ex: "2023") guardando todos os códigos de combustível
+    const d = await fipeFetch(fipeUrl(type, 'brands', brand, 'models', model, 'years'));
+    // Agrupa por ano (igual ao fluxo de marca)
     const anoMap = new Map();
     (Array.isArray(d) ? d : []).forEach(a => {
       const ano = (a.name||a.nome||'').split(' ')[0];
       if (!anoMap.has(ano)) anoMap.set(ano, []);
       anoMap.get(ano).push(a.code||a.codigo);
     });
-    // Salva o mapa para uso em sbLoadModelsFromYear
     ySel._anoMap = anoMap;
+    const anos = [...anoMap.keys()];
+    const stillValid = prevYear && anoMap.has(prevYear);
+
     ySel.innerHTML = '<option value="">Selecione o ano</option>' +
-      [...anoMap.keys()].map(ano => `<option value="${ano}">${ano}</option>`).join('');
+      anos.map(ano => `<option value="${ano}">${ano}</option>`).join('');
     ySel.disabled = false;
+
+    if (stillValid) {
+      ySel.value = prevYear;
+      doFipeSearch(); // ano compatível → busca direto
+    }
   } catch(e) {
-    console.error('FIPE anos erro:', e);
-    ySel.innerHTML = '<option>⚠️ Erro ao carregar</option>';
+    console.error('FIPE anos do modelo erro:', e);
+    ySel.innerHTML = '<option value="">⚠️ Erro ao carregar anos</option>';
     ySel.disabled = false;
   }
 }
 
-// Ano → Modelos usando endpoint direto da v2
-async function sbLoadModelsFromYear() {
-  const type = document.getElementById('sb-type').value;
-  const brand = document.getElementById('sb-brand').value;
-  const year = document.getElementById('sb-year').value;
-  const mSel = document.getElementById('sb-model');
-  const ySel = document.getElementById('sb-year');
-  if (!year) return;
-  mSel.innerHTML = '<option>⏳ Carregando modelos…</option>'; mSel.disabled = true;
-  document.getElementById('sb-fipe-result').classList.remove('show');
+// Trigger 4: Ano mudou ────────────────────────────────────────
+// Dois cenários:
+// (A) Já tem Modelo selecionado → dispara busca
+// (B) Sem Modelo → filtra a lista de Modelos pelos fabricados nesse ano
+async function sbOnYearChange() {
+  const { tSel, bSel, mSel, ySel } = _sbEls();
+  const type = tSel.value;
+  const brand = bSel.value;
+  const model = mSel.value;
+  const year = ySel.value;
+  _sbHideResult();
+
+  if (!year) {
+    // Voltou pro placeholder: restaura lista completa de modelos se tiver
+    if (mSel._fullModels && !model) _sbRenderModels(mSel._fullModels);
+    return;
+  }
+
+  // (A) Modelo + Ano → busca
+  if (model) { doFipeSearch(); return; }
+
+  // (B) Só Ano: filtra modelos pelos disponíveis nesse ano
+  const codes = (ySel._anoMap && ySel._anoMap.get(year)) || [];
+  if (!codes.length) return;
+
+  mSel.innerHTML = '<option>⏳ Filtrando modelos…</option>'; mSel.disabled = true;
   try {
-    // Pega todos os códigos de combustível para esse ano
-    const codes = (ySel._anoMap && ySel._anoMap.get(year)) || [year + '-1'];
-    // Busca modelos de todos os combustíveis e une sem repetir
     const modelMap = new Map();
     await Promise.all(codes.map(async code => {
       try {
         const d = await fipeFetch(fipeUrl(type, 'brands', brand, 'years', code, 'models'));
         (Array.isArray(d) ? d : []).forEach(m => {
-          const key = m.code||m.codigo;
+          const key = String(m.code||m.codigo);
           if (!modelMap.has(key)) modelMap.set(key, m.name||m.nome);
         });
       } catch(e) {}
     }));
-    mSel.innerHTML = '<option value="">Selecione o modelo</option>' +
-      [...modelMap.entries()].map(([code, name]) => `<option value="${code}">${name}</option>`).join('');
-    mSel.disabled = false;
+    _sbRenderModels(modelMap);
   } catch(e) {
-    console.error('FIPE modelos erro:', e);
-    mSel.innerHTML = '<option>⚠️ Erro ao carregar</option>';
-    mSel.disabled = false;
+    console.error('FIPE modelos por ano erro:', e);
+    // Fallback: restaura lista completa
+    if (mSel._fullModels) _sbRenderModels(mSel._fullModels);
+    else { mSel.innerHTML = '<option value="">⚠️ Erro ao filtrar</option>'; mSel.disabled = false; }
   }
 }
 
