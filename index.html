@@ -112,13 +112,13 @@ header{
     background:#fff!important;
   }
   .nav-search button{
-    height:36px!important;width:36px!important;border-radius:0 50px 50px 0!important;
-    background:var(--bg)!important;color:var(--navy)!important;
+    height:36px!important;width:42px!important;border-radius:0 50px 50px 0!important;
+    background:var(--bg)!important;color:var(--muted)!important;
     border:1.5px solid var(--border)!important;border-left:none!important;
   }
   #voice-btn:hover{background:var(--bg2)!important;color:var(--navy)!important}
-  /* Aumenta o ícone do microfone no mobile (SVG inline é só 16px) */
-  #voice-btn svg{width:22px!important;height:22px!important;stroke-width:2.4!important}
+  /* Garante que o SVG não encolha dentro do botão flex */
+  #voice-btn svg{flex-shrink:0!important}
   .logo-desktop{display:none!important}
   .logo-mobile{display:block!important;height:34px!important;width:auto!important}
   .nav-user-name{display:none}
