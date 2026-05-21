@@ -712,11 +712,12 @@ footer{background:var(--navy);padding:36px 24px;margin-top:auto}
   display:flex;flex-direction:column;
 }
 .auth-header{
-  background:var(--navy);padding:28px 28px 22px;text-align:center;
+  background:#fff;padding:28px 28px 22px;text-align:center;
+  border-bottom:1px solid var(--border);
 }
 .auth-logo-wrap{margin-bottom:14px}
-.auth-title{font-family:var(--font);font-weight:900;font-size:20px;color:#fff;margin-bottom:4px}
-.auth-subtitle{color:rgba(255,255,255,.55);font-size:13px}
+.auth-title{font-family:var(--font);font-weight:900;font-size:20px;color:var(--navy);margin-bottom:4px}
+.auth-subtitle{color:var(--muted);font-size:13px}
 .auth-tabs{display:flex;background:var(--bg);border-bottom:1px solid var(--border)}
 .auth-tab{
   flex:1;padding:13px;font-family:var(--font);font-weight:700;font-size:13px;
@@ -757,12 +758,12 @@ footer{background:var(--navy);padding:36px 24px;margin-top:auto}
 .auth-social-btn:hover{border-color:var(--navy);background:var(--white)}
 .auth-close{
   position:absolute;top:16px;right:16px;
-  background:rgba(255,255,255,.15);border:none;color:#fff;
+  background:var(--bg);border:none;color:var(--muted);
   width:32px;height:32px;border-radius:50%;cursor:pointer;
   font-size:16px;display:flex;align-items:center;justify-content:center;
-  transition:background .2s;
+  transition:background .2s,color .2s;
 }
-.auth-close:hover{background:rgba(255,255,255,.25)}
+.auth-close:hover{background:var(--bg2);color:var(--navy)}
 .auth-header{position:relative}
 .auth-error{background:var(--red-light);border:1px solid var(--red-light2);color:var(--red);font-size:12px;font-weight:600;padding:8px 12px;border-radius:8px;margin-bottom:12px;display:none}
 .auth-error.show{display:block}
@@ -6847,10 +6848,10 @@ function openAuth(tab='login') {
   switchAuth(tab);
   document.getElementById('auth-modal').classList.add('open');
   document.body.style.overflow = 'hidden';
-  // Copia logo para o modal
-  const srcImg = document.querySelector('header img');
+  // Usa o logo símbolo (só infinito) no modal
+  const srcImg = document.querySelector('header img.logo-mobile');
   const wrap = document.getElementById('auth-logo-wrap');
-  if (srcImg && wrap) wrap.innerHTML = `<img src="${srcImg.src}" style="height:46px;width:auto;" alt="Doutor Oficina"/>`;
+  if (srcImg && wrap) wrap.innerHTML = `<img src="${srcImg.src}" style="height:44px;width:auto;" alt="Doutor Oficina"/>`;
 }
 let _authMouseDownTarget = null;
 function closeAuth() {
