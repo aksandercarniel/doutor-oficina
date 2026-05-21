@@ -1021,12 +1021,13 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
   display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;
   box-shadow:var(--shadow);
 }
-.profile-left{flex:1;min-width:240px}
-.profile-emoji{margin-bottom:12px;display:block;line-height:1}
-.profile-emoji .vehicle-icon-svg{display:block;width:96px;height:96px;color:var(--navy)}
-.profile-brand-label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:1.2px;font-weight:700;margin-bottom:6px}
-.profile-name{font-family:var(--font);font-weight:900;font-size:38px;line-height:1;color:var(--navy);margin-bottom:5px}
-.profile-sub{color:var(--muted);font-size:14px;margin-bottom:14px;font-family:var(--font-body)}
+.profile-left{flex:1;min-width:240px;display:grid;grid-template-columns:auto 1fr;grid-column-gap:18px;align-items:start}
+.profile-emoji{grid-column:1;grid-row:1/span 3;align-self:center;display:block;line-height:1}
+.profile-emoji .vehicle-icon-svg{display:block;width:64px;height:64px;color:var(--navy);stroke-width:1.25}
+.profile-brand-label{grid-column:2;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:1.2px;font-weight:700;margin-bottom:6px}
+.profile-name{grid-column:2;font-family:var(--font);font-weight:900;font-size:38px;line-height:1;color:var(--navy);margin-bottom:5px}
+.profile-sub{grid-column:2;color:var(--muted);font-size:14px;margin-bottom:14px;font-family:var(--font-body)}
+.profile-rating,.profile-tags{grid-column:1/-1}
 .profile-rating{display:flex;align-items:center;gap:10px;margin-bottom:14px}
 .big-stars{color:var(--yellow);font-size:18px;letter-spacing:2px}
 .big-score{font-family:var(--font);font-weight:900;font-size:28px;color:var(--navy)}
