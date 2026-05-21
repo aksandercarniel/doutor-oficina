@@ -1042,20 +1042,21 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .eye-btn{position:absolute;right:12px;background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;padding:4px;line-height:1}
 .eye-btn:hover{color:var(--navy)}
 
-/* ── CANAL DE MEDIAÇÃO ── */
-.mediation-grid{
+/* ── LAYOUT 2 COLUNAS COM SIDEBAR ── */
+/* Usado em: canal de mediação, detalhes de reclamação, e onde mais aparecer */
+.split-2col{
   display:grid;
   grid-template-columns:1fr;
   gap:14px;
   align-items:start;
 }
 @media(min-width:768px){
-  .mediation-grid{
+  .split-2col{
     grid-template-columns:1fr 280px;
     gap:20px;
   }
 }
-.mediation-card{
+.split-card{
   background:var(--white);
   border:1.5px solid var(--border);
   border-radius:16px;
@@ -1063,7 +1064,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
   margin-bottom:16px;
 }
 @media(min-width:768px){
-  .mediation-card{padding:24px}
+  .split-card{padding:24px}
 }
 
 
@@ -5722,11 +5723,11 @@ async function openComplaintDetail(complaintId) {
     let html = `
       <button onclick="goBack()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body);margin-bottom:20px;display:flex;align-items:center;gap:6px">← Voltar</button>
 
-      <div style="display:grid;grid-template-columns:1fr 280px;gap:20px;align-items:start">
+      <div class="split-2col">
 
         <!-- Coluna principal -->
         <div>
-          <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:28px;margin-bottom:16px">
+          <div class="split-card">
             <div style="font-size:12px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">
               ${typeEmoji[complaint.vehicle_type]||'🚗'} ${complaint.vehicle_brand||''} ${complaint.vehicle_model||''} ${complaint.vehicle_year||''}
             </div>
@@ -5742,7 +5743,7 @@ async function openComplaintDetail(complaintId) {
 
           <!-- Acompanhamento -->
           ${messages && messages.length > 0 ? `
-          <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:28px">
+          <div class="split-card">
             <h3 style="font-family:var(--font);font-weight:800;font-size:16px;color:var(--navy);margin:0 0 16px">💬 Acompanhamento</h3>
             ${messages.map(m => {
               const isFromAuthor = m.sender_role === 'client';
@@ -6006,22 +6007,22 @@ function renderResolutionPage() {
   let html = `
     <button onclick="goBack()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body);margin-bottom:24px;display:flex;align-items:center;gap:6px">← Voltar</button>
 
-    <div style="display:grid;grid-template-columns:1fr 280px;gap:20px;align-items:start">
+    <div class="split-2col">
 
       <!-- Coluna principal -->
       <div>
         <!-- Cabeçalho da reclamação -->
-        <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px">
+        <div class="split-card">
           <div style="font-size:12px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">🚗 ${complaint.vehicle_brand||''} ${complaint.vehicle_model||''} ${complaint.vehicle_year||''}</div>
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px">
-            <h2 style="font-family:var(--font);font-weight:900;font-size:22px;color:var(--navy);margin:0;line-height:1.2">${complaint.title}</h2>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+            <h2 style="font-family:var(--font);font-weight:900;font-size:22px;color:var(--navy);margin:0;line-height:1.2;flex:1;min-width:0;word-wrap:break-word">${complaint.title}</h2>
             <span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;white-space:nowrap;background:${statusBg[st]};color:${statusCol[st]}">${statusMap[st]||'🔴 Não respondida'}</span>
           </div>
           <p style="font-size:14px;color:var(--text2);line-height:1.7;margin:0">${complaint.description||''}</p>
         </div>
 
         <!-- Diálogo -->
-        <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px">
+        <div class="split-card">
           <div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy);margin-bottom:16px">💬 Diálogo</div>
           ${msgHtml}
 
@@ -7263,11 +7264,11 @@ async function openMediationChannel(mediationId) {
     el.innerHTML = `
       <button onclick="goBack()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body);margin-bottom:24px;display:flex;align-items:center;gap:6px">← Voltar</button>
 
-      <div class="mediation-grid">
+      <div class="split-2col">
 
         <!-- Coluna principal: mensagens -->
         <div>
-          <div class="mediation-card">
+          <div class="split-card">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px">
               <div>
                 <div style="font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">⚖️ Canal de Mediação</div>
