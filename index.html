@@ -175,7 +175,7 @@ header{
 @media(max-width:640px){.nav-search input::placeholder{content:"Buscar..."}#search-free-input::placeholder{color:rgba(255,255,255,.55);font-size:13px}}
 .nav-search input:focus{border-color:rgba(255,255,255,.4)!important;box-shadow:0 0 0 3px rgba(255,255,255,.08)!important;background:rgba(255,255,255,.14)!important}
 #voice-btn:hover{background:rgba(255,255,255,.14)!important;color:#fff!important}
-.nav-search button{height:42px;border:none;cursor:pointer;color:#fff;font-size:16px;transition:background .2s;border-radius:0 50px 50px 0;padding:0 18px}
+.nav-search button{height:42px;border:none;cursor:pointer;color:#fff;font-size:16px;transition:background .2s,color .2s;border-radius:0 50px 50px 0;padding:0 16px 0 8px;flex-shrink:0}
 .nav-actions{display:flex;align-items:center;gap:6px;margin-left:auto}
 @media(max-width:640px){#search-free-input::placeholder{font-size:12px}}
 .nav-link{color:rgba(255,255,255,.6);text-decoration:none;font-size:13.5px;font-weight:600;padding:8px 12px;border-radius:7px;transition:color .2s,background .2s;white-space:nowrap}
@@ -1033,7 +1033,7 @@ footer{background:var(--navy);padding:36px 24px;margin-top:auto}
           autocorrect="off"
           autocapitalize="off"
           role="searchbox"/>
-        <button onclick="startVoiceSearch()" id="voice-btn" title="Buscar por voz" style="flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0;">
+        <button onclick="startVoiceSearch()" id="voice-btn" title="Buscar por voz" style="flex-shrink:0;display:flex;align-items:center;justify-content:center;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
         </button>
       </div>
