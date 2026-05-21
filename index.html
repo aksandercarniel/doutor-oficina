@@ -586,6 +586,7 @@ header{
 .cc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap}
 .cc-vehicle{display:flex;align-items:center;gap:10px}
 .cc-emoji{font-size:18px}
+.cc-emoji .vehicle-icon-svg{width:22px;height:22px;color:var(--navy);display:block}
 .cc-vname{font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy)}
 .cc-vbrand{color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase}
 .cc-meta{display:flex;align-items:center;gap:10px}
@@ -8092,7 +8093,7 @@ function renderComplaintsList(list) {
     <div class="complaint-card" style="cursor:pointer" onclick="openComplaintDetail('${c.id||i}')">
       <div class="cc-top">
         <div class="cc-vehicle">
-          <span class="cc-emoji">${c.emoji}</span>
+          <span class="cc-emoji">${vehicleIcon(c.emoji, c.model)}</span>
           <div><div class="cc-vname">${c.model}</div><div class="cc-vbrand">${c.brand}</div></div>
         </div>
         <div class="cc-meta">
