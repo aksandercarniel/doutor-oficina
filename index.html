@@ -67,7 +67,7 @@ svg.ico,svg.ico-sm,svg.ico-lg,svg.ico-xl,svg.ico-medal{color:var(--navy)}
 .auth-social-btn svg.ico{width:16px;height:16px}
 
 
-html{overflow-x:hidden;max-width:100vw}
+html{max-width:100vw}
 body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;overflow-x:hidden;overflow-y:scroll;min-height:100vh;display:flex;flex-direction:column;max-width:100vw}
 img,video{max-width:100%;height:auto}
 ::-webkit-scrollbar{width:6px}
@@ -80,6 +80,12 @@ header{
   background:var(--navy);
   border-bottom:1px solid rgba(255,255,255,.08);
   box-shadow:0 2px 12px rgba(13,31,60,.25);
+  transition:transform .25s ease;
+  will-change:transform;
+}
+/* hide-on-scroll-down só no mobile */
+@media(max-width:640px){
+  header.header-hidden{transform:translateY(-100%)}
 }
 .nav{
   max-width:1280px;margin:0 auto;padding:0 16px;
@@ -6644,6 +6650,55 @@ window.addEventListener('resize', () => {
     closeMobileMenu();
   }
 });
+
+// ── HEADER HIDE-ON-SCROLL-DOWN (só mobile) ──
+// Esconde o header ao rolar pra baixo, mostra ao rolar pra cima.
+// Threshold pequeno (5px) pra responder a gestos curtos sem disparar com micro-scrolls.
+(() => {
+  let lastY = window.scrollY;
+  let ticking = false;
+  const THRESHOLD = 5;       // mínimo de delta pra reagir
+  const TOP_ZONE = 60;       // acima disso, sempre mostra
+  const HIDE_AFTER = 80;     // só esconde depois de rolar X px do topo
+
+  function onScroll() {
+    // só ativa em viewport mobile
+    if (window.innerWidth > 640) {
+      document.querySelector('header')?.classList.remove('header-hidden');
+      lastY = window.scrollY;
+      ticking = false;
+      return;
+    }
+    // não esconde se o drawer mobile estiver aberto
+    if (isMobileMenuOpen()) { ticking = false; return; }
+
+    const y = window.scrollY;
+    const delta = y - lastY;
+    const header = document.querySelector('header');
+    if (!header) { ticking = false; return; }
+
+    if (y <= TOP_ZONE) {
+      // perto do topo: sempre mostra
+      header.classList.remove('header-hidden');
+    } else if (delta > THRESHOLD && y > HIDE_AFTER) {
+      // rolando pra baixo: esconde
+      header.classList.add('header-hidden');
+    } else if (delta < -THRESHOLD) {
+      // rolando pra cima: mostra
+      header.classList.remove('header-hidden');
+    }
+
+    lastY = y;
+    ticking = false;
+  }
+
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      window.requestAnimationFrame(onScroll);
+      ticking = true;
+    }
+  }, { passive: true });
+})();
 
 function renderMobileMenu() {
   const el = document.getElementById('mobile-menu-items');
