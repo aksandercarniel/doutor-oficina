@@ -4682,12 +4682,14 @@ function showPage(page, params={}){
     alert('Acesso restrito.');
     return;
   }
-  // Reseta a searchbar FIPE ao navegar (fecha painel mobile, limpa selects/cache, desmarca tipo)
-  // e re-seleciona "Carros" como padrão. keepClosed mantém o painel fechado no mobile —
-  // no desktop nada muda (painel sempre visível).
+  // Reseta a searchbar FIPE ao navegar (fecha painel mobile, limpa selects/cache, desmarca tipo).
+  // No desktop, re-seleciona "Carros" como padrão pra usuário cair direto na marca.
+  // No mobile fica virgem — botão ativo sem painel aberto confundiria.
   if(typeof sbResetSearchBar === 'function') {
     sbResetSearchBar({full: true});
-    if(typeof sbSelectType === 'function') sbSelectType('carros', {keepClosed: true});
+    if(typeof sbSelectType === 'function' && window.innerWidth > 640) {
+      sbSelectType('carros', {keepClosed: true});
+    }
   }
   ['home','vehicle','profile','compare','search','admin','lawyers','resolution','company','ranking-companies','complaint','company-profile','mediation','lawyer-panel','mediation-channel'].forEach(p=>{
     const el=document.getElementById('page-'+p);
@@ -8092,11 +8094,13 @@ renderVehicles();
 renderRanking();
 initCompare();
 initSearch();
-// Pré-seleciona "Carros" na init: usuário cai direto na escolha de marca,
-// sem precisar entender que precisa clicar no ícone primeiro. Moto/caminhão
-// continuam clicáveis pra trocar. No mobile o painel começa fechado
-// (keepClosed) — só abre quando o usuário toca num ícone.
-sbSelectType('carros', {keepClosed: true});
+// Pré-seleciona "Carros" apenas no desktop: usuário cai direto na escolha de marca,
+// sem precisar entender que precisa clicar no ícone primeiro.
+// No mobile não faz sentido — botão ativo sem painel aberto confunde, então
+// começa virgem e o usuário escolhe o tipo tocando no ícone.
+if (window.innerWidth > 640) {
+  sbSelectType('carros', {keepClosed: true});
+}
 getTopVehiclesFromSupabase(); // pré-aquece cache para autocomplete
 setTimeout(() => { const i = document.getElementById('search-free-input'); if(i) i.value=''; }, 50);
 // Placeholder menor no mobile
