@@ -1467,6 +1467,46 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
   </div>
 </div>
 
+<!-- ══ PÁGINA: TODOS OS VEÍCULOS (com filtros e ordenação) ══ -->
+<div id="page-vehicles" style="display:none;max-width:1280px;margin:0 auto;padding:32px 24px">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+    <button onclick="goBack()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body)">← Voltar</button>
+  </div>
+  <div style="margin-bottom:24px">
+    <h2 style="font-family:var(--font);font-size:26px;font-weight:900;color:var(--navy);margin:0 0 6px">Todos os <span style="color:var(--red)">veículos</span></h2>
+    <p id="all-vehicles-subtitle" style="color:var(--muted);font-size:14px;margin:0">Carregando…</p>
+  </div>
+
+  <button class="filters-toggle" id="veh-filters-toggle" onclick="toggleVehicleFiltersMobile()" type="button">
+    <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>Filtros<span class="filters-toggle-badge" id="veh-filters-toggle-badge" style="display:none"></span></span>
+    <svg class="filters-toggle-arrow" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 4.5 6 7.5 9 4.5"/></svg>
+  </button>
+
+  <div class="filters-bar" id="veh-filters-bar">
+    <span class="filter-label">Filtrar:</span>
+    <select class="filter-select" id="veh-filter-brand" onchange="applyVehicleFilters()">
+      <option value="">Todas as marcas</option>
+    </select>
+    <select class="filter-select" id="veh-filter-type" onchange="applyVehicleFilters()">
+      <option value="">Todos os tipos</option>
+      <option value="carro">🚗 Carro</option>
+      <option value="moto">🏍️ Moto</option>
+      <option value="caminhao">🚚 Caminhão</option>
+    </select>
+    <select class="filter-select" id="veh-filter-sort" onchange="applyVehicleFilters()" style="min-width:200px">
+      <option value="most_issues">Mais avaliados</option>
+      <option value="best_rating">Melhor nota</option>
+      <option value="worst_rating">Pior nota</option>
+      <option value="name_asc">Nome (A-Z)</option>
+    </select>
+    <button class="filter-clear" onclick="clearVehicleFilters()">✕ Limpar filtros</button>
+  </div>
+
+  <div id="all-vehicles-grid" class="vehicles-grid">
+    <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Carregando…</div>
+  </div>
+</div>
+
 <!-- ══ PÁGINA: TODAS AS RECLAMAÇÕES (paginada, com filtros e ordenação) ══ -->
 <div id="page-complaints" style="display:none;max-width:1100px;margin:0 auto;padding:32px 24px">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
@@ -1587,7 +1627,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
     <div class="section-inner">
       <div class="section-header">
         <h2 class="section-title">Veículos mais <span class="accent">avaliados</span></h2>
-        <a href="#" class="see-all" id="vehicles-toggle" onclick="event.preventDefault();toggleVehiclesExpanded();return false;">Ver todos →</a>
+        <a href="#" class="see-all" onclick="event.preventDefault();showPage('vehicles');return false;">Ver todos →</a>
       </div>
       <div class="vehicles-grid" id="vehicles-grid"></div>
     </div>
@@ -3159,14 +3199,7 @@ const fipePrices={'1':'R$ 142.990','2':'R$ 61.490','3':'R$ 78.900','4':'R$ 18.59
 // ══ RENDER ══
 function starsHtml(r){let s='';for(let i=1;i<=5;i++)s+=i<=Math.round(r)?'★':'☆';return s}
 
-// Estado de expansão da seção "Veículos mais avaliados" (4 cards collapsed / 12 expanded)
-let _vehiclesExpanded = false;
-function toggleVehiclesExpanded(){
-  _vehiclesExpanded = !_vehiclesExpanded;
-  const toggle = document.getElementById('vehicles-toggle');
-  if (toggle) toggle.textContent = _vehiclesExpanded ? 'Ver menos ↑' : 'Ver todos →';
-  renderVehicles();
-}
+// Estado de expansão da seção "Veículos mais avaliados" — removido (agora "Ver todos" leva à página dedicada)
 
 async function renderVehicles(){
   const grid = document.getElementById('vehicles-grid');
@@ -3193,8 +3226,7 @@ async function renderVehicles(){
     else groups[key].issues.push(row);
   });
 
-  const limit = _vehiclesExpanded ? 12 : 4;
-  const vehicles = Object.values(groups).filter(v => v.summary).slice(0, limit);
+  const vehicles = Object.values(groups).filter(v => v.summary).slice(0, 4);
   if (!vehicles.length) {
     grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Nenhum veículo encontrado no Raio-X.</div>';
     return;
@@ -4921,7 +4953,7 @@ function showPage(page, params={}){
       sbSelectType('carros', {keepClosed: true});
     }
   }
-  ['home','vehicle','profile','compare','search','admin','lawyers','resolution','company','ranking-companies','complaint','company-profile','mediation','lawyer-panel','mediation-channel','complaints'].forEach(p=>{
+  ['home','vehicle','profile','compare','search','admin','lawyers','resolution','company','ranking-companies','complaint','company-profile','mediation','lawyer-panel','mediation-channel','complaints','vehicles'].forEach(p=>{
     const el=document.getElementById('page-'+p);
     if(el) el.style.display=p===page?'block':'none';
   });
@@ -4934,6 +4966,7 @@ function showPage(page, params={}){
   if(page==='ranking-companies') loadCompanyRanking();
   if(page==='lawyer-panel') loadLawyerPanel();
   if(page==='complaints') loadAllComplaintsPage(params);
+  if(page==='vehicles') loadAllVehiclesPage(params);
   // Salva estado na URL para sobreviver ao Cmd+R
   const hashParams = new URLSearchParams(params).toString();
   window.location.hash = hashParams ? page + '?' + hashParams : page;
@@ -8434,6 +8467,162 @@ function updateAllFiltersBadge() {
   // sort não conta como "filtro" — é só ordenação
   const count = [status, brand, state].filter(Boolean).length;
   const badge = document.getElementById('all-filters-toggle-badge');
+  if (!badge) return;
+  if (count > 0) { badge.textContent = count; badge.style.display = 'inline-flex'; }
+  else { badge.style.display = 'none'; }
+}
+
+// ══ PÁGINA: TODOS OS VEÍCULOS ══
+// Estratégia: busca tudo uma vez (são poucos modelos), filtra/ordena no client.
+// Evita ida extra ao banco a cada toggle de filtro.
+let _allVehiclesState = { all: [], filters: { brand:'', type:'' }, sort: 'most_issues' };
+
+async function loadAllVehiclesPage(params = {}) {
+  _allVehiclesState = { all: [], filters: { brand:'', type:'' }, sort: 'most_issues' };
+  const grid = document.getElementById('all-vehicles-grid');
+  const sub  = document.getElementById('all-vehicles-subtitle');
+  if (grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Carregando…</div>';
+  if (sub)  sub.textContent = 'Carregando…';
+
+  // Reseta selects de UI
+  ['veh-filter-brand','veh-filter-type'].forEach(id => { const e=document.getElementById(id); if(e) e.value=''; });
+  const sortSel = document.getElementById('veh-filter-sort');
+  if (sortSel) sortSel.value = 'most_issues';
+
+  // Busca tudo do Supabase (mesma lógica do renderVehicles)
+  let allRows = [];
+  try {
+    const { data } = await sb.from('vehicle_known_issues')
+      .select('vehicle_brand, vehicle_model, vehicle_type, is_summary, reliability_score, verdict, weaknesses, issue_title, severity')
+      .order('is_summary', { ascending: false })
+      .order('severity', { ascending: true })
+      .limit(1000);
+    allRows = data || [];
+  } catch(e) { console.error('Erro ao buscar veículos:', e); }
+
+  // Agrupa por marca+modelo
+  const groups = {};
+  allRows.forEach(row => {
+    const key = `${row.vehicle_brand}|${row.vehicle_model}`;
+    if (!groups[key]) groups[key] = { brand: row.vehicle_brand, model: row.vehicle_model, type: row.vehicle_type, summary: null, issues: [] };
+    if (row.is_summary) groups[key].summary = row;
+    else groups[key].issues.push(row);
+  });
+  _allVehiclesState.all = Object.values(groups).filter(v => v.summary);
+
+  // Popula select de marcas dinamicamente (só marcas que realmente têm veículos)
+  const brandSel = document.getElementById('veh-filter-brand');
+  if (brandSel) {
+    const brands = [...new Set(_allVehiclesState.all.map(v => v.brand))].sort();
+    brandSel.innerHTML = '<option value="">Todas as marcas</option>' + brands.map(b => `<option value="${b}">${b}</option>`).join('');
+  }
+
+  // Aplica filtros vindos por params (ex: futuro: vir filtrado por tipo via URL)
+  if (params.brand && brandSel) { brandSel.value = params.brand; _allVehiclesState.filters.brand = params.brand; }
+  if (params.type) { const ts = document.getElementById('veh-filter-type'); if (ts) ts.value = params.type; _allVehiclesState.filters.type = params.type; }
+
+  renderAllVehiclesGrid();
+  updateVehicleFiltersBadge();
+}
+
+function renderAllVehiclesGrid() {
+  const grid = document.getElementById('all-vehicles-grid');
+  const sub  = document.getElementById('all-vehicles-subtitle');
+  if (!grid) return;
+
+  const { all, filters, sort } = _allVehiclesState;
+  // Filtra
+  let list = all.filter(v => {
+    if (filters.brand && v.brand !== filters.brand) return false;
+    if (filters.type  && v.type  !== filters.type)  return false;
+    return true;
+  });
+  // Ordena
+  if (sort === 'most_issues')       list.sort((a,b) => b.issues.length - a.issues.length);
+  else if (sort === 'best_rating')  list.sort((a,b) => (parseFloat(b.summary?.reliability_score)||0) - (parseFloat(a.summary?.reliability_score)||0));
+  else if (sort === 'worst_rating') list.sort((a,b) => (parseFloat(a.summary?.reliability_score)||0) - (parseFloat(b.summary?.reliability_score)||0));
+  else if (sort === 'name_asc')     list.sort((a,b) => (a.brand+' '+a.model).localeCompare(b.brand+' '+b.model, 'pt-BR'));
+
+  // Subtítulo com contagem
+  const filtered = Object.values(filters).filter(Boolean).length > 0;
+  if (sub) {
+    sub.textContent = filtered
+      ? `${list.length} ${list.length === 1 ? 'veículo encontrado' : 'veículos encontrados'}`
+      : `${list.length} ${list.length === 1 ? 'veículo' : 'veículos'} no total`;
+  }
+
+  if (!list.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--muted);background:var(--white);border:1.5px solid var(--border);border-radius:12px">Nenhum veículo encontrado com esses filtros.</div>';
+    return;
+  }
+
+  const typeEmoji = (t) => t === 'moto' ? '🏍️' : t === 'caminhao' ? '🚚' : '🚗';
+
+  grid.innerHTML = list.map(v => {
+    const s = v.summary;
+    const rating = parseFloat(s.reliability_score) || 0;
+    const topProblem = v.issues[0]?.issue_title || s.weaknesses?.[0] || 'Verificar manual';
+    const resolved = Math.round(55 + rating * 5);
+    const emoji = typeEmoji(v.type);
+    const verdict = (s.verdict || '').slice(0, 70) + ((s.verdict||'').length > 70 ? '…' : '');
+    return `
+    <div class="vehicle-card" onclick="showVehicleProfileByBrandModel('${v.brand.replace(/'/g,"\\'")}','${v.model.replace(/'/g,"\\'")}')">
+      <div class="vc-top">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="vc-emoji">${vehicleIcon(emoji, v.model)}</span>
+          <div class="vc-name">${v.model}</div>
+        </div>
+        <span class="vc-badge badge-blue">✓ Raio-X</span>
+      </div>
+      <div class="vc-brand">${v.brand}</div>
+      <div class="vc-version">${verdict}</div>
+      <div class="vc-rating"><span class="stars">${starsHtml(rating)}</span><span class="star-val">${rating.toFixed(1)}</span></div>
+      <div class="vc-count">${v.issues.length} problema${v.issues.length !== 1 ? 's' : ''} mapeado${v.issues.length !== 1 ? 's' : ''}</div>
+      <div class="vc-divider"></div>
+      <div class="vc-info-grid">
+        <div class="vc-info-item">
+          <span class="vc-info-label">⚠️ Mais relatado</span>
+          <span class="vc-info-value red">${topProblem}</span>
+        </div>
+        <div class="vc-info-item">
+          <span class="vc-info-label">✅ Resolvidas</span>
+          <span class="vc-info-value green">${resolved}%</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function applyVehicleFilters() {
+  _allVehiclesState.filters.brand = document.getElementById('veh-filter-brand').value;
+  _allVehiclesState.filters.type  = document.getElementById('veh-filter-type').value;
+  _allVehiclesState.sort          = document.getElementById('veh-filter-sort').value;
+  renderAllVehiclesGrid();
+  updateVehicleFiltersBadge();
+}
+
+function clearVehicleFilters() {
+  ['veh-filter-brand','veh-filter-type'].forEach(id => { const e=document.getElementById(id); if(e) e.value=''; });
+  const sortSel = document.getElementById('veh-filter-sort'); if (sortSel) sortSel.value = 'most_issues';
+  _allVehiclesState.filters = { brand:'', type:'' };
+  _allVehiclesState.sort = 'most_issues';
+  renderAllVehiclesGrid();
+  updateVehicleFiltersBadge();
+}
+
+function toggleVehicleFiltersMobile() {
+  const bar = document.getElementById('veh-filters-bar');
+  const tgl = document.getElementById('veh-filters-toggle');
+  if (!bar || !tgl) return;
+  bar.classList.toggle('expanded');
+  tgl.classList.toggle('expanded');
+}
+
+function updateVehicleFiltersBadge() {
+  const brand = document.getElementById('veh-filter-brand')?.value;
+  const type  = document.getElementById('veh-filter-type')?.value;
+  const count = [brand, type].filter(Boolean).length;
+  const badge = document.getElementById('veh-filters-toggle-badge');
   if (!badge) return;
   if (count > 0) { badge.textContent = count; badge.style.display = 'inline-flex'; }
   else { badge.style.display = 'none'; }
