@@ -1622,6 +1622,39 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
     </div>
   </section>
 
+  <!-- RANKING -->
+  <section class="section section-alt" id="ranking-section">
+    <div class="section-inner">
+      <div class="section-header">
+        <h2 class="section-title">🏆 Ranking de <span class="accent">confiabilidade</span></h2>
+        <a href="#" class="see-all" onclick="event.preventDefault();showPage('vehicles',{sort:'best_rating'});return false;">Ranking completo →</a>
+      </div>
+      <div class="ranking-grid" id="ranking-grid"></div>
+    </div>
+  </section>
+
+  <!-- VEÍCULOS EM DESTAQUE -->
+  <section class="section">
+    <div class="section-inner">
+      <div class="section-header">
+        <h2 class="section-title">Veículos mais <span class="accent">avaliados</span></h2>
+        <a href="#" class="see-all" onclick="event.preventDefault();showPage('vehicles');return false;">Ver todos →</a>
+      </div>
+      <div class="vehicles-grid" id="vehicles-grid"></div>
+    </div>
+  </section>
+
+  <!-- RECLAMAÇÕES RECENTES -->
+  <section class="section section-alt">
+    <div class="section-inner">
+      <div class="section-header">
+        <h2 class="section-title">Reclamações <span class="accent">recentes</span></h2>
+        <a href="#" class="see-all" onclick="event.preventDefault();showPage('complaints');return false;">Ver todas →</a>
+      </div>
+      <div class="complaints-list" id="complaints-list"></div>
+    </div>
+  </section>
+
   <!-- COMO FUNCIONA -->
   <section class="section">
     <div class="section-inner">
@@ -1656,41 +1689,6 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
       </div>
     </div>
   </section>
-
-  <!-- VEÍCULOS EM DESTAQUE -->
-  <section class="section section-alt">
-    <div class="section-inner">
-      <div class="section-header">
-        <h2 class="section-title">Veículos mais <span class="accent">avaliados</span></h2>
-        <a href="#" class="see-all" onclick="event.preventDefault();showPage('vehicles');return false;">Ver todos →</a>
-      </div>
-      <div class="vehicles-grid" id="vehicles-grid"></div>
-    </div>
-  </section>
-
-  <!-- RECLAMAÇÕES RECENTES -->
-  <section class="section">
-    <div class="section-inner">
-      <div class="section-header">
-        <h2 class="section-title">Reclamações <span class="accent">recentes</span></h2>
-        <a href="#" class="see-all" onclick="event.preventDefault();showPage('complaints');return false;">Ver todas →</a>
-      </div>
-      <div class="complaints-list" id="complaints-list"></div>
-    </div>
-  </section>
-
-  <!-- RANKING -->
-  <section class="section section-alt" id="ranking-section">
-    <div class="section-inner">
-      <div class="section-header">
-        <h2 class="section-title">🏆 Ranking de <span class="accent">confiabilidade</span></h2>
-        <a href="#" class="see-all" onclick="event.preventDefault();showPage('vehicles',{sort:'best_rating'});return false;">Ranking completo →</a>
-      </div>
-      <div class="ranking-grid" id="ranking-grid"></div>
-    </div>
-  </section>
-
-  <!-- COMO FUNCIONA — movido para logo após o Hero -->
 </div>
 
 <!-- ══ PAGE VEHICLE PROFILE ══ -->
