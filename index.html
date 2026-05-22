@@ -1640,33 +1640,6 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
         <h2 class="section-title">Reclamações <span class="accent">recentes</span></h2>
         <a href="#" class="see-all" onclick="event.preventDefault();showPage('complaints');return false;">Ver todas →</a>
       </div>
-      <!-- FILTROS -->
-      <button class="filters-toggle" id="filters-toggle" onclick="toggleFiltersMobile()" type="button">
-        <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>Filtros<span class="filters-toggle-badge" id="filters-toggle-badge" style="display:none"></span></span>
-        <svg class="filters-toggle-arrow" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 4.5 6 7.5 9 4.5"/></svg>
-      </button>
-      <div class="filters-bar" id="filters-bar">
-        <span class="filter-label">Filtrar:</span>
-        <select class="filter-select" id="filter-status" onchange="applyFilters()">
-          <option value="">Todos os status</option>
-          <option value="s-open">Não respondidas</option>
-          <option value="s-progress">Em análise</option>
-          <option value="s-resolved">Resolvidos</option>
-        </select>
-        <select class="filter-select" id="filter-brand" onchange="applyFilters()">
-          <option value="">Todas as marcas</option>
-          <option>Hyundai</option><option>Chevrolet</option><option>Jeep</option>
-          <option>Honda</option><option>Toyota</option><option>Volkswagen</option>
-          <option>Fiat</option><option>Yamaha</option>
-          <option>Mercedes-Benz</option><option>Scania</option><option>Volvo</option><option>DAF</option>
-        </select>
-        <select class="filter-select" id="filter-state" onchange="applyFilters()">
-          <option value="">Todos os estados</option>
-          <option>SP</option><option>RJ</option><option>MG</option><option>RS</option>
-          <option>PR</option><option>SC</option><option>BA</option><option>GO</option>
-        </select>
-        <button class="filter-clear" onclick="clearFilters()">✕ Limpar filtros</button>
-      </div>
       <div class="complaints-list" id="complaints-list"></div>
     </div>
   </section>
@@ -3134,37 +3107,8 @@ async function submitComplaint() {
   }
 }
 
-// ══ OVERRIDE: applyFilters com Supabase ══
-async function applyFilters() {
-  const status = document.getElementById('filter-status').value;
-  const brand  = document.getElementById('filter-brand').value;
-  const state  = document.getElementById('filter-state').value;
-  const data = await sbLoadComplaints({ status, brand, state });
-  // Home mostra apenas 5 — "Ver todas →" leva à página completa com mais filtros
-  renderComplaintsList(data.slice(0, 5));
-  updateFiltersBadge();
-}
-
-// Toggle dos filtros mobile (botão expand/colapse)
-function toggleFiltersMobile() {
-  const bar = document.getElementById('filters-bar');
-  const tgl = document.getElementById('filters-toggle');
-  if (!bar || !tgl) return;
-  bar.classList.toggle('expanded');
-  tgl.classList.toggle('expanded');
-}
-
-// Atualiza badge com contagem de filtros ativos (só mostra se >0)
-function updateFiltersBadge() {
-  const status = document.getElementById('filter-status')?.value;
-  const brand  = document.getElementById('filter-brand')?.value;
-  const state  = document.getElementById('filter-state')?.value;
-  const count = [status, brand, state].filter(Boolean).length;
-  const badge = document.getElementById('filters-toggle-badge');
-  if (!badge) return;
-  if (count > 0) { badge.textContent = count; badge.style.display = 'inline-flex'; }
-  else { badge.style.display = 'none'; }
-}
+// Filtros da home foram removidos — agora estão na página dedicada "Todas as reclamações"
+// (applyFilters, toggleFiltersMobile, updateFiltersBadge, clearFilters → ver applyAllFilters etc.)
 
 // ══ OVERRIDE: renderProfile com Supabase ══
 
@@ -8295,14 +8239,6 @@ function requireAuthForCurrentVehicle() {
   });
 }
 // ══ PERFIL ══
-
-// ══ FILTROS ══
-function clearFilters() {
-  document.getElementById('filter-status').value = '';
-  document.getElementById('filter-brand').value = '';
-  document.getElementById('filter-state').value = '';
-  applyFilters();
-}
 
 function renderComplaintsList(list) {
   // Card estilo Reclame Aqui adaptado às cores Doutor Oficina
