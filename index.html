@@ -1649,7 +1649,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
     <div class="section-inner">
       <div class="section-header">
         <h2 class="section-title">🏆 Ranking de <span class="accent">confiabilidade</span></h2>
-        <a href="#" class="see-all">Ranking completo →</a>
+        <a href="#" class="see-all" onclick="event.preventDefault();showPage('vehicles',{sort:'best_rating'});return false;">Ranking completo →</a>
       </div>
       <div class="ranking-grid" id="ranking-grid"></div>
     </div>
@@ -3130,16 +3130,7 @@ async function toggleVote(btn, id, current) {
 // Repositório local de veículos da sessão (populado via FIPE quando o usuário pesquisa)
 // Não é mock — são dados reais buscados sob demanda
 const dynamicVehicles = [];
-const rankingData=[
-  {pos:1,emoji:'🏍️',brand:'Honda',name:'CG 160',score:4.5},
-  {pos:2,emoji:'🚗',brand:'Toyota',name:'Corolla',score:4.1},
-  {pos:3,emoji:'🏍️',brand:'Yamaha',name:'Fazer 250',score:4.2},
-  {pos:4,emoji:'🚗',brand:'Fiat',name:'Argo',score:3.8},
-  {pos:5,emoji:'🚗',brand:'Chevrolet',name:'Onix',score:3.5},
-  {pos:6,emoji:'🚗',brand:'Volkswagen',name:'Gol',score:3.2},
-  {pos:7,emoji:'🚗',brand:'Hyundai',name:'HB20',score:2.8},
-  {pos:8,emoji:'🚗',brand:'Jeep',name:'Compass',score:2.5},
-];
+// rankingData mock removido — renderRanking agora busca dados reais do Supabase (vehicle_known_issues)
 const fipePrices={'1':'R$ 142.990','2':'R$ 61.490','3':'R$ 78.900','4':'R$ 18.590','5':'R$ 79.990','6':'R$ 84.290','7':'R$ 22.890','8':'R$ 212.990','9':'R$ 398.000','10':'R$ 620.000','11':'R$ 580.000'};
 
 // ══ RENDER ══
@@ -3278,15 +3269,44 @@ async function renderComplaints(){
   }
 }
 
-function renderRanking(){
-  document.getElementById('ranking-grid').innerHTML=rankingData.map(r=>{
-    const pc=r.pos<=3?`pos-${r.pos}`:'pos-o';
-    const medal=r.pos<=3?['🥇','🥇','🥇'][r.pos-1]:r.pos;
-    return`<div class="rank-item" onclick="showVehicleProfile('${r.pos}')">
+async function renderRanking(){
+  const grid = document.getElementById('ranking-grid');
+  if (!grid) return;
+  grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--muted)">Carregando ranking…</div>';
+
+  // Mesma fonte do renderVehicles: vehicle_known_issues agrupado por marca+modelo,
+  // pegando o registro summary (is_summary=true) com reliability_score.
+  let allRows = [];
+  try {
+    const { data } = await sb.from('vehicle_known_issues')
+      .select('vehicle_brand, vehicle_model, vehicle_type, is_summary, reliability_score')
+      .eq('is_summary', true)
+      .order('reliability_score', { ascending: false })
+      .limit(8);
+    allRows = data || [];
+  } catch(e) { console.error('Erro ao buscar ranking:', e); }
+
+  if (!allRows.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--muted)">Sem dados de ranking ainda.</div>';
+    return;
+  }
+
+  const typeEmoji = (t) => t === 'moto' ? '🏍️' : t === 'caminhao' ? '🚚' : '🚗';
+  const medals = ['🥇','🥈','🥉'];
+
+  grid.innerHTML = allRows.map((r, i) => {
+    const pos = i + 1;
+    const pc = pos <= 3 ? `pos-${pos}` : 'pos-o';
+    const medal = pos <= 3 ? medals[pos-1] : pos;
+    const score = parseFloat(r.reliability_score) || 0;
+    const emoji = typeEmoji(r.vehicle_type);
+    const safeBrand = r.vehicle_brand.replace(/'/g, "\\'");
+    const safeModel = r.vehicle_model.replace(/'/g, "\\'");
+    return `<div class="rank-item" onclick="showVehicleProfileByBrandModel('${safeBrand}','${safeModel}')">
       <span class="rank-pos ${pc}">${medal}</span>
-      <div class="rank-info"><div class="rank-name"><span class="rank-icon">${vehicleIcon(r.emoji, r.name)}</span>${r.name}</div><div class="rank-brand">${r.brand}</div></div>
-      <div class="rank-bar-wrap"><div class="rank-bar-bg"><div class="rank-bar" style="width:${(r.score/5*100).toFixed(0)}%"></div></div></div>
-      <span class="rank-score">${r.score.toFixed(1)}</span>
+      <div class="rank-info"><div class="rank-name"><span class="rank-icon">${vehicleIcon(emoji, r.vehicle_model)}</span>${r.vehicle_model}</div><div class="rank-brand">${r.vehicle_brand}</div></div>
+      <div class="rank-bar-wrap"><div class="rank-bar-bg"><div class="rank-bar" style="width:${(score/5*100).toFixed(0)}%"></div></div></div>
+      <span class="rank-score">${score.toFixed(1)}</span>
     </div>`;
   }).join('');
 }
@@ -8460,6 +8480,12 @@ async function loadAllVehiclesPage(params = {}) {
   // Aplica filtros vindos por params (ex: futuro: vir filtrado por tipo via URL)
   if (params.brand && brandSel) { brandSel.value = params.brand; _allVehiclesState.filters.brand = params.brand; }
   if (params.type) { const ts = document.getElementById('veh-filter-type'); if (ts) ts.value = params.type; _allVehiclesState.filters.type = params.type; }
+  // Aceita sort vindo por URL (ex: "Ranking completo →" passa sort=best_rating)
+  if (params.sort) {
+    const ss = document.getElementById('veh-filter-sort');
+    if (ss) ss.value = params.sort;
+    _allVehiclesState.sort = params.sort;
+  }
 
   renderAllVehiclesGrid();
   updateVehicleFiltersBadge();
