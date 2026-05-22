@@ -979,9 +979,28 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 }
 .filter-clear:hover{color:var(--red)}
 
+/* Botão de toggle dos filtros — visível só no mobile */
+.filters-toggle{display:none}
+.filters-toggle-badge{
+  display:inline-flex;align-items:center;justify-content:center;
+  background:var(--red);color:#fff;font-size:11px;font-weight:800;
+  min-width:18px;height:18px;border-radius:9px;padding:0 6px;margin-left:6px;
+}
+
 /* Mobile: filtros viram coluna organizada — selects ocupam largura total, label fica acima, "Limpar" alinhado à direita */
 @media(max-width:600px){
-  .filters-bar{padding:14px 14px;gap:8px;flex-direction:column;align-items:stretch}
+  .filters-toggle{
+    display:flex;align-items:center;justify-content:space-between;width:100%;
+    background:var(--white);border:1.5px solid var(--border);border-radius:12px;
+    padding:12px 16px;margin-bottom:12px;cursor:pointer;
+    font-family:var(--font);font-weight:700;font-size:13px;color:var(--navy);
+    transition:border-color .2s;
+  }
+  .filters-toggle:hover{border-color:var(--border2)}
+  .filters-toggle-arrow{transition:transform .2s;color:var(--muted)}
+  .filters-toggle.expanded .filters-toggle-arrow{transform:rotate(180deg)}
+  .filters-bar{display:none;padding:14px 14px;gap:8px;flex-direction:column;align-items:stretch;margin-top:-4px}
+  .filters-bar.expanded{display:flex}
   .filter-label{margin-right:0;margin-bottom:2px}
   .filter-select{width:100%;height:40px;font-size:14px}
   .filter-clear{margin-left:0;align-self:flex-end;margin-top:4px;padding:4px 0}
@@ -1532,7 +1551,11 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
         <a href="#" class="see-all">Ver todas →</a>
       </div>
       <!-- FILTROS -->
-      <div class="filters-bar">
+      <button class="filters-toggle" id="filters-toggle" onclick="toggleFiltersMobile()" type="button">
+        <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>Filtros<span class="filters-toggle-badge" id="filters-toggle-badge" style="display:none"></span></span>
+        <svg class="filters-toggle-arrow" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 4.5 6 7.5 9 4.5"/></svg>
+      </button>
+      <div class="filters-bar" id="filters-bar">
         <span class="filter-label">Filtrar:</span>
         <select class="filter-select" id="filter-status" onchange="applyFilters()">
           <option value="">Todos os status</option>
@@ -3003,6 +3026,28 @@ async function applyFilters() {
   const state  = document.getElementById('filter-state').value;
   const data = await sbLoadComplaints({ status, brand, state });
   renderComplaintsList(data);
+  updateFiltersBadge();
+}
+
+// Toggle dos filtros mobile (botão expand/colapse)
+function toggleFiltersMobile() {
+  const bar = document.getElementById('filters-bar');
+  const tgl = document.getElementById('filters-toggle');
+  if (!bar || !tgl) return;
+  bar.classList.toggle('expanded');
+  tgl.classList.toggle('expanded');
+}
+
+// Atualiza badge com contagem de filtros ativos (só mostra se >0)
+function updateFiltersBadge() {
+  const status = document.getElementById('filter-status')?.value;
+  const brand  = document.getElementById('filter-brand')?.value;
+  const state  = document.getElementById('filter-state')?.value;
+  const count = [status, brand, state].filter(Boolean).length;
+  const badge = document.getElementById('filters-toggle-badge');
+  if (!badge) return;
+  if (count > 0) { badge.textContent = count; badge.style.display = 'inline-flex'; }
+  else { badge.style.display = 'none'; }
 }
 
 // ══ OVERRIDE: renderProfile com Supabase ══
