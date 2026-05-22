@@ -3113,7 +3113,8 @@ async function submitComplaint() {
 
     // Reset
     wantsMediation = false;
-    sbLoadComplaints().then(data => { if (data.length) renderComplaintsList(data); });
+    // Home mostra apenas 5 — "Ver todas →" leva à página completa
+    sbLoadComplaints().then(data => { if (data.length) renderComplaintsList(data.slice(0, 5)); });
 
     if (saved?.id && complaint.wants_mediation) {
       // Fecha o modal e abre direto a escolha de advogado
@@ -3139,7 +3140,8 @@ async function applyFilters() {
   const brand  = document.getElementById('filter-brand').value;
   const state  = document.getElementById('filter-state').value;
   const data = await sbLoadComplaints({ status, brand, state });
-  renderComplaintsList(data);
+  // Home mostra apenas 5 — "Ver todas →" leva à página completa com mais filtros
+  renderComplaintsList(data.slice(0, 5));
   updateFiltersBadge();
 }
 
@@ -3325,7 +3327,8 @@ async function renderComplaints(){
   list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted)">Carregando reclamações…</div>';
   try {
     const data = await sbLoadComplaints();
-    renderComplaintsList(data);
+    // Home mostra apenas 5 — "Ver todas →" leva à página completa com filtros e paginação
+    renderComplaintsList(data.slice(0, 5));
   } catch(e) {
     list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted)">Erro ao carregar reclamações.</div>';
   }
