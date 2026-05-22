@@ -5200,7 +5200,8 @@ async function applySearchWithFilter(query, filter) {
     type: typeMap[filter] || ''
   };
   const results = await sbLoadComplaints(filters);
-  renderComplaintsList(results);
+  // Home mostra apenas 5 — "Ver todas →" leva à página completa
+  renderComplaintsList(results.slice(0, 5));
   document.getElementById('complaints-list')?.scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
@@ -8741,7 +8742,8 @@ async function restoreFromHash() {
   // Tenta carregar reclamações reais, cai no mock se falhar
   try {
     const realComplaints = await sbLoadComplaints();
-    renderComplaintsList(realComplaints);
+    // Home mostra apenas 5 — "Ver todas →" leva à página completa
+    renderComplaintsList(realComplaints.slice(0, 5));
   } catch(e) {
     renderComplaintsList([]);
   }
