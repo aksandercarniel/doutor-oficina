@@ -1467,6 +1467,56 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
   </div>
 </div>
 
+<!-- ══ PÁGINA: TODAS AS RECLAMAÇÕES (paginada, com filtros e ordenação) ══ -->
+<div id="page-complaints" style="display:none;max-width:1100px;margin:0 auto;padding:32px 24px">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+    <button onclick="goBack()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body)">← Voltar</button>
+  </div>
+  <div style="margin-bottom:24px">
+    <h2 style="font-family:var(--font);font-size:26px;font-weight:900;color:var(--navy);margin:0 0 6px">Todas as <span style="color:var(--red)">reclamações</span></h2>
+    <p id="all-complaints-subtitle" style="color:var(--muted);font-size:14px;margin:0">Carregando…</p>
+  </div>
+
+  <!-- Toggle mobile (reusa estilos do filters-toggle já existentes) -->
+  <button class="filters-toggle" id="all-filters-toggle" onclick="toggleAllFiltersMobile()" type="button">
+    <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>Filtros<span class="filters-toggle-badge" id="all-filters-toggle-badge" style="display:none"></span></span>
+    <svg class="filters-toggle-arrow" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 4.5 6 7.5 9 4.5"/></svg>
+  </button>
+
+  <div class="filters-bar" id="all-filters-bar">
+    <span class="filter-label">Filtrar:</span>
+    <select class="filter-select" id="all-filter-status" onchange="applyAllFilters()">
+      <option value="">Todos os status</option>
+      <option value="s-open">Não respondidas</option>
+      <option value="s-progress">Em análise</option>
+      <option value="s-resolved">Resolvidos</option>
+    </select>
+    <select class="filter-select" id="all-filter-brand" onchange="applyAllFilters()">
+      <option value="">Todas as marcas</option>
+      <option>Hyundai</option><option>Chevrolet</option><option>Jeep</option>
+      <option>Honda</option><option>Toyota</option><option>Volkswagen</option>
+      <option>Fiat</option><option>Yamaha</option>
+      <option>Mercedes-Benz</option><option>Scania</option><option>Volvo</option><option>DAF</option>
+    </select>
+    <select class="filter-select" id="all-filter-state" onchange="applyAllFilters()">
+      <option value="">Todos os estados</option>
+      <option>SP</option><option>RJ</option><option>MG</option><option>RS</option>
+      <option>PR</option><option>SC</option><option>BA</option><option>GO</option>
+    </select>
+    <select class="filter-select" id="all-filter-sort" onchange="applyAllFilters()" style="min-width:180px">
+      <option value="recent">Mais recentes</option>
+      <option value="votes">Mais votadas</option>
+    </select>
+    <button class="filter-clear" onclick="clearAllFilters()">✕ Limpar filtros</button>
+  </div>
+
+  <div class="complaints-list" id="all-complaints-list">
+    <div style="text-align:center;padding:40px;color:var(--muted)">Carregando…</div>
+  </div>
+
+  <div id="all-complaints-loadmore-wrap" style="margin-top:24px;text-align:center"></div>
+</div>
+
 <!-- Página Resolução Direta -->
 <div id="page-company-profile" style="display:none;max-width:1100px;margin:0 auto;padding:32px 24px">
   <div id="company-profile-content"></div>
@@ -1548,7 +1598,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
     <div class="section-inner">
       <div class="section-header">
         <h2 class="section-title">Reclamações <span class="accent">recentes</span></h2>
-        <a href="#" class="see-all">Ver todas →</a>
+        <a href="#" class="see-all" onclick="event.preventDefault();showPage('complaints');return false;">Ver todas →</a>
       </div>
       <!-- FILTROS -->
       <button class="filters-toggle" id="filters-toggle" onclick="toggleFiltersMobile()" type="button">
@@ -2207,6 +2257,30 @@ async function sbLoadComplaints(filters = {}) {
   const { data, error } = await query;
   if (error) { console.error(error); return []; }
   return (data || []).map(mapComplaint);
+}
+
+// Variante paginada usada pela página "Todas as reclamações"
+// Retorna { items, totalCount } — totalCount usa head:true (rápido, sem trafegar rows)
+async function sbLoadAllComplaints(filters = {}, sort = 'recent', offset = 0, limit = 20) {
+  // Conta total respeitando filtros
+  let countQ = sb.from('complaints').select('*', { count: 'exact', head: true });
+  if (filters.status) countQ = countQ.eq('status', filters.status === 's-open' ? 'open' : filters.status === 's-progress' ? 'in_progress' : 'resolved');
+  if (filters.brand)  countQ = countQ.eq('vehicle_brand', filters.brand);
+  if (filters.state)  countQ = countQ.eq('state', filters.state);
+  if (filters.model)  countQ = countQ.eq('vehicle_model', filters.model);
+  const { count } = await countQ;
+  // Busca a página com ordenação escolhida
+  let q = sb.from('complaints').select('*');
+  if (sort === 'votes') q = q.order('votes_count', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false });
+  else                  q = q.order('created_at', { ascending: false });
+  if (filters.status) q = q.eq('status', filters.status === 's-open' ? 'open' : filters.status === 's-progress' ? 'in_progress' : 'resolved');
+  if (filters.brand)  q = q.eq('vehicle_brand', filters.brand);
+  if (filters.state)  q = q.eq('state', filters.state);
+  if (filters.model)  q = q.eq('vehicle_model', filters.model);
+  q = q.range(offset, offset + limit - 1);
+  const { data, error } = await q;
+  if (error) { console.error(error); return { items: [], totalCount: 0 }; }
+  return { items: (data || []).map(mapComplaint), totalCount: count || 0 };
 }
 
 async function sbLoadVehicleComplaints(brand, model) {
@@ -3915,7 +3989,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice) 
     + (complaints.length > 0 ? '<span style="margin-left:auto;font-size:11px;font-weight:700;color:var(--red)">' + complaints.length + ' relatos</span>' : '')
     + '</div>'
     + complaintCards
-    + (complaints.length > 3 ? '<button onclick="showPage(\'complaints\')" style="width:100%;background:none;border:1.5px solid var(--border2);border-radius:8px;padding:10px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;color:var(--navy);margin-top:6px">Ver todos os relatos →</button>' : '')
+    + (complaints.length > 3 ? '<button onclick="showPage(\'complaints\',{brand:\'' + v.brand.replace(/'/g,"\\'") + '\',model:\'' + v.name.replace(/'/g,"\\'") + '\'})" style="width:100%;background:none;border:1.5px solid var(--border2);border-radius:8px;padding:10px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;color:var(--navy);margin-top:6px">Ver todos os relatos →</button>' : '')
     + '</div>'
     + '</div>'
 
@@ -4847,7 +4921,7 @@ function showPage(page, params={}){
       sbSelectType('carros', {keepClosed: true});
     }
   }
-  ['home','vehicle','profile','compare','search','admin','lawyers','resolution','company','ranking-companies','complaint','company-profile','mediation','lawyer-panel','mediation-channel'].forEach(p=>{
+  ['home','vehicle','profile','compare','search','admin','lawyers','resolution','company','ranking-companies','complaint','company-profile','mediation','lawyer-panel','mediation-channel','complaints'].forEach(p=>{
     const el=document.getElementById('page-'+p);
     if(el) el.style.display=p===page?'block':'none';
   });
@@ -4859,6 +4933,7 @@ function showPage(page, params={}){
   if(page==='company') loadCompanyComplaints('open');
   if(page==='ranking-companies') loadCompanyRanking();
   if(page==='lawyer-panel') loadLawyerPanel();
+  if(page==='complaints') loadAllComplaintsPage(params);
   // Salva estado na URL para sobreviver ao Cmd+R
   const hashParams = new URLSearchParams(params).toString();
   window.location.hash = hashParams ? page + '?' + hashParams : page;
@@ -8223,6 +8298,145 @@ function renderComplaintsList(list) {
       </div>
     </div>`;
   }).join('');
+}
+
+// ══ PÁGINA: TODAS AS RECLAMAÇÕES (paginada) ══
+let _allComplaintsState = { filters: {}, sort: 'recent', offset: 0, limit: 20, items: [], totalCount: 0, loading: false };
+
+async function loadAllComplaintsPage(params = {}) {
+  // params pode vir com {brand, model} (quando aberto via "Ver todos os relatos" do perfil do veículo)
+  _allComplaintsState = { filters: {}, sort: 'recent', offset: 0, limit: 20, items: [], totalCount: 0, loading: false };
+
+  // Pré-aplica filtros vindos por URL (ex: vindo do perfil do veículo)
+  if (params.brand) {
+    _allComplaintsState.filters.brand = params.brand;
+    const brandSel = document.getElementById('all-filter-brand');
+    if (brandSel) brandSel.value = params.brand;
+  }
+  if (params.model) _allComplaintsState.filters.model = params.model;
+  // Reseta selects de UI que não vêm por URL
+  ['all-filter-status','all-filter-state'].forEach(id => { const e=document.getElementById(id); if(e) e.value=''; });
+  const sortSel = document.getElementById('all-filter-sort');
+  if (sortSel) sortSel.value = 'recent';
+
+  await fetchAndRenderAllComplaints(true);
+  updateAllFiltersBadge();
+}
+
+async function fetchAndRenderAllComplaints(reset = false) {
+  if (_allComplaintsState.loading) return;
+  _allComplaintsState.loading = true;
+  const listEl = document.getElementById('all-complaints-list');
+  const moreEl = document.getElementById('all-complaints-loadmore-wrap');
+  if (reset) {
+    _allComplaintsState.offset = 0;
+    _allComplaintsState.items = [];
+    if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Carregando…</div>';
+    if (moreEl) moreEl.innerHTML = '';
+  }
+  const { filters, sort, offset, limit } = _allComplaintsState;
+  const { items, totalCount } = await sbLoadAllComplaints(filters, sort, offset, limit);
+  _allComplaintsState.totalCount = totalCount;
+  _allComplaintsState.items = reset ? items : _allComplaintsState.items.concat(items);
+  _allComplaintsState.offset = _allComplaintsState.items.length;
+  // Atualiza subtítulo com contagem
+  const sub = document.getElementById('all-complaints-subtitle');
+  if (sub) {
+    const filtered = Object.values(filters).filter(Boolean).length > 0;
+    sub.textContent = filtered
+      ? `${totalCount} ${totalCount === 1 ? 'reclamação encontrada' : 'reclamações encontradas'}`
+      : `${totalCount} ${totalCount === 1 ? 'reclamação no total' : 'reclamações no total'}`;
+  }
+  // Renderiza usando o renderComplaintsList existente (mesmos cards da home — consistência total)
+  if (listEl) {
+    if (_allComplaintsState.items.length === 0) {
+      listEl.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--muted);background:var(--white);border:1.5px solid var(--border);border-radius:12px">Nenhuma reclamação encontrada com esses filtros.</div>';
+    } else {
+      // Salva temporariamente o target do renderComplaintsList (ele escreve em #complaints-list)
+      // Como o renderComplaintsList é hard-coded pra #complaints-list, fazemos um swap temporário pelo DOM
+      const tempDiv = document.createElement('div');
+      tempDiv.id = '__tmp_complaints_render';
+      // hack mais limpo: replicamos a lógica de render aqui mesmo, em vez de monkey-patch
+      listEl.innerHTML = _allComplaintsState.items.map((c,i) => buildComplaintCardHtml(c, i)).join('');
+    }
+  }
+  // Botão "Carregar mais"
+  if (moreEl) {
+    if (_allComplaintsState.items.length < totalCount) {
+      moreEl.innerHTML = `<button onclick="fetchAndRenderAllComplaints(false)" style="background:var(--white);border:1.5px solid var(--border2);color:var(--navy);border-radius:10px;padding:12px 28px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;transition:border-color .2s" onmouseover="this.style.borderColor='var(--navy)'" onmouseout="this.style.borderColor='var(--border2)'">Carregar mais (${totalCount - _allComplaintsState.items.length} restantes)</button>`;
+    } else {
+      moreEl.innerHTML = '';
+    }
+  }
+  _allComplaintsState.loading = false;
+}
+
+// Helper: gera HTML de um card (idêntico ao renderComplaintsList, extraído pra reuso)
+function buildComplaintCardHtml(c, i) {
+  const id = c.id || i;
+  const subParts = [];
+  if (c.companyName) subParts.push(`<span class="cra-sub-company">🏢 ${c.companyName}</span>`);
+  subParts.push(`<span>${c.model}</span>`);
+  const sub = subParts.join('<span class="cra-sub-sep">·</span>');
+  const loc = c.city && c.state ? `${c.city}, ${c.state}` : (c.state || '');
+  const locHtml = loc ? `<span class="cra-foot-sep">·</span><span class="cra-foot-item">📍 ${loc}</span>` : '';
+  const voted = votedIds.includes(id) ? 'voted' : '';
+  return `
+    <div class="complaint-card-ra" onclick="openComplaintDetail('${id}')">
+      <div class="cra-avatar">${vehicleIcon(c.emoji, c.model)}</div>
+      <div class="cra-head"><div class="cra-title">${c.title}</div></div>
+      <div class="cra-sub">${sub}</div>
+      <div class="cra-text">${c.text}</div>
+      <div class="cra-footer">
+        <span class="cra-foot-item"><span class="cra-status-dot ${c.status}"></span>${c.statusLabel}</span>
+        <span class="cra-foot-sep">·</span>
+        <span class="cra-foot-item">⏱ ${c.date}</span>
+        ${locHtml}
+        <button class="vote-btn cra-vote ${voted}" onclick="event.stopPropagation();toggleVote(this,'${id}',${c.votes})">
+          👍 <span>${c.votes}</span>
+        </button>
+      </div>
+    </div>`;
+}
+
+async function applyAllFilters() {
+  _allComplaintsState.filters.status = document.getElementById('all-filter-status').value;
+  _allComplaintsState.filters.brand  = document.getElementById('all-filter-brand').value;
+  _allComplaintsState.filters.state  = document.getElementById('all-filter-state').value;
+  _allComplaintsState.sort           = document.getElementById('all-filter-sort').value;
+  // model só vem via params da URL e fica preservado entre filtros (não é setado por UI)
+  await fetchAndRenderAllComplaints(true);
+  updateAllFiltersBadge();
+}
+
+function clearAllFilters() {
+  ['all-filter-status','all-filter-brand','all-filter-state'].forEach(id => { const e=document.getElementById(id); if(e) e.value=''; });
+  const sortSel = document.getElementById('all-filter-sort'); if (sortSel) sortSel.value = 'recent';
+  // Preserva o filtro de model (que vem da URL) — só limpa os que o usuário pode mexer
+  _allComplaintsState.filters = { model: _allComplaintsState.filters.model };
+  _allComplaintsState.sort = 'recent';
+  fetchAndRenderAllComplaints(true);
+  updateAllFiltersBadge();
+}
+
+function toggleAllFiltersMobile() {
+  const bar = document.getElementById('all-filters-bar');
+  const tgl = document.getElementById('all-filters-toggle');
+  if (!bar || !tgl) return;
+  bar.classList.toggle('expanded');
+  tgl.classList.toggle('expanded');
+}
+
+function updateAllFiltersBadge() {
+  const status = document.getElementById('all-filter-status')?.value;
+  const brand  = document.getElementById('all-filter-brand')?.value;
+  const state  = document.getElementById('all-filter-state')?.value;
+  // sort não conta como "filtro" — é só ordenação
+  const count = [status, brand, state].filter(Boolean).length;
+  const badge = document.getElementById('all-filters-toggle-badge');
+  if (!badge) return;
+  if (count > 0) { badge.textContent = count; badge.style.display = 'inline-flex'; }
+  else { badge.style.display = 'none'; }
 }
 
 // ══ COMPARADOR ══
