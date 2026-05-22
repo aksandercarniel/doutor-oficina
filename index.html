@@ -4389,8 +4389,7 @@ async function loadFipePrice(){
   document.getElementById('fipe-info').classList.remove('show');
   document.getElementById('fipe-price-val').textContent='Carregando…';
   try{
-    const r=await fetch(`${FIPE}/${vehicleType}/marcas/${b}/modelos/${m}/anos/${y}`);
-    const d=await r.json();
+    const d=await fipeFetch(fipeUrl(vehicleType,'brands',b,'models',m,'years',y)); // Sprint 1: corrigido bug pré-existente (era ${FIPE}/marcas/... — v1 quebrada)
     _currentFipeCode = d.codeFipe||d.CodigoFipe||null; // Sprint 1 FIPE-first
     document.getElementById('fipe-price-val').textContent=d.price||d.Valor||'—';
     document.getElementById('fipe-ref').textContent='Ref: '+(d.referenceMonth||d.MesReferencia||'—');
