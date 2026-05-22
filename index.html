@@ -3040,6 +3040,13 @@ async function submitComplaint() {
     return;
   }
 
+  // FIPE-first (Sprint 1): exige busca FIPE completa (marca → modelo → ano)
+  if (!_currentFipeCode) {
+    alert('Selecione também o ano do veículo (necessário para identificar a versão exata).');
+    goStep(1);
+    return;
+  }
+
   // Quebra o modelo da FIPE em nome + versão
   // Ex: "CR-V EXL 2.0 16V 4WD/2.0 Flexone Aut." → nome: "CR-V", versão: "EXL 2.0 16V 4WD/2.0 Flexone Aut."
   const parts = fullModelText.split(' ');
@@ -3056,6 +3063,7 @@ async function submitComplaint() {
 
   const complaint = {
     user_id: currentUser.id,
+    fipe_code: _currentFipeCode, // Sprint 1 FIPE-first
     vehicle_brand: brandText,
     vehicle_model: modelName,
     vehicle_version: modelVersion,
@@ -4377,16 +4385,17 @@ async function loadFipePrice(){
   const b=document.getElementById('sel-brand').value;
   const m=document.getElementById('sel-model').value;
   const y=document.getElementById('sel-year').value;
-  if(!y)return;
+  if(!y){_currentFipeCode=null;return;}
   document.getElementById('fipe-info').classList.remove('show');
   document.getElementById('fipe-price-val').textContent='Carregando…';
   try{
     const r=await fetch(`${FIPE}/${vehicleType}/marcas/${b}/modelos/${m}/anos/${y}`);
     const d=await r.json();
+    _currentFipeCode = d.codeFipe||d.CodigoFipe||null; // Sprint 1 FIPE-first
     document.getElementById('fipe-price-val').textContent=d.price||d.Valor||'—';
     document.getElementById('fipe-ref').textContent='Ref: '+(d.referenceMonth||d.MesReferencia||'—');
     document.getElementById('fipe-info').classList.add('show');
-  }catch(e){}
+  }catch(e){_currentFipeCode=null;}
 }
 
 async function loadFipeBrandsInto(selId,type){
@@ -8237,6 +8246,7 @@ document.addEventListener('click', function(e) {
 let pendingComplaint = false;
 let pendingVehicleContext = null; // {brand, model, fipeBrandCode, fipeModelCode, type}
 let _currentVehicle = null; // veículo atualmente exibido no perfil
+let _currentFipeCode = null; // codeFipe da última busca no form de reclamação (Sprint 1 FIPE-first)
 
 function requireAuth(vehicleContext) {
   // Aceita contexto do veículo para pré-preencher o formulário
