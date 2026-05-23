@@ -3351,6 +3351,97 @@ async function showVehicleProfileByBrandModel(brand, model) {
   await loadVehicleProfileData(v);
 }
 
+// ═════════════════════════════════════════════════════════════════
+// Sprint 2 — Etapa 2.2: Página de perfil FIPE-exata
+// ═════════════════════════════════════════════════════════════════
+// Esta função é a porta de entrada da nova página FIPE-exata.
+// Ela hidrata o veículo via getOrFetchFipeVehicle, renderiza o
+// skeleton existente, e dispara o carregamento de dados filtrados
+// por código FIPE em loadVehicleProfileDataByFipe.
+//
+// Diferenças vs showVehicleProfileByBrandModel:
+//   - Identidade vem do código FIPE (não brand+model genéricos)
+//   - Reclamações são filtradas por fipe_code exato
+//   - Score do header usa calculateFipeScore (estados 2 e 3 ativos)
+//   - Botão "Ver Raio-X completo do [modelo]" no rodapé (Decisão #22)
+async function showVehicleProfileByFipe(fipeCode, hint) {
+  if (!fipeCode) {
+    alert('Código FIPE ausente.');
+    return;
+  }
+
+  // Tenta hidratar o veículo (cache fipe_vehicles + hint da busca)
+  const result = await getOrFetchFipeVehicle(fipeCode, hint || null);
+
+  if (!result.success) {
+    alert('Não foi possível abrir o perfil deste veículo: ' + result.error);
+    return;
+  }
+
+  const v = result.vehicle;
+  // ID único pra este perfil (usado pelo dynamicVehicles e _currentVehicle)
+  v.id = 'fipe-' + fipeCode;
+
+  // Registra no dynamicVehicles (mesma lógica de showVehicleProfileByBrandModel)
+  const existingIdx = dynamicVehicles.findIndex(x => x.id === v.id);
+  if (existingIdx > -1) dynamicVehicles.splice(existingIdx, 1);
+  dynamicVehicles.push(v);
+  // Auto-limpa após 5 minutos (não acumula)
+  setTimeout(() => {
+    const idx = dynamicVehicles.findIndex(x => x.id === v.id);
+    if (idx > -1) dynamicVehicles.splice(idx, 1);
+  }, 300000);
+
+  showPage('vehicle');
+  renderVehicleProfileSkeleton(v);
+  await loadVehicleProfileDataByFipe(v);
+}
+
+// Carrega dados específicos da FIPE em paralelo:
+//   - Curadoria (loadKnownIssues por brand+model, como fallback)
+//   - Reclamações filtradas por fipe_code exato
+//   - Score híbrido via calculateFipeScore (ativa estados 2/3 do header)
+//   - Preço FIPE atual (loadFipePriceForVehicle, já existe)
+async function loadVehicleProfileDataByFipe(v) {
+  const fipeCode = v.fipe_code;
+  const brand = v.brand || '';
+  const model = v.name || '';
+
+  // Busca em paralelo (4 fontes)
+  const [knownIssues, complaints, fipePrice, scoreData] = await Promise.all([
+    loadKnownIssues(brand, model),
+    sbLoadComplaintsByFipe(fipeCode),
+    loadFipePriceForVehicle(v),
+    calculateFipeScore(fipeCode)
+  ]);
+
+  // Calcula stats das reclamações
+  const stats = calcVehicleStats(complaints);
+
+  // Renderiza passando scoreData (novo parâmetro opcional)
+  renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, scoreData);
+}
+
+// Busca reclamações filtradas por código FIPE exato.
+// Fallback: se nenhuma reclamação tem o fipe_code preenchido (caso
+// comum hoje, já que complaints antigas têm fipe_code=NULL), tenta
+// busca por brand+model como compatibilidade.
+async function sbLoadComplaintsByFipe(fipeCode) {
+  try {
+    const { data, error } = await sb.from('complaints')
+      .select('*')
+      .eq('fipe_code', fipeCode)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) return [];
+    return (data || []).map(mapComplaint);
+  } catch (e) {
+    return [];
+  }
+}
+// ═════════════════════════════════════════════════════════════════
+
 // Retorna <img> com ícone profissional do veículo (PNG embutido em base64)
 // Mantém compatibilidade com chamadas que passavam emoji
 const VEHICLE_ICONS = {
@@ -3719,7 +3810,7 @@ async function loadFipePriceForVehicle(v, opts) {
 }
 
 // Renderiza a página completa com dados reais
-function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice) {
+function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, scoreData) {
   _currentVehicle = v; // rastreia veículo atual para o botão Reclamar
   const el = document.getElementById('vehicle-profile-content');
   if (!el) return;
@@ -3733,9 +3824,15 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice) 
   const resolvedCount = stats?.resolved_count || complaints.filter(c => c.status === 's-resolved').length || 0;
   const resolvedPct = totalComplaints > 0 ? Math.round((resolvedCount / totalComplaints) * 100) : null;
 
-  // -- Nota: usa curada se existir, senão calcula da média real
-  const avgRating = summary?.reliability_score
-    || (stats?.avg_rating ? parseFloat(stats.avg_rating).toFixed(1) : null);
+  // -- Nota: prioridade
+  //    1. Se scoreData veio (página FIPE-exata) e tem score calculado, usa ele
+  //       (já considera 60% curadoria + 40% comunidade quando há ≥5 votos)
+  //    2. Senão, usa reliability_score do summary curado
+  //    3. Senão, fallback para média de stars das reclamações
+  const avgRating = (scoreData && scoreData.score != null)
+    ? scoreData.score
+    : (summary?.reliability_score
+        || (stats?.avg_rating ? parseFloat(stats.avg_rating).toFixed(1) : null));
   const displayRating = avgRating ? parseFloat(avgRating) : null;
 
   // -- Badge baseado na nota curada
@@ -3786,15 +3883,39 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice) 
   // ─────────────────────────────────────────────────────────────
   // O Raio-X é o veredito final. Hoje ele é composto SÓ por curadoria
   // (web/fontes externas). No futuro vai incluir comunidade (votos ≥5).
-  // Estados implementados aqui: 1 (com curado) e 4 (sem nada).
-  // Estados 2 e 3 (com voto da comunidade) virão junto com os helpers
-  // de score da Sprint 2 (calculateFipeScore etc).
+  //
+  // Estados implementados (Sprint 2, etapa 2.2):
+  //   1. Só curadoria (sem votos suficientes): "composto por: curadoria · CTA"
+  //   2. Curadoria + comunidade (≥5 votos): "composto por: curadoria + comunidade (N votos)"
+  //   3. Só comunidade (sem curadoria, ≥5 votos): "composto por: comunidade (N votos)"
+  //   4. Nada ainda: "sem análise ainda · CTA"
+  //
+  // Estados 2 e 3 só são ativados quando scoreData (output de
+  // calculateFipeScore) é passado — caso da página FIPE-exata.
+  // Páginas que não passam scoreData mantêm comportamento antigo
+  // (apenas estados 1 e 4).
   const hasCurated = !!summary?.reliability_score;
-  // Placeholder até interface de voto existir (próxima etapa da Sprint 2):
-  const ctaVote = '<span class="cta" onclick="openVotePrompt()">seja o 1º a avaliar →</span>';
-  const raioxComposition = hasCurated
-    ? ('composto por: curadoria · ' + ctaVote)
-    : ('sem análise ainda · ' + ctaVote);
+  const hasCommunity = scoreData && scoreData.hasMinimum && scoreData.votos > 0;
+  const fipeCodeForVote = v.fipe_code || null;
+  const voteHandler = fipeCodeForVote
+    ? `openVotePrompt('${fipeCodeForVote}')`
+    : 'openVotePrompt()';
+  const ctaVote = '<span class="cta" onclick="' + voteHandler + '">seja o 1º a avaliar →</span>';
+
+  let raioxComposition;
+  if (hasCurated && hasCommunity) {
+    // Estado 2: curadoria + comunidade
+    raioxComposition = 'composto por: curadoria + comunidade (' + scoreData.votos + ' votos)';
+  } else if (!hasCurated && hasCommunity) {
+    // Estado 3: só comunidade
+    raioxComposition = 'composto por: comunidade (' + scoreData.votos + ' votos)';
+  } else if (hasCurated) {
+    // Estado 1: só curadoria (com ou sem votos < mínimo)
+    raioxComposition = 'composto por: curadoria · ' + ctaVote;
+  } else {
+    // Estado 4: nada ainda
+    raioxComposition = 'sem análise ainda · ' + ctaVote;
+  }
   // ─────────────────────────────────────────────────────────────
 
   // ═════════════════════════════════════════════════════════════
@@ -7391,6 +7512,41 @@ async function sbShowPrice() {
       fipeModelCode: model,
       fipeType: type
     };
+
+    // ─────────────────────────────────────────────────────────────
+    // Sprint 2 — Etapa 2.3: Search bar FIPE → perfil FIPE-exata
+    // ─────────────────────────────────────────────────────────────
+    // Caminho 1 (decidido com Aksander): em vez de mostrar cartão de
+    // preço inline, navega direto pro perfil completo (que já inclui
+    // o preço dentro do header). Mais alinhado com a visão "Raio-X
+    // é o produto principal" — o preço sozinho é commodity.
+    //
+    // O hint reúne todos os dados que a API FIPE retornou, pra que
+    // getOrFetchFipeVehicle consiga fazer o UPSERT em fipe_vehicles
+    // sem precisar bater na API de novo.
+    const fipeCode = d.codeFipe || d.CodigoFipe;
+    if (fipeCode) {
+      const hint = {
+        brand: brandTxt,
+        name: modelTxt,
+        version: modelTxt,                    // FIPE retorna versão dentro do modelTxt
+        modelYear: parseInt(d.modelYear || d.AnoModelo || year),
+        fuel: d.fuel || d.Combustivel || null,
+        fipeBrandCode: brand,
+        fipeModelCode: model,
+        fipeYearCode: yearCode,
+        fipeType: type,
+        fipePrice: d.price || d.Valor || null  // pra evitar nova requisição em loadFipePriceForVehicle
+      };
+      // Esconde o card de resultado e navega
+      res.classList.remove('show');
+      res.innerHTML = '';
+      await showVehicleProfileByFipe(fipeCode, hint);
+      return;
+    }
+
+    // Fallback: se por algum motivo a API não retornou codeFipe,
+    // mantém o comportamento antigo (card de preço) pra não quebrar
     res.innerHTML = `
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid rgba(0,168,120,.15)">
         <span style="font-size:36px">${typeEmoji}</span>
@@ -8584,6 +8740,155 @@ async function submitVote(fipeCode, rating, options = {}) {
   }
 }
 // ═════════════════════════════════════════════════════════════════
+
+
+// ═════════════════════════════════════════════════════════════════
+// Sprint 2 — Etapa 2.2: Helpers da página FIPE-exata
+// ═════════════════════════════════════════════════════════════════
+// Estes helpers preparam o terreno pra showVehicleProfileByFipe.
+// Não são chamados em lugar nenhum ainda — a função principal vem
+// logo abaixo e plugagem com search bar vem em outra etapa.
+
+// Converte o "tipo FIPE" (carros/motos/caminhoes) usado pela API
+// e pelo código de UI pra forma singular usada nas constantes
+// RATING_DIMENSIONS (carro/moto/caminhao). Aceita também as formas
+// em inglês da FIPE v2 (cars/motorcycles/trucks) por garantia.
+function normalizeVehicleType(rawType) {
+  if (!rawType) return null;
+  const t = String(rawType).toLowerCase();
+  if (t === 'carro' || t === 'carros' || t === 'cars' || t === 'car') return 'carro';
+  if (t === 'moto'  || t === 'motos'  || t === 'motorcycles' || t === 'motorcycle') return 'moto';
+  if (t === 'caminhao' || t === 'caminhão' || t === 'caminhoes' || t === 'caminhões' || t === 'trucks' || t === 'truck') return 'caminhao';
+  return null;
+}
+
+// Busca um veículo pelo código FIPE na tabela fipe_vehicles. Se não
+// existir e tiver um "hint" (dados vindos da busca FIPE da home), faz
+// upsert pra alimentar o cache. Retorna o objeto normalizado pra uso
+// no resto do código do perfil (formato compatível com 'v').
+//
+// Parâmetros:
+//   fipeCode (string, obrigatório)  — ex: '004278-7'
+//   hint     (object|null)          — pode trazer brand, model, year,
+//                                      fipeBrandCode, fipeModelCode,
+//                                      fipeYearCode, fipeType, fuel,
+//                                      version, modelYear
+//
+// Retorna:
+//   { success: true, vehicle: {...} }  — sucesso
+//   { success: false, error: '...' }   — sem hint e não está no cache
+async function getOrFetchFipeVehicle(fipeCode, hint) {
+  if (!fipeCode) return { success: false, error: 'Código FIPE ausente.' };
+  hint = hint || null;
+
+  // Tenta cache primeiro
+  try {
+    const { data: cached } = await sb.from('fipe_vehicles')
+      .select('*')
+      .eq('fipe_code', fipeCode)
+      .maybeSingle();
+
+    if (cached) {
+      // Atualiza last_seen_at silenciosamente (não bloqueia se falhar)
+      sb.from('fipe_vehicles')
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq('fipe_code', fipeCode)
+        .then(() => {}, () => {});
+
+      return {
+        success: true,
+        vehicle: {
+          fipe_code: cached.fipe_code,
+          brand: cached.vehicle_brand,
+          name: cached.vehicle_model,
+          version: cached.vehicle_version,
+          year: String(cached.model_year || ''),
+          model_year: cached.model_year,
+          fuel: cached.fuel,
+          fipeBrandCode: cached.fipe_brand_code,
+          fipeModelCode: cached.fipe_model_code,
+          fipeYearCode: cached.fipe_year_code,
+          fipeType: cached.vehicle_type === 'carro' ? 'carros'
+                  : cached.vehicle_type === 'moto' ? 'motos'
+                  : cached.vehicle_type === 'caminhao' ? 'caminhoes'
+                  : 'carros',
+          vehicleType: cached.vehicle_type,
+          emoji: cached.vehicle_type === 'moto' ? '🏍️'
+               : cached.vehicle_type === 'caminhao' ? '🚚'
+               : '🚗'
+        }
+      };
+    }
+  } catch (e) {
+    // Cache miss ou erro de leitura — segue pra tentar hint
+  }
+
+  // Sem cache: precisa do hint pra hidratar
+  if (!hint) {
+    return { success: false, error: 'Veículo não encontrado no cache e dados de busca não fornecidos.' };
+  }
+
+  // Valida campos obrigatórios do hint
+  const vehicleType = normalizeVehicleType(hint.fipeType || hint.vehicleType);
+  const brandTxt = hint.brand || hint.vehicle_brand;
+  const modelTxt = hint.name || hint.model || hint.vehicle_model;
+  const version  = hint.version || hint.vehicle_version || modelTxt || '';
+  const modelYear = hint.modelYear || hint.model_year || parseInt(hint.year) || null;
+  const fipeBrandCode = hint.fipeBrandCode || hint.fipe_brand_code;
+  const fipeModelCode = hint.fipeModelCode || hint.fipe_model_code;
+  const fipeYearCode  = hint.fipeYearCode  || hint.fipe_year_code;
+
+  if (!vehicleType || !brandTxt || !modelTxt || !modelYear || !fipeBrandCode || !fipeModelCode || !fipeYearCode) {
+    return { success: false, error: 'Dados incompletos para registrar o veículo no cache.' };
+  }
+
+  // Upsert no fipe_vehicles
+  const payload = {
+    fipe_code: fipeCode,
+    vehicle_type: vehicleType,
+    vehicle_brand: brandTxt,
+    vehicle_model: modelTxt,
+    vehicle_version: version,
+    model_year: modelYear,
+    fuel: hint.fuel || null,
+    fipe_brand_code: String(fipeBrandCode),
+    fipe_model_code: String(fipeModelCode),
+    fipe_year_code: String(fipeYearCode),
+    last_seen_at: new Date().toISOString()
+  };
+
+  try {
+    const { error } = await sb.from('fipe_vehicles')
+      .upsert([payload], { onConflict: 'fipe_code' });
+    if (error) {
+      // Falha de gravação não impede uso — só não cacheia
+      console.warn('fipe_vehicles upsert falhou:', error.message);
+    }
+  } catch (e) {
+    console.warn('fipe_vehicles upsert exception:', e);
+  }
+
+  return {
+    success: true,
+    vehicle: {
+      fipe_code: fipeCode,
+      brand: brandTxt,
+      name: modelTxt,
+      version: version,
+      year: String(modelYear),
+      model_year: modelYear,
+      fuel: hint.fuel || null,
+      fipeBrandCode: String(fipeBrandCode),
+      fipeModelCode: String(fipeModelCode),
+      fipeYearCode: String(fipeYearCode),
+      fipeType: hint.fipeType || (vehicleType === 'carro' ? 'carros' : vehicleType === 'moto' ? 'motos' : 'caminhoes'),
+      vehicleType: vehicleType,
+      emoji: vehicleType === 'moto' ? '🏍️' : vehicleType === 'caminhao' ? '🚚' : '🚗'
+    }
+  };
+}
+// ═════════════════════════════════════════════════════════════════
+
 
 function requireAuth(vehicleContext) {
   // Aceita contexto do veículo para pré-preencher o formulário
