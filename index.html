@@ -8300,6 +8300,22 @@ const RAIOX_WEIGHT_CURATED = 0.6;
 const RAIOX_WEIGHT_COMMUNITY = 0.4;
 const RAIOX_MIN_VOTES = 5;
 
+// Dimensões de avaliação por tipo de veículo (Decisão pendência #1 da Sprint 2).
+// "Mecânicas" (motor/cambio/suspensao/freios/eletrica) espelham categorias de
+// reclamação pra permitir cruzamento futuro. Listas de moto/caminhão são v1
+// educado e podem ser revistas quando entrar dado real desses tipos.
+const RATING_DIMENSIONS = {
+  carro:    ['motor', 'cambio', 'suspensao', 'freios', 'eletrica', 'acabamento', 'multimidia', 'consumo'],
+  moto:     ['motor', 'cambio', 'suspensao', 'freios', 'eletrica', 'consumo', 'pilotagem'],
+  caminhao: ['motor', 'cambio', 'suspensao', 'freios', 'eletrica', 'cabine', 'consumo', 'torque']
+};
+const DIMENSION_LABELS = {
+  motor: 'Motor', cambio: 'Câmbio', suspensao: 'Suspensão',
+  freios: 'Freios', eletrica: 'Elétrica', acabamento: 'Acabamento',
+  multimidia: 'Multimídia', consumo: 'Consumo',
+  pilotagem: 'Pilotagem', cabine: 'Cabine', torque: 'Torque'
+};
+
 // Cache em memória, válido por sessão. Invalidado manualmente após voto.
 let _scoreCache = { fipe: {}, model: {}, brand: {} };
 
@@ -8458,6 +8474,115 @@ async function calculateBrandScore(brand) {
 
   _scoreCache.brand[brand] = result;
   return result;
+}
+
+// Insere ou atualiza um voto da comunidade em vehicle_ratings.
+// Parâmetros:
+//   fipeCode    (string, obrigatório)  ex: '004278-7'
+//   rating      (number, obrigatório)  1-5 se scale='stars', 0-10 se scale='nps'
+//   options     (object, opcional):
+//     dimensions    (object|null)      ex: { motor: 4, cambio: 3 }
+//     vehicleType   (string|null)      'carro' | 'moto' | 'caminhao' (necessário se dimensions vier)
+//     source        (string)           'casual' (default) | 'complaint'
+//     complaintId   (string|null)      uuid, obrigatório se source='complaint'
+//     scale         (string)           'stars' (default) | 'nps'
+//
+// Retorna:
+//   { success: true, voteId: '...', isUpdate: bool }
+//   { success: false, error: 'mensagem amigável' }
+//
+// Decisões de design (Sprint 2):
+//   - Upsert: se já existe voto casual (voter_id+fipe_code), atualiza.
+//   - Voto de reclamação (source='complaint') é controlado por complaint_id, não pelo unique index.
+//   - Validação no client: rating fora do range e dimensões com chave inválida retornam erro.
+//   - Não dispara alert/toast/render — quem chama decide o feedback.
+//   - Invalida cache de score (fipe + model + brand) após sucesso.
+async function submitVote(fipeCode, rating, options = {}) {
+  const { dimensions = null, vehicleType = null, source = 'casual', complaintId = null, scale = 'stars' } = options;
+
+  // ── Validações
+  if (!fipeCode) return { success: false, error: 'Código FIPE ausente.' };
+  if (rating == null || isNaN(rating)) return { success: false, error: 'Avaliação inválida.' };
+
+  const r = Number(rating);
+  if (scale === 'stars' && (r < 1 || r > 5 || r !== Math.floor(r))) {
+    return { success: false, error: 'A nota deve ser de 1 a 5 estrelas.' };
+  }
+  if (scale === 'nps' && (r < 0 || r > 10)) {
+    return { success: false, error: 'A nota NPS deve ser de 0 a 10.' };
+  }
+  if (source !== 'casual' && source !== 'complaint') {
+    return { success: false, error: 'Origem do voto inválida.' };
+  }
+  if (source === 'complaint' && !complaintId) {
+    return { success: false, error: 'Voto de reclamação exige ID da reclamação.' };
+  }
+
+  // ── Validação de dimensões (se vierem)
+  let validDimensions = null;
+  if (dimensions && typeof dimensions === 'object') {
+    if (!vehicleType || !RATING_DIMENSIONS[vehicleType]) {
+      return { success: false, error: 'Tipo de veículo necessário para validar dimensões.' };
+    }
+    const allowed = new Set(RATING_DIMENSIONS[vehicleType]);
+    const clean = {};
+    for (const [key, val] of Object.entries(dimensions)) {
+      if (!allowed.has(key)) {
+        return { success: false, error: 'Dimensão "' + key + '" não é válida para ' + vehicleType + '.' };
+      }
+      const v = Number(val);
+      if (isNaN(v) || v < 1 || v > 5 || v !== Math.floor(v)) {
+        return { success: false, error: 'Nota da dimensão "' + key + '" deve ser 1-5.' };
+      }
+      clean[key] = v;
+    }
+    if (Object.keys(clean).length > 0) validDimensions = clean;
+  }
+
+  const voterId = getOrCreateVoterId();
+  const payload = {
+    fipe_code: fipeCode,
+    rating: r,
+    scale: scale,
+    source: source,
+    voter_id: voterId,
+    complaint_id: complaintId,
+    dimensions: validDimensions,
+    updated_at: new Date().toISOString()
+  };
+
+  try {
+    // Voto de reclamação: 1 por complaint_id (não dá upsert no unique de voter+fipe)
+    if (source === 'complaint') {
+      const { data, error } = await sb.from('vehicle_ratings').insert([payload]).select('id').single();
+      if (error) return { success: false, error: 'Não foi possível registrar o voto. (' + error.message + ')' };
+      invalidateScoreCache();
+      return { success: true, voteId: data.id, isUpdate: false };
+    }
+
+    // Voto casual: upsert no unique (voter_id + fipe_code + source='casual')
+    const { data: existing } = await sb.from('vehicle_ratings')
+      .select('id')
+      .eq('voter_id', voterId)
+      .eq('fipe_code', fipeCode)
+      .eq('source', 'casual')
+      .maybeSingle();
+
+    if (existing) {
+      const { error } = await sb.from('vehicle_ratings').update(payload).eq('id', existing.id);
+      if (error) return { success: false, error: 'Não foi possível atualizar o voto. (' + error.message + ')' };
+      invalidateScoreCache();
+      return { success: true, voteId: existing.id, isUpdate: true };
+    }
+
+    const { data, error } = await sb.from('vehicle_ratings').insert([payload]).select('id').single();
+    if (error) return { success: false, error: 'Não foi possível registrar o voto. (' + error.message + ')' };
+    invalidateScoreCache();
+    return { success: true, voteId: data.id, isUpdate: false };
+
+  } catch (e) {
+    return { success: false, error: 'Erro inesperado ao salvar o voto.' };
+  }
 }
 // ═════════════════════════════════════════════════════════════════
 
