@@ -7656,15 +7656,47 @@ async function doFipeSearch() {
   try {
     // Pega código do ano com combustível
     let fipeData = null;
+    let yearCode = null;
     if (year) {
       const anos = await fipeFetch(fipeUrl(type, 'brands', brand, 'models', model, 'years'));
       const anoMatch = (Array.isArray(anos) ? anos : []).find(a =>
         (a.name||a.nome||'').split(' ')[0] === year
       );
       if (anoMatch) {
-        const yearCode = anoMatch.code||anoMatch.codigo;
+        yearCode = anoMatch.code||anoMatch.codigo;
         fipeData = await fipeFetch(fipeUrl(type, 'brands', brand, 'models', model, 'years', yearCode));
       }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Sprint 2 — Etapa 2.3 (Caminho 1, D43)
+    // ─────────────────────────────────────────────────────────────
+    // Quando a FIPE retorna codeFipe, navega pro perfil FIPE-exata
+    // (que tem id 'fipe-XXX', injeta v.fipe_code no header e ativa
+    // voto 1-clique). O caminho antigo abaixo (id 'dynamic') vira
+    // fallback pra casos onde a FIPE não retornou code.
+    //
+    // NOTA: a sessão de 24/05 implementou esse trecho dentro de
+    // sbShowPrice() — função que ninguém chama. Quem é chamado
+    // pela search bar é doFipeSearch. Por isso o Caminho 1 nunca
+    // executava antes desta correção.
+    const fipeCode = fipeData && (fipeData.codeFipe || fipeData.CodigoFipe);
+    if (fipeCode && yearCode) {
+      const hint = {
+        brand: brandTxt,
+        name: modelTxt,
+        version: modelTxt,
+        modelYear: parseInt(fipeData.modelYear || fipeData.AnoModelo || year),
+        fuel: fipeData.fuel || fipeData.Combustivel || null,
+        fipeBrandCode: brand,
+        fipeModelCode: model,
+        fipeYearCode: yearCode,
+        fipeType: type,
+        fipePrice: fipeData.price || fipeData.Valor || null
+      };
+      sbResetSearchBar();
+      await showVehicleProfileByFipe(fipeCode, hint);
+      return;
     }
 
     // Cria veículo dinâmico e navega para o perfil
