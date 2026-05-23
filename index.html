@@ -7684,8 +7684,8 @@ async function doFipeSearch() {
     if (fipeCode && yearCode) {
       const hint = {
         brand: brandTxt,
-        name: modelTxt,
-        version: modelTxt,
+        name: modelTxt.split(' ')[0],  // só a primeira palavra (ex: "ONIX"), padrão herdado do caminho antigo (linha 7708)
+        version: modelTxt,             // versão completa preservada
         modelYear: parseInt(fipeData.modelYear || fipeData.AnoModelo || year),
         fuel: fipeData.fuel || fipeData.Combustivel || null,
         fipeBrandCode: brand,
