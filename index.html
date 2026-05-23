@@ -8282,6 +8282,185 @@ function openVotePrompt() {
   alert('A avaliação da comunidade está sendo construída nesta sprint. Em breve você vai poder dar nota a esse veículo e ajudar a compor o Raio-X. 🛠️');
 }
 
+// ═════════════════════════════════════════════════════════════════
+// Sprint 2 — Helpers de score (etapa 2.1 do briefing)
+// ═════════════════════════════════════════════════════════════════
+// Composição do Raio-X (Decisões #10, #11, #30):
+//   - Curadoria (reliability_score) = 60% do score quando há votos suficientes
+//   - Comunidade (vehicle_ratings)  = 40% do score, mínimo 5 votos pra contar
+//   - Voto casual e voto de reclamação têm peso 1 cada (Sprint 2 decisão)
+//   - Escala NPS (0-10) é normalizada pra estrelas (0-5) dividindo por 2
+//
+// Níveis (Decisão #30): FIPE → Modelo → Marca, todos combinam 60/40.
+//   - FIPE: score direto da FIPE específica
+//   - Modelo: média ponderada das FIPEs do modelo (peso = nº de votos)
+//   - Marca: média ponderada dos modelos da marca (peso = nº de votos)
+
+const RAIOX_WEIGHT_CURATED = 0.6;
+const RAIOX_WEIGHT_COMMUNITY = 0.4;
+const RAIOX_MIN_VOTES = 5;
+
+// Cache em memória, válido por sessão. Invalidado manualmente após voto.
+let _scoreCache = { fipe: {}, model: {}, brand: {} };
+
+function invalidateScoreCache(scope) {
+  // scope opcional: 'fipe' | 'model' | 'brand' | undefined (tudo)
+  if (!scope) { _scoreCache = { fipe: {}, model: {}, brand: {} }; return; }
+  if (_scoreCache[scope]) _scoreCache[scope] = {};
+}
+
+// UUID persistente do votante (identifica voto sem login)
+function getOrCreateVoterId() {
+  let id = localStorage.getItem('do_voter_id');
+  if (!id) {
+    id = (crypto && crypto.randomUUID) ? crypto.randomUUID()
+      : 'v-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+    localStorage.setItem('do_voter_id', id);
+  }
+  return id;
+}
+
+// Normaliza rating bruto pra escala de estrelas (0-5)
+function normalizeRating(rating, scale) {
+  if (rating == null) return null;
+  const r = Number(rating);
+  if (isNaN(r)) return null;
+  if (scale === 'nps') return r / 2;     // NPS 0-10 → 0-5
+  return r;                              // stars 0-5 → 0-5
+}
+
+// Score de uma FIPE específica
+// Retorna { score, raioX, comunidade, votos, hasMinimum }
+async function calculateFipeScore(fipeCode) {
+  if (!fipeCode) return { score: null, raioX: null, comunidade: null, votos: 0, hasMinimum: false };
+  if (_scoreCache.fipe[fipeCode]) return _scoreCache.fipe[fipeCode];
+
+  let raioX = null, comunidade = null, votos = 0;
+
+  // 1. Busca curadoria (reliability_score do summary com fipe_code exato)
+  try {
+    const { data: rx } = await sb.from('vehicle_known_issues')
+      .select('reliability_score')
+      .eq('fipe_code', fipeCode)
+      .eq('is_summary', true)
+      .limit(1)
+      .maybeSingle();
+    if (rx && rx.reliability_score != null) raioX = parseFloat(rx.reliability_score);
+  } catch (e) { /* curadoria opcional */ }
+
+  // 2. Busca votos da comunidade
+  try {
+    const { data: ratings } = await sb.from('vehicle_ratings')
+      .select('rating, scale')
+      .eq('fipe_code', fipeCode);
+    if (ratings && ratings.length) {
+      const normed = ratings.map(r => normalizeRating(r.rating, r.scale)).filter(v => v != null);
+      votos = normed.length;
+      if (votos > 0) comunidade = normed.reduce((a, b) => a + b, 0) / votos;
+    }
+  } catch (e) { /* comunidade opcional */ }
+
+  const hasMinimum = votos >= RAIOX_MIN_VOTES;
+  let score = null;
+  if (raioX != null && hasMinimum) {
+    score = RAIOX_WEIGHT_CURATED * raioX + RAIOX_WEIGHT_COMMUNITY * comunidade;
+  } else if (raioX != null) {
+    score = raioX;                       // Estado 1: só curadoria
+  } else if (hasMinimum) {
+    score = comunidade;                  // Estado 3: só comunidade
+  }                                      // Estado 4: tudo null
+
+  const result = { score, raioX, comunidade, votos, hasMinimum };
+  _scoreCache.fipe[fipeCode] = result;
+  return result;
+}
+
+// Score do Modelo-genérico (média ponderada das FIPEs do modelo)
+// Fallback: se nenhuma FIPE tem score, usa média de reliability_score
+// dos summaries genéricos (fipe_code IS NULL) do modelo.
+async function calculateModelScore(brand, model) {
+  if (!brand || !model) return { score: null, votos: 0, fipes: 0 };
+  const cacheKey = brand + '|' + model;
+  if (_scoreCache.model[cacheKey]) return _scoreCache.model[cacheKey];
+
+  let result = { score: null, votos: 0, fipes: 0 };
+
+  // 1. Lista FIPEs conhecidas do modelo (cache fipe_vehicles)
+  try {
+    const { data: fipes } = await sb.from('fipe_vehicles')
+      .select('fipe_code')
+      .eq('vehicle_brand', brand)
+      .eq('vehicle_model', model);
+
+    if (fipes && fipes.length) {
+      const scores = await Promise.all(fipes.map(f => calculateFipeScore(f.fipe_code)));
+      const valid = scores.filter(s => s.score != null);
+      const totalVotos = valid.reduce((sum, s) => sum + Math.max(s.votos, 1), 0);
+      if (valid.length && totalVotos > 0) {
+        // Peso = max(votos, 1) pra que FIPEs sem voto ainda contem (pelo curado)
+        const weighted = valid.reduce((sum, s) => sum + s.score * Math.max(s.votos, 1), 0);
+        result = {
+          score: weighted / totalVotos,
+          votos: valid.reduce((sum, s) => sum + s.votos, 0),
+          fipes: valid.length
+        };
+      }
+    }
+  } catch (e) { /* segue pro fallback */ }
+
+  // 2. Fallback: média de reliability_score dos summaries genéricos do modelo
+  if (result.score == null) {
+    try {
+      const { data: generic } = await sb.from('vehicle_known_issues')
+        .select('reliability_score')
+        .eq('vehicle_brand', brand)
+        .eq('vehicle_model', model)
+        .eq('is_summary', true)
+        .is('fipe_code', null);
+      if (generic && generic.length) {
+        const vals = generic.map(g => parseFloat(g.reliability_score)).filter(v => !isNaN(v));
+        if (vals.length) result.score = vals.reduce((a, b) => a + b, 0) / vals.length;
+      }
+    } catch (e) { /* sem fallback, score fica null */ }
+  }
+
+  _scoreCache.model[cacheKey] = result;
+  return result;
+}
+
+// Score da Marca (média ponderada dos modelos da marca)
+async function calculateBrandScore(brand) {
+  if (!brand) return { score: null, votos: 0, modelos: 0 };
+  if (_scoreCache.brand[brand]) return _scoreCache.brand[brand];
+
+  let result = { score: null, votos: 0, modelos: 0 };
+
+  try {
+    const { data: fipes } = await sb.from('fipe_vehicles')
+      .select('vehicle_model')
+      .eq('vehicle_brand', brand);
+
+    if (fipes && fipes.length) {
+      const modelos = [...new Set(fipes.map(f => f.vehicle_model))];
+      const scores = await Promise.all(modelos.map(m => calculateModelScore(brand, m)));
+      const valid = scores.filter(s => s.score != null);
+      const totalVotos = valid.reduce((sum, s) => sum + Math.max(s.votos, 1), 0);
+      if (valid.length && totalVotos > 0) {
+        const weighted = valid.reduce((sum, s) => sum + s.score * Math.max(s.votos, 1), 0);
+        result = {
+          score: weighted / totalVotos,
+          votos: valid.reduce((sum, s) => sum + s.votos, 0),
+          modelos: valid.length
+        };
+      }
+    }
+  } catch (e) { /* score fica null */ }
+
+  _scoreCache.brand[brand] = result;
+  return result;
+}
+// ═════════════════════════════════════════════════════════════════
+
 function requireAuth(vehicleContext) {
   // Aceita contexto do veículo para pré-preencher o formulário
   // Pode vir como objeto direto ou ser undefined (botões antigos sem contexto)
