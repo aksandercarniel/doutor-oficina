@@ -1107,6 +1107,9 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .raiox-composition .cta:hover{color:var(--red)}
 .vote-stars-block{flex-basis:100%;display:flex;flex-direction:column;gap:6px;margin-top:4px}
 .vote-stars-label{color:var(--muted);font-size:12px;font-weight:500;line-height:1.4}
+.btn-raiox-full-wrap{text-align:center;margin-top:8px}
+.btn-raiox-full{display:inline-flex;align-items:center;justify-content:center;gap:6px;margin:20px auto 0;padding:10px 20px;background:transparent;border:1.5px solid var(--navy);color:var(--navy);font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;transition:all .15s;text-decoration:none;font-family:inherit}
+.btn-raiox-full:hover{background:var(--navy);color:#fff}
 .profile-tags{display:flex;gap:7px;flex-wrap:wrap}
 .ptag{background:var(--red-light);border:1px solid var(--red-light2);color:var(--red);font-size:11px;padding:4px 12px;border-radius:20px;font-weight:700;font-family:var(--font)}
 
@@ -4209,6 +4212,18 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
 
     + '</div>' // fim coluna direita
     + '</div>'; // fim profile-grid
+
+  // Botão "Ver Raio-X completo do [modelo]" — só na página FIPE-exata
+  // Conecta visão granular (FIPE-exata) à visão agregada (modelo-genérico)
+  if (fipeCodeForVote && v.brand && v.name) {
+    const safeBrand = v.brand.replace(/'/g, "\\'");
+    const safeModel = v.name.replace(/'/g, "\\'");
+    el.innerHTML += '<div class="btn-raiox-full-wrap">'
+      + '<button class="btn-raiox-full" onclick="showVehicleProfileByBrandModel(\'' + safeBrand + '\',\'' + safeModel + '\')">'
+      + 'Ver Raio-X completo do ' + v.name
+      + ' →</button>'
+      + '</div>';
+  }
 
   loadFipeBrandsInto('cmp-brand', 'carros');
 
