@@ -2201,7 +2201,13 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 // ══ SUPABASE CONFIG ══
 const SUPABASE_URL = 'https://laxjvesxrcklckjpqbcs.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxheGp2ZXN4cmNrbGNranBxYmNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1ODI5MjEsImV4cCI6MjA5NDE1ODkyMX0.BOqpFt_GH1WzyWDpfHUl1-8sQTLZCWHZxAtb-yOWXE8';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Sprint 2 — Opção 2A: envia voter_id em todo header pro RLS poder validar
+// quem é dono do voto casual no UPDATE. Não é segurança forte (atacante
+// pode trocar o header no DevTools se souber voter_id alheio), mas é
+// melhor que policy aberta. Auth real fica pra outra sprint.
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  global: { headers: { 'x-voter-id': getOrCreateVoterId() } }
+});
 
 // ══ SUPABASE AUTH ══
 async function sbSignUp(name, email, password, cpfHash = null, phone = null) {
