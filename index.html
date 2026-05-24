@@ -4117,13 +4117,16 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + '<div class="profile-right">'
     + '<div class="info-card">'
     + '<div class="ic-label">💰 Tabela FIPE</div>'
-    + '<div class="ic-value" style="' + (fipePrice && fipePrice.isRange ? 'font-size:15px' : '') + '">' 
-      + (fipePrice && fipePrice.isRange && fipePrice.priceMax 
-          ? 'De ' + fipePrice.price + ' até ' + fipePrice.priceMax
-          : (fipePrice && fipePrice.price ? fipePrice.price : (v.fipePrice || 'R$ —'))
-        )
-    + '</div>'
-    + '<div class="ic-sub">' + (fipePrice && fipePrice.year ? 'Ano ' + fipePrice.year + ' · ' : '') + (fipePrice && fipePrice.ref ? fipePrice.ref : 'Referência atual') + '</div>'
+    + (v.id && v.id.indexOf('direct-') === 0
+        ? '<div class="ic-sub" style="margin-top:8px;line-height:1.4">Para ver o preço, busque uma versão específica do ' + (v.name || 'veículo') + ' na barra de busca acima</div>'
+        : '<div class="ic-value" style="' + (fipePrice && fipePrice.isRange ? 'font-size:15px' : '') + '">'
+          + (fipePrice && fipePrice.isRange && fipePrice.priceMax
+              ? 'De ' + fipePrice.price + ' até ' + fipePrice.priceMax
+              : (fipePrice && fipePrice.price ? fipePrice.price : (v.fipePrice || 'R$ —'))
+            )
+          + '</div>'
+          + '<div class="ic-sub">' + (fipePrice && fipePrice.year ? 'Ano ' + fipePrice.year + ' · ' : '') + (fipePrice && fipePrice.ref ? fipePrice.ref : 'Referência atual') + '</div>'
+      )
     + '</div>'
     + '<div class="info-card">'
     + '<div class="ic-label">📋 Relatos na plataforma</div>'
