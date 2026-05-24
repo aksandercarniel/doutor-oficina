@@ -753,14 +753,6 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .fipe-price{font-family:var(--font);font-weight:900;font-size:20px;color:var(--green)}
 .fipe-label{color:var(--muted);font-size:12px;font-weight:500}
 
-.rating-row{display:flex;gap:6px}
-.star-btn{
-  width:40px;height:40px;border-radius:8px;border:1.5px solid var(--border2);
-  background:var(--bg);cursor:pointer;font-size:18px;transition:all .15s;
-  display:flex;align-items:center;justify-content:center;
-}
-.star-btn:hover,.star-btn.active{border-color:var(--yellow);background:var(--yellow-light);transform:scale(1.1)}
-
 .category-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .cat-btn{
   padding:10px 8px;border-radius:9px;border:1.5px solid var(--border2);
@@ -1098,7 +1090,6 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .profile-sub{grid-column:2;color:var(--muted);font-size:14px;margin-bottom:14px;font-family:var(--font-body)}
 .profile-rating,.profile-tags{grid-column:1/-1}
 .profile-rating{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap}
-.big-stars{color:var(--yellow);font-size:18px;letter-spacing:2px}
 .big-score{font-family:var(--font);font-weight:900;font-size:28px;color:var(--navy)}
 .profile-rcount{color:var(--muted);font-size:14px;font-weight:500}
 .raiox-badge{display:inline-flex;align-items:center;color:var(--navy);font-family:var(--font);font-size:13px;font-weight:800;letter-spacing:0.2px}
@@ -1110,6 +1101,16 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .btn-raiox-full-wrap{text-align:center;margin-top:8px}
 .btn-raiox-full{display:inline-flex;align-items:center;justify-content:center;gap:6px;margin:20px auto 0;padding:10px 20px;background:transparent;border:1.5px solid var(--navy);color:var(--navy);font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;transition:all .15s;text-decoration:none;font-family:inherit}
 .btn-raiox-full:hover{background:var(--navy);color:#fff}
+/* Widget de voto: 5 carinhas (Sprint 2 — D51) */
+.face-row{display:flex;gap:8px;flex-wrap:wrap}
+.face-btn{width:32px;height:32px;padding:0;background:none;border:2px solid transparent;border-radius:50%;cursor:pointer;transition:transform .15s,border-color .15s;display:flex;align-items:center;justify-content:center;line-height:0}
+.face-btn svg{display:block;width:28px;height:28px}
+.face-btn:hover{transform:scale(1.1)}
+.face-btn.active{transform:scale(1.1)}
+.face-label{color:var(--muted);font-size:12px;font-weight:600;line-height:1.4;margin-top:2px;min-height:18px}
+/* Display da nota: 1 carinha colorida (header do perfil) */
+.face-display{width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.face-display svg{width:36px;height:36px;display:block}
 .profile-tags{display:flex;gap:7px;flex-wrap:wrap}
 .ptag{background:var(--red-light);border:1px solid var(--red-light2);color:var(--red);font-size:11px;padding:4px 12px;border-radius:20px;font-weight:700;font-family:var(--font)}
 
@@ -2068,13 +2069,8 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
         </div>
         <div class="form-group">
           <label class="form-label">Sua avaliação geral do veículo</label>
-          <div class="rating-row" id="star-rating">
-            <button class="star-btn" onclick="setRating(1)">⭐</button>
-            <button class="star-btn" onclick="setRating(2)">⭐</button>
-            <button class="star-btn" onclick="setRating(3)">⭐</button>
-            <button class="star-btn" onclick="setRating(4)">⭐</button>
-            <button class="star-btn" onclick="setRating(5)">⭐</button>
-          </div>
+          <div class="face-row" id="star-rating"></div>
+          <span class="face-label" id="form-face-label">Sem avaliação</span>
         </div>
         <div class="form-actions">
           <button class="btn-back" onclick="goStep(0)">← Voltar</button>
@@ -4106,8 +4102,8 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + '<div class="profile-name">' + v.name + '</div>'
     + ((v.version || v.year) ? ('<div class="profile-sub">' + [v.version, v.year].filter(x => x && x !== '—').join(' · ') + '</div>') : '')
     + '<div class="profile-rating">'
-    + '<span class="big-stars">' + (displayRating ? starsHtml(displayRating) : '☆☆☆☆☆') + '</span>'
-    + '<span class="big-score">' + (displayRating ? displayRating.toFixed(1) : '—') + '</span>'
+    + (displayRating ? ('<span class="face-display">' + faceSvg(Math.round(displayRating), true) + '</span>') : '')
+    + (displayRating ? ('<span class="big-score">' + displayRating.toFixed(1) + '</span>') : '')
     + '<span class="raiox-badge">Raio-X</span>'
     + '<span class="raiox-composition">' + raioxComposition + '</span>'
     + voteStarsHtml
@@ -4714,7 +4710,9 @@ function resetComplaintForm() {
   selectedCatVal = null;
   selectedRating = null;
   document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.star-btn').forEach(b => b.classList.remove('active'));
+  renderFormFaces(); // repopula com selectedRating=null → todas cinzentas
+  const fLbl = document.getElementById('form-face-label');
+  if (fLbl) fLbl.textContent = 'Sem avaliação';
 
   // Dados pessoais
   document.getElementById('inp-name')  && (document.getElementById('inp-name').value  = '');
@@ -4761,6 +4759,10 @@ function goStep(n){
   const dots = ['dot0','dot1','dot2'];
   dots.forEach((d,i) => { const el=document.getElementById(d); if(el) el.classList.toggle('done', i<=n); });
   currentStep = n;
+  if (n===1) {
+    // Popula as 5 carinhas no container (HTML estático foi removido — JS controla agora)
+    renderFormFaces();
+  }
   if (n===2) {
     updateSummary();
     // Pré-preenche nome, email e estado com dados do usuário logado
@@ -4790,8 +4792,35 @@ function selectCat(btn,cat){
 }
 
 function setRating(n){
-  selectedRating=n;
-  document.querySelectorAll('.star-btn').forEach((b,i)=>b.classList.toggle('active',i<n));
+  selectedRating = n;
+  renderFormFaces();
+  const lbl = document.getElementById('form-face-label');
+  if (lbl) lbl.textContent = (n && FACE_LABELS[n]) ? FACE_LABELS[n] : 'Sem avaliação';
+}
+
+// Popula #star-rating com as 5 carinhas (form de reclamação)
+// Chamado ao abrir step 2 e sempre que setRating é chamado pra refletir estado.
+function renderFormFaces(){
+  const container = document.getElementById('star-rating');
+  if (!container) return;
+  const fixedLabel = (selectedRating && FACE_LABELS[selectedRating]) ? FACE_LABELS[selectedRating] : 'Sem avaliação';
+  container.dataset.fixedLabel = fixedLabel;
+  let html = '';
+  for (let i = 1; i <= 5; i++) {
+    const isActive = (selectedRating === i);
+    const activeClass = isActive ? ' active' : '';
+    const handlerEnter = "document.getElementById('form-face-label').textContent='" + FACE_LABELS[i] + "'";
+    const handlerLeave = "document.getElementById('form-face-label').textContent=this.parentNode.dataset.fixedLabel||'Sem avaliação'";
+    html += '<button class="face-btn' + activeClass + '"'
+      + ' style="' + (isActive ? 'border-color:' + FACE_COLORS[i] : '') + '"'
+      + ' onmouseenter="' + handlerEnter + '"'
+      + ' onmouseleave="' + handlerLeave + '"'
+      + ' onclick="setRating(' + i + ')"'
+      + ' aria-label="Nota ' + i + ' - ' + FACE_LABELS[i] + '">'
+      + faceSvg(i, isActive)
+      + '</button>';
+  }
+  container.innerHTML = html;
 }
 
 function updateSummary(){
@@ -8711,9 +8740,9 @@ async function calculateBrandScore(brand) {
 // ═════════════════════════════════════════════════════════════════
 // Sprint 2 — Interface de voto 1-clique (etapa "voto rápido")
 // ═════════════════════════════════════════════════════════════════
-// Estrelas votáveis no header da página FIPE-exata. Reusa o widget
-// .star-btn / .rating-row do formulário de reclamação (consistência
-// visual) mas com comportamento diferente: clicou → salva na hora.
+// 5 carinhas votáveis no header da página FIPE-exata. Compartilha o
+// widget .face-btn / .face-row com o formulário de reclamação:
+// cores 1=vermelho, 2-3=amarelo, 4-5=verde. Clicou → salva na hora.
 //
 // Decisões (sessão de 24/05 noite):
 //   - Voto 1-clique sem dimensões (escala stars 1-5, source='casual')
@@ -8723,6 +8752,36 @@ async function calculateBrandScore(brand) {
 
 // Busca o voto casual do usuário atual para um FIPE específico.
 // Retorna { rating, updatedAt } ou null se não votou ainda.
+
+// Constantes do widget de carinhas (Sprint 2 — D51)
+// Distribuição (decisão D51, 23/05/2026): 1=vermelho, 2-3=amarelo, 4-5=verde
+const FACE_COLORS = {
+  1: '#dc2626', // vermelho forte
+  2: '#f59e0b', // amarelo/laranja
+  3: '#facc15', // amarelo
+  4: '#65a30d', // verde claro
+  5: '#16a34a'  // verde forte
+};
+const FACE_LABELS = { 1:'Péssimo', 2:'Ruim', 3:'Regular', 4:'Bom', 5:'Excelente' };
+
+// Gera o SVG inline de uma carinha (n = 1..5, active = se está colorida ou cinza).
+// Reusada pelo display da nota no header e pelos botões de voto.
+function faceSvg(n, active) {
+  const fill = active ? FACE_COLORS[n] : '#e5e7eb';
+  let mouth;
+  if (n === 1)      mouth = '<path d="M 13 27 Q 20 20 27 27" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
+  else if (n === 2) mouth = '<path d="M 13 26 Q 20 23 27 26" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
+  else if (n === 3) mouth = '<line x1="13" y1="25" x2="27" y2="25" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>';
+  else if (n === 4) mouth = '<path d="M 13 24 Q 20 27 27 24" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
+  else              mouth = '<path d="M 13 23 Q 20 29 27 23" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
+  return '<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">'
+    + '<circle cx="20" cy="20" r="18" fill="' + fill + '"/>'
+    + '<circle cx="14" cy="16" r="2" fill="#fff"/>'
+    + '<circle cx="26" cy="16" r="2" fill="#fff"/>'
+    + mouth
+    + '</svg>';
+}
+
 async function loadCurrentUserVote(fipeCode) {
   if (!fipeCode) return null;
   try {
@@ -8757,25 +8816,38 @@ function renderVoteStars(fipeCode, currentVote) {
   const containerId = 'vote-stars-' + fipeCode.replace(/[^a-z0-9]/gi, '');
   const safeFipe = fipeCode.replace(/'/g, "\\'");
 
-  let microcopy;
+  let microcopy, labelText;
   if (currentVote && currentVote.rating) {
     const r = currentVote.rating;
     const date = _formatVoteDate(currentVote.updatedAt);
-    microcopy = 'você votou ' + r + '★' + (date ? ' em ' + date : '') + ' · clique pra atualizar';
+    microcopy = 'você votou ' + r + '/5' + (date ? ' em ' + date : '') + ' · clique pra atualizar';
+    labelText = FACE_LABELS[r] || '';
   } else {
     microcopy = 'sua avaliação:';
+    labelText = 'Sem avaliação';
   }
 
-  let starsHtml = '';
+  let facesHtml = '';
   for (let i = 1; i <= 5; i++) {
-    const active = (currentVote && currentVote.rating >= i) ? ' active' : '';
-    starsHtml += '<button class="star-btn' + active + '" onclick="castQuickVote(\'' + safeFipe + '\', ' + i + ', this)">⭐</button>';
+    const isActive = currentVote && currentVote.rating === i;
+    const activeClass = isActive ? ' active' : '';
+    const handlerEnter = 'this.closest(\'.vote-stars-block\').querySelector(\'.face-label\').textContent=\'' + FACE_LABELS[i] + '\'';
+    const handlerLeave = 'this.closest(\'.vote-stars-block\').querySelector(\'.face-label\').textContent=this.closest(\'.vote-stars-block\').dataset.fixedLabel||\'\'';
+    facesHtml += '<button class="face-btn' + activeClass + '"'
+      + ' style="' + (isActive ? 'border-color:' + FACE_COLORS[i] : '') + '"'
+      + ' onmouseenter="' + handlerEnter + '"'
+      + ' onmouseleave="' + handlerLeave + '"'
+      + ' onclick="castQuickVote(\'' + safeFipe + '\', ' + i + ', this)"'
+      + ' aria-label="Nota ' + i + ' - ' + FACE_LABELS[i] + '">'
+      + faceSvg(i, isActive)
+      + '</button>';
   }
 
   return ''
-    + '<div class="vote-stars-block" id="' + containerId + '">'
+    + '<div class="vote-stars-block" id="' + containerId + '" data-fixed-label="' + labelText + '">'
     + '<span class="vote-stars-label">' + microcopy + '</span>'
-    + '<div class="rating-row">' + starsHtml + '</div>'
+    + '<div class="face-row">' + facesHtml + '</div>'
+    + '<span class="face-label">' + labelText + '</span>'
     + '</div>';
 }
 
@@ -8785,36 +8857,52 @@ async function castQuickVote(fipeCode, rating, btnEl) {
 
   // Estado anterior (pra reverter se der erro)
   const block = btnEl.closest('.vote-stars-block');
-  const allStars = block ? block.querySelectorAll('.star-btn') : [];
-  const prevState = Array.from(allStars).map(b => b.classList.contains('active'));
+  const allFaces = block ? block.querySelectorAll('.face-btn') : [];
+  const prevState = Array.from(allFaces).map(b => ({
+    active: b.classList.contains('active'),
+    border: b.style.borderColor,
+    svg: b.innerHTML
+  }));
   const labelEl = block ? block.querySelector('.vote-stars-label') : null;
+  const faceLabelEl = block ? block.querySelector('.face-label') : null;
   const prevLabel = labelEl ? labelEl.textContent : '';
+  const prevFaceLabel = faceLabelEl ? faceLabelEl.textContent : '';
 
-  // Render otimista: pinta estrelas até a clicada
-  allStars.forEach((b, i) => {
-    b.classList.toggle('active', i < rating);
+  // Render otimista: ativa só a carinha clicada (e desativa as outras)
+  allFaces.forEach((b, i) => {
+    const n = i + 1;
+    const isSelected = (n === rating);
+    b.classList.toggle('active', isSelected);
+    b.style.borderColor = isSelected ? FACE_COLORS[n] : '';
+    b.innerHTML = faceSvg(n, isSelected);
     b.disabled = true;
   });
   if (labelEl) labelEl.textContent = 'salvando…';
+  if (faceLabelEl) faceLabelEl.textContent = FACE_LABELS[rating] || '';
+  if (block) block.dataset.fixedLabel = FACE_LABELS[rating] || '';
 
   const result = await submitVote(fipeCode, rating);
 
   if (!result.success) {
     // Reverte estado visual
-    allStars.forEach((b, i) => {
-      b.classList.toggle('active', prevState[i]);
+    allFaces.forEach((b, i) => {
+      b.classList.toggle('active', prevState[i].active);
+      b.style.borderColor = prevState[i].border;
+      b.innerHTML = prevState[i].svg;
       b.disabled = false;
     });
     if (labelEl) labelEl.textContent = prevLabel;
+    if (faceLabelEl) faceLabelEl.textContent = prevFaceLabel;
+    if (block) block.dataset.fixedLabel = prevFaceLabel;
     alert(result.error || 'Não foi possível salvar seu voto. Tente de novo.');
     return;
   }
 
-  // Sucesso: feedback + atualiza microcópia pra "você votou X★ em hoje"
-  allStars.forEach(b => { b.disabled = false; });
+  // Sucesso: feedback + atualiza microcópia
+  allFaces.forEach(b => { b.disabled = false; });
   const today = _formatVoteDate(new Date().toISOString());
   if (labelEl) {
-    labelEl.textContent = '✓ obrigado! você votou ' + rating + '★ em ' + today + ' · clique pra atualizar';
+    labelEl.textContent = '✓ obrigado! você votou ' + rating + '/5 em ' + today + ' · clique pra atualizar';
   }
 }
 
