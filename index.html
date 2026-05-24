@@ -4809,12 +4809,12 @@ function renderFormFaces(){
   for (let i = 1; i <= 5; i++) {
     const isActive = (selectedRating === i);
     const activeClass = isActive ? ' active' : '';
-    const handlerEnter = "document.getElementById('form-face-label').textContent='" + FACE_LABELS[i] + "'";
-    const handlerLeave = "document.getElementById('form-face-label').textContent=this.parentNode.dataset.fixedLabel||'Sem avaliação'";
     html += '<button class="face-btn' + activeClass + '"'
+      + ' data-n="' + i + '"'
+      + ' data-active="' + (isActive ? '1' : '0') + '"'
       + ' style="' + (isActive ? 'border-color:' + FACE_COLORS[i] : '') + '"'
-      + ' onmouseenter="' + handlerEnter + '"'
-      + ' onmouseleave="' + handlerLeave + '"'
+      + ' onmouseenter="faceHoverEnter(this)"'
+      + ' onmouseleave="faceHoverLeave(this)"'
       + ' onclick="setRating(' + i + ')"'
       + ' aria-label="Nota ' + i + ' - ' + FACE_LABELS[i] + '">'
       + faceSvg(i, isActive)
@@ -8782,6 +8782,39 @@ function faceSvg(n, active) {
     + '</svg>';
 }
 
+// Hover handler compartilhado pelos 2 widgets (header + form)
+// - Pinta a carinha hovered com cor
+// - Atualiza a face-label do container pai (vote-stars-block ou face-row do form)
+function faceHoverEnter(btnEl){
+  const n = parseInt(btnEl.dataset.n, 10);
+  if (!n) return;
+  btnEl.innerHTML = faceSvg(n, true);
+  // Encontra a face-label: pode estar em .vote-stars-block (header) ou form (form-face-label)
+  const block = btnEl.closest('.vote-stars-block');
+  if (block) {
+    const lbl = block.querySelector('.face-label');
+    if (lbl) lbl.textContent = FACE_LABELS[n] || '';
+  } else {
+    const formLbl = document.getElementById('form-face-label');
+    if (formLbl) formLbl.textContent = FACE_LABELS[n] || '';
+  }
+}
+function faceHoverLeave(btnEl){
+  const n = parseInt(btnEl.dataset.n, 10);
+  const isActive = btnEl.dataset.active === '1';
+  if (!n) return;
+  btnEl.innerHTML = faceSvg(n, isActive);
+  const block = btnEl.closest('.vote-stars-block');
+  if (block) {
+    const lbl = block.querySelector('.face-label');
+    if (lbl) lbl.textContent = block.dataset.fixedLabel || '';
+  } else {
+    const formLbl = document.getElementById('form-face-label');
+    const parent = btnEl.parentNode;
+    if (formLbl) formLbl.textContent = (parent && parent.dataset.fixedLabel) || 'Sem avaliação';
+  }
+}
+
 async function loadCurrentUserVote(fipeCode) {
   if (!fipeCode) return null;
   try {
@@ -8828,15 +8861,16 @@ function renderVoteStars(fipeCode, currentVote) {
   }
 
   let facesHtml = '';
+  const safeRating = (currentVote && currentVote.rating) ? currentVote.rating : 0;
   for (let i = 1; i <= 5; i++) {
-    const isActive = currentVote && currentVote.rating === i;
+    const isActive = (safeRating === i);
     const activeClass = isActive ? ' active' : '';
-    const handlerEnter = 'this.closest(\'.vote-stars-block\').querySelector(\'.face-label\').textContent=\'' + FACE_LABELS[i] + '\'';
-    const handlerLeave = 'this.closest(\'.vote-stars-block\').querySelector(\'.face-label\').textContent=this.closest(\'.vote-stars-block\').dataset.fixedLabel||\'\'';
     facesHtml += '<button class="face-btn' + activeClass + '"'
+      + ' data-n="' + i + '"'
+      + ' data-active="' + (isActive ? '1' : '0') + '"'
       + ' style="' + (isActive ? 'border-color:' + FACE_COLORS[i] : '') + '"'
-      + ' onmouseenter="' + handlerEnter + '"'
-      + ' onmouseleave="' + handlerLeave + '"'
+      + ' onmouseenter="faceHoverEnter(this)"'
+      + ' onmouseleave="faceHoverLeave(this)"'
       + ' onclick="castQuickVote(\'' + safeFipe + '\', ' + i + ', this)"'
       + ' aria-label="Nota ' + i + ' - ' + FACE_LABELS[i] + '">'
       + faceSvg(i, isActive)
@@ -8860,6 +8894,7 @@ async function castQuickVote(fipeCode, rating, btnEl) {
   const allFaces = block ? block.querySelectorAll('.face-btn') : [];
   const prevState = Array.from(allFaces).map(b => ({
     active: b.classList.contains('active'),
+    dataActive: b.dataset.active || '0',
     border: b.style.borderColor,
     svg: b.innerHTML
   }));
@@ -8873,6 +8908,7 @@ async function castQuickVote(fipeCode, rating, btnEl) {
     const n = i + 1;
     const isSelected = (n === rating);
     b.classList.toggle('active', isSelected);
+    b.dataset.active = isSelected ? '1' : '0';
     b.style.borderColor = isSelected ? FACE_COLORS[n] : '';
     b.innerHTML = faceSvg(n, isSelected);
     b.disabled = true;
@@ -8887,6 +8923,7 @@ async function castQuickVote(fipeCode, rating, btnEl) {
     // Reverte estado visual
     allFaces.forEach((b, i) => {
       b.classList.toggle('active', prevState[i].active);
+      b.dataset.active = prevState[i].dataActive;
       b.style.borderColor = prevState[i].border;
       b.innerHTML = prevState[i].svg;
       b.disabled = false;
