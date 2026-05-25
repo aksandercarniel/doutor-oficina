@@ -5288,7 +5288,7 @@ function renderSearchList(tab) {
   // Reclamações
   if (tab === 'all' || tab === 'complaints') {
     if (tab === 'all' && complaints.length) html += `<div style="font-family:var(--font);font-weight:900;font-size:12px;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;padding:4px 0 10px;border-bottom:1px solid var(--border)">📋 Reclamações</div>`;    complaints.slice(0,10).forEach(c => {
-      html += `<div style="padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.querySelector('.sr-title').style.textDecoration='underline'" onmouseout="this.querySelector('.sr-title').style.textDecoration='none'">
+      html += `<div onclick="openComplaintDetail('${c.id}')" style="padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.querySelector('.sr-title').style.textDecoration='underline'" onmouseout="this.querySelector('.sr-title').style.textDecoration='none'">
         <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${c.brand||''} ${c.model||''} · <span style="background:${c.status==='s-resolved'?'#e8f5e9':c.status==='s-progress'?'#fff8e1':'#fef2f2'};color:${c.status==='s-resolved'?'#16a34a':c.status==='s-progress'?'#f59e0b':'#dc2626'};padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700">${c.status==='s-resolved'?'Resolvido':c.status==='s-progress'?'Em análise':'Não respondida'}</span></div>
         <div class="sr-title" style="font-family:var(--font);font-weight:700;font-size:15px;color:var(--navy);margin-bottom:4px">${c.title||'Reclamação'}</div>
         <div style="font-size:13px;color:var(--text2);line-height:1.5">${(c.description||c.text||'').slice(0,120)}${(c.description||c.text||'').length>120?'…':''}</div>
@@ -5301,7 +5301,7 @@ function renderSearchList(tab) {
   if (tab === 'all' || tab === 'companies') {
     if (tab === 'all' && companies.length) html += `<div style="font-family:var(--font);font-weight:900;font-size:12px;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;padding:20px 0 10px;border-bottom:1px solid var(--border)">🏢 Empresas</div>`;
     companies.forEach(c => {
-      html += `<div style="padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer;display:flex;gap:14px;align-items:flex-start" onmouseover="this.querySelector('.sr-title').style.textDecoration='underline'" onmouseout="this.querySelector('.sr-title').style.textDecoration='none'">
+      html += `<div onclick="openCompanyProfile('${(c.name||'').replace(/'/g,"\\'")}')" style="padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer;display:flex;gap:14px;align-items:flex-start" onmouseover="this.querySelector('.sr-title').style.textDecoration='underline'" onmouseout="this.querySelector('.sr-title').style.textDecoration='none'">
         <div style="width:40px;height:40px;background:var(--bg2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🏢</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:11px;color:var(--muted);margin-bottom:2px">CNPJ: ${c.cnpj||'—'}</div>
