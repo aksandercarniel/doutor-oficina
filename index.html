@@ -1120,6 +1120,9 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .doxcore-velocimetro{display:inline-flex;flex-direction:column;align-items:center;line-height:1;flex-shrink:0}
 .doxcore-velocimetro svg{display:block}
 .doxcore-velocimetro-score{font-family:var(--font);font-weight:600;color:var(--navy);margin-top:4px;line-height:1}
+/* Card de avaliação (D89 — bloco separado pra dar protagonismo ao voto) */
+.vote-card .vote-stars-block{margin-top:6px;gap:10px}
+.vote-card .vote-stars-label{font-size:13px}
 /* Widget de voto: 5 quadrados coloridos com carinha branca (D89 — barra de voto) */
 .face-row{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;max-width:340px}
 .face-btn{aspect-ratio:1;width:auto;height:auto;padding:0;border:0.5px solid rgba(0,0,0,0.08);border-radius:10px;cursor:pointer;transition:transform .15s,opacity .15s,box-shadow .15s;display:flex;align-items:center;justify-content:center;line-height:0}
@@ -4145,7 +4148,6 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
         })()
       : '')
     + '<span class="doxcore-composition">' + raioxComposition + '</span>'
-    + voteStarsHtml
     + '</div>'
     + '<div class="profile-tags">'
     + '<span class="ptag ' + badge.cls + '">' + badge.label + '</span>'
@@ -4172,6 +4174,14 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + '<button class="btn-primary" style="width:100%;justify-content:center" onclick="requireAuthForCurrentVehicle()">🚨 Reclamar deste veículo</button>'
     + '</div>'
     + '</div>'
+
+    // Card de avaliação (D89 — separado do hero pra dar protagonismo próprio)
+    + (voteStarsHtml
+      ? '<div class="profile-card vote-card">'
+        + '<div class="pc-title"><span class="pc-emoji">📝</span> Avalie esse veículo</div>'
+        + voteStarsHtml
+        + '</div>'
+      : '')
 
     // Grid principal
     + '<div class="profile-grid">'
@@ -8925,7 +8935,7 @@ function renderVoteStars(fipeCode, currentVote) {
     microcopy = 'você votou ' + r + '/5' + (date ? ' em ' + date : '') + ' · clique pra atualizar';
     labelText = FACE_LABELS[r] || '';
   } else {
-    microcopy = 'sua avaliação:';
+    microcopy = 'Toque numa carinha pra dar sua nota';
     labelText = 'Sem avaliação';
   }
 
