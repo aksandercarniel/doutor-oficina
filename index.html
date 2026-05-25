@@ -1099,7 +1099,10 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .doxcore-velocimetro-wrap{display:inline-block;line-height:0}
 @media(max-width:600px){
   .profile-rating:has(.doxcore-velocimetro-wrap){grid-template-columns:1fr}
-  .profile-rating:has(.doxcore-velocimetro-wrap) > *{grid-column:1}
+  .profile-rating:has(.doxcore-velocimetro-wrap) > .doxcore-badge,
+  .profile-rating:has(.doxcore-velocimetro-wrap) > .doxcore-velocimetro-wrap,
+  .profile-rating:has(.doxcore-velocimetro-wrap) > .doxcore-text,
+  .profile-rating:has(.doxcore-velocimetro-wrap) > .doxcore-composition{grid-column:1}
   .profile-rating:has(.doxcore-velocimetro-wrap) > .doxcore-velocimetro-wrap{grid-row:auto;justify-self:center}
 }
 .big-score{font-family:var(--font);font-weight:900;font-size:28px;color:var(--navy)}
