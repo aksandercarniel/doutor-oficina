@@ -1130,6 +1130,10 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .profile-card{background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px 22px;margin-bottom:14px;box-shadow:var(--shadow)}
 .pc-title{font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy);margin-bottom:16px;display:flex;align-items:center;gap:4px}
 .pc-title .pc-emoji{font-size:22px;line-height:1}
+.raiox-section-title{font-family:var(--font);font-weight:900;font-size:18px;color:var(--navy);margin:0 0 12px;display:flex;align-items:center;gap:8px;letter-spacing:.2px}
+.raiox-section-title .pc-emoji{font-size:24px;line-height:1}
+.raiox-section-sub{font-family:var(--font);font-weight:700;font-size:11px;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;margin:-6px 0 14px;padding-left:34px}
+@media(max-width:600px){.raiox-section-sub{padding-left:0}}
 
 .problems-list{display:flex;flex-direction:column;gap:10px}
 .problem-item{display:flex;align-items:center;gap:12px}
@@ -4153,13 +4157,15 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     // Coluna esquerda
     + '<div>'
 
-    // Card Raio-X curado
+    // ═══ Cabeçalho de seção Raio-X (unifica os dois cards abaixo) ═══
+    + '<div class="raiox-section-title"><span class="pc-emoji">👨‍🔧</span> Raio-X</div>'
+
+    // Card Raio-X curado (análise do modelo)
     + '<div class="profile-card">'
-    + '<div class="pc-title"><span class="pc-emoji">👨‍🔧</span> Raio-X do modelo'
-    + (summary ? '<span style="margin-left:auto;font-size:10px;font-weight:600;color:var(--muted);background:var(--bg2);padding:3px 9px;border-radius:20px;border:1px solid var(--border)">Análise: ' + (summary.source || 'Doutor Oficina') + '</span>' : '')
-    + '</div>'
     + (summary
-      ? '<div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px;padding:12px 14px;background:' + summaryColors.bg + ';border-radius:10px;border:1px solid ' + summaryColors.border + '">' + summary.issue_description + '</div>'
+      ? '<div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px;padding:12px 14px;background:' + summaryColors.bg + ';border-radius:10px;border:1px solid ' + summaryColors.border + '">' + summary.issue_description
+        + (summary.source ? '<div style="margin-top:8px;font-size:10px;font-weight:600;color:var(--muted);text-align:right">Análise: ' + summary.source + '</div>' : '')
+        + '</div>'
       : '')
     + raioXCards
     + '</div>'
@@ -4170,7 +4176,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + (complaints.length > 0 ? '<span style="margin-left:auto;font-size:11px;font-weight:700;color:var(--red)">' + complaints.length + ' relatos</span>' : '')
     + '</div>'
     + complaintCards
-    + (complaints.length > 3 ? '<button onclick="showPage(\'complaints\',{brand:\'' + v.brand.replace(/'/g,"\\'") + '\',model:\'' + v.name.replace(/'/g,"\\'") + '\'})" style="width:100%;background:none;border:1.5px solid var(--border2);border-radius:8px;padding:10px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;color:var(--navy);margin-top:6px">Ver todos os relatos →</button>' : '')
+    + (complaints.length > 3 ? '<button onclick="showPage(\'complaints\',{brand:\'' + v.brand.replace(/'/g,"\\'") + '\',model:\'' + v.name.replace(/'/g,"\\'") + '\'})" style="width:100%;background:none;border:1.5px solid var(--border2);border-radius:8px;padding:10px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;color:var(--navy);margin-top:6px">Confira todos os relatos da comunidade →</button>' : '')
     + '</div>'
     + '</div>'
 
