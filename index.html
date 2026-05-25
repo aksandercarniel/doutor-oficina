@@ -1725,6 +1725,12 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
               <input type="hidden" id="reg-company-models" value=""/>
             </div>
             <div class="auth-group"><label class="auth-label">Concessionárias autorizadas</label><input type="text" class="auth-input" id="reg-company-dealers" placeholder="Ex: Honda SP, Honda RJ" autocomplete="off"/></div>
+            <!-- NOVO: aviso de conflito quando a marca FIPE já tem montadora pré-cadastrada -->
+            <div id="reg-montadora-conflict" style="display:none;margin-top:14px;padding:14px;border:2px solid var(--orange);border-radius:12px;background:#fff8f0">
+              <div style="font-family:var(--font);font-weight:800;font-size:14px;color:var(--navy);margin-bottom:6px">⚠️ Esta marca já está pré-cadastrada</div>
+              <div id="reg-montadora-conflict-msg" style="font-size:13px;color:var(--text2);margin-bottom:10px;line-height:1.5"></div>
+              <div id="reg-montadora-conflict-options" style="display:flex;flex-direction:column;gap:8px"></div>
+            </div>
           </div>
           <div id="reg-fields-oficina" style="display:none">
             <div class="auth-group"><label class="auth-label">Especialidades</label><input type="text" class="auth-input" id="reg-company-specialties" placeholder="Ex: Mecânica, Funilaria, Elétrica" autocomplete="off"/></div>
@@ -2468,6 +2474,14 @@ async function doRegisterCompanyOnly() {
     errEl.textContent = 'Selecione a marca FIPE da montadora.';
     errEl.classList.add('show'); return;
   }
+  // NOVO: cinto de segurança da trava anti-duplicação
+  // Se houve detecção de conflito e a pessoa NÃO marcou "nenhuma dessas", bloqueia
+  if (type === 'montadora'
+      && _montadoraConflictState.matches.length > 0
+      && _montadoraConflictState.userChoice !== 'none-of-these') {
+    errEl.textContent = 'Esta marca já tem montadora pré-cadastrada. Reivindique uma das opções acima ou marque "Nenhuma dessas".';
+    errEl.classList.add('show'); return;
+  }
   try {
     const hasDoc = !!document.getElementById('reg-company-doc')?.files?.[0];
     const isClaiming = !!sessionStorage.getItem('claiming_company');
@@ -2586,6 +2600,9 @@ async function regLoadFipeModels() {
   const name = sel.options[sel.selectedIndex]?.dataset?.name || '';
   document.getElementById('reg-fipe-brand-code').value = code;
 
+  // NOVO: checagem de conflito em paralelo, sem bloquear a lógica FIPE
+  checkMontadoraConflict(name);
+
   const group = document.getElementById('reg-fipe-models-group');
   const status = document.getElementById('reg-fipe-models-status');
   const hidden = document.getElementById('reg-company-models');
@@ -2624,6 +2641,77 @@ async function regLoadFipeModels() {
     status.innerHTML = '⚠️ Erro ao carregar modelos. Tente novamente.';
   }
 }
+// ── NOVO: Trava anti-duplicação de montadora pré-cadastrada ────
+// Quando a pessoa seleciona uma marca FIPE, checa se já existe montadora
+// pré-cadastrada com nome similar. Se houver, mostra opções de reivindicação.
+// Estado guardado pra cinto de segurança em doRegisterCompanyOnly.
+let _montadoraConflictState = { fipeBrand: null, matches: [], userChoice: null };
+
+async function checkMontadoraConflict(fipeBrandName) {
+  const box     = document.getElementById('reg-montadora-conflict');
+  const msg     = document.getElementById('reg-montadora-conflict-msg');
+  const optsEl  = document.getElementById('reg-montadora-conflict-options');
+  if (!box || !msg || !optsEl) return;
+
+  // Reset
+  _montadoraConflictState = { fipeBrand: null, matches: [], userChoice: null };
+  box.style.display = 'none';
+  msg.innerHTML = '';
+  optsEl.innerHTML = '';
+
+  const brand = (fipeBrandName || '').trim();
+  if (!brand) return;
+
+  try {
+    // Heurística: pega só a primeira palavra da marca FIPE pra busca ampla
+    // Ex: "GM - Chevrolet" → "GM"; "VW - VolksWagen" → "VW"; "Honda" → "Honda"
+    // Depois filtra no cliente por inclusão case-insensitive
+    const firstWord = brand.split(/[\s\-/]/)[0].toLowerCase();
+    if (firstWord.length < 2) return; // proteção contra match vazio
+    const { data, error } = await sb
+      .from('companies')
+      .select('id, name, cnpj, city, state, fipe_brand_code')
+      .eq('type', 'montadora')
+      .ilike('name', `%${firstWord}%`);
+    if (error) { console.warn('checkMontadoraConflict:', error.message); return; }
+    if (!data || !data.length) return;
+
+    _montadoraConflictState.fipeBrand = brand;
+    _montadoraConflictState.matches = data;
+
+    const n = data.length;
+    if (n === 1) {
+      msg.innerHTML = `Encontramos uma montadora pré-cadastrada para "<strong>${brand}</strong>". Se essa é a sua empresa, reivindique a titularidade em vez de criar um novo cadastro:`;
+    } else {
+      msg.innerHTML = `Encontramos <strong>${n} montadoras</strong> pré-cadastradas que podem corresponder a "<strong>${brand}</strong>". Qual é a sua empresa?`;
+    }
+
+    optsEl.innerHTML = data.map(c => `
+      <button type="button" onclick="goToClaimFromRegister('${(c.name || '').replace(/'/g, "\\'")}')"
+        style="text-align:left;background:var(--white);border:1.5px solid var(--orange);color:var(--navy);border-radius:10px;padding:10px 14px;cursor:pointer;font-family:var(--font);font-size:13px;line-height:1.4">
+        <div style="font-weight:800">🏳️ ${c.name}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">CNPJ ${c.cnpj || '—'}${c.city ? ` · ${c.city}/${c.state || ''}` : ''}</div>
+      </button>
+    `).join('') + `
+      <button type="button" onclick="_montadoraConflictState.userChoice='none-of-these'; document.getElementById('reg-montadora-conflict').style.borderColor='var(--border2)'; this.parentElement.querySelectorAll('button').forEach(b=>b.style.opacity='0.5'); this.style.opacity='1'; this.style.background='var(--bg2)';"
+        style="text-align:left;background:none;border:1.5px dashed var(--border2);color:var(--muted);border-radius:10px;padding:10px 14px;cursor:pointer;font-family:var(--font);font-size:12px;margin-top:2px">
+        Nenhuma dessas — sou uma empresa diferente (ex: concessionária local)
+      </button>
+    `;
+    box.style.display = 'block';
+  } catch (e) {
+    console.warn('checkMontadoraConflict catch:', e);
+  }
+}
+
+function goToClaimFromRegister(companyName) {
+  // Limpa estado da trava (já que a escolha foi reivindicar, não cadastrar)
+  _montadoraConflictState = { fipeBrand: null, matches: [], userChoice: null };
+  closeModal();
+  setTimeout(() => claimCompany(companyName), 100);
+}
+// ── fim trava anti-duplicação ──────────────────────────────────
+
 // ── fim FIPE cadastro ───────────────────────────────────────────
 
 function selectCompanyType(type, btn) {
