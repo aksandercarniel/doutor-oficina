@@ -6210,10 +6210,17 @@ async function claimCompany(companyName) {
     setVal('reg-company-brands-rev', company.brands_served);
     setVal('reg-company-type-other', company.type_other);
     setVal('reg-company-segment', company.segment);
-    // Se for montadora, preserva o código FIPE pro INSERT (sem mostrar o passo FIPE)
+    // Preserva fipe_brand_code do banco pro INSERT (mesmo sem mostrar o passo FIPE)
     if (company.fipe_brand_code) {
       const codeEl = document.getElementById('reg-fipe-brand-code');
       if (codeEl) codeEl.value = company.fipe_brand_code;
+    }
+    // Se segment veio NULL do banco (caso das 33 montadoras seed), infere pelo fipe_brand_code:
+    // códigos > 60 e < 102 são motos; específicos como Scania=código truck → trato no futuro
+    if (!company.segment && company.fipe_brand_code) {
+      const c = parseInt(company.fipe_brand_code, 10);
+      const inferido = (c >= 60 && c <= 101) ? 'moto' : 'carro';
+      setVal('reg-company-segment', inferido);
     }
   } else {
     // Não achou no banco: pelo menos preserva o e-mail do usuário
