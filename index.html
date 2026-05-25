@@ -6076,8 +6076,12 @@ async function markResolved(complaintId) {
   if (!confirm('Confirma que o problema foi resolvido?')) return;
   try {
     await sb.from('complaints').update({ status:'resolved' }).eq('id', complaintId);
-    currentResolution.complaint.status = 'resolved';
-    renderResolutionPage();
+    if (currentResolution && currentResolution.complaint?.id === complaintId) {
+      currentResolution.complaint.status = 'resolved';
+      renderResolutionPage();
+    } else {
+      showResolution(complaintId);
+    }
   } catch(e) { alert('Erro ao marcar como resolvido.'); }
 }
 
