@@ -4951,7 +4951,18 @@ async function approveCompany(pendingId, userId, name, cnpj, email, phone, addre
   if (!confirm(`Aprovar a empresa "${name}"?`)) return;
   try {
     // Busca todos os campos do pending para copiar integralmente
-    const { data: pending } = await sb.from('companies_pending').select('*').eq('id', pendingId).single();
+    const { data: pending, error: pendErr } = await sb.from('companies_pending').select('*').eq('id', pendingId).single();
+    if (pendErr || !pending) throw new Error('Pending não encontrado: ' + (pendErr?.message || 'sem dados'));
+
+    // Inferência de segment quando vier vazio do pending (pra montadoras do seed
+    // que ainda têm segment NULL e não foram preenchidas pelo usuário)
+    let segment = pending.segment;
+    if (!segment && pending.fipe_brand_code) {
+      const code = parseInt(pending.fipe_brand_code);
+      if (code >= 60 && code <= 101) segment = 'moto';
+      else if (code > 0) segment = 'carro';
+    }
+
     const companyData = {
       name:               pending.name,
       cnpj:               pending.cnpj,
@@ -4968,16 +4979,54 @@ async function approveCompany(pendingId, userId, name, cnpj, email, phone, addre
       recalls:            pending.recalls,
       type_other:         pending.type_other,
       fipe_brand_code:    pending.fipe_brand_code,
+      segment:            segment,
       owner_id:           pending.user_id,
-      is_claimed:         false,
+      is_claimed:         true, // FIX: aprovação = reivindicada de verdade
     };
-    await sb.from('companies').insert([companyData]);
-    await sb.from('profiles').update({ role: 'company', company_name: pending.name }).eq('id', userId);
-    await sb.from('companies_pending').update({ status: 'approved' }).eq('id', pendingId);
-    alert('✅ Empresa aprovada com sucesso!');
+
+    // UPSERT: detecta empresa pré-existente (seed ou cadastrada antes) e faz UPDATE.
+    // Senão, INSERT. Detecção prioritária por fipe_brand_code (único pra montadoras),
+    // fallback pra nome (oficinas, revendas, outros).
+    let existing = null;
+    if (pending.fipe_brand_code) {
+      const { data } = await sb.from('companies')
+        .select('id')
+        .eq('fipe_brand_code', pending.fipe_brand_code)
+        .maybeSingle();
+      existing = data;
+    }
+    if (!existing) {
+      const { data } = await sb.from('companies')
+        .select('id')
+        .ilike('name', pending.name)
+        .maybeSingle();
+      existing = data;
+    }
+
+    let upsertErr;
+    if (existing) {
+      // Empresa já existe (seed ou cadastro anterior) → UPDATE
+      // Admin já validou, então sobrescreve com dados do pending
+      const { error } = await sb.from('companies').update(companyData).eq('id', existing.id);
+      upsertErr = error;
+    } else {
+      const { error } = await sb.from('companies').insert([companyData]);
+      upsertErr = error;
+    }
+    if (upsertErr) throw new Error('Erro ao gravar empresa: ' + upsertErr.message);
+
+    // Atualiza profile e fecha pending
+    const { error: profErr } = await sb.from('profiles').update({ role: 'company', company_name: pending.name }).eq('id', userId);
+    if (profErr) throw new Error('Erro ao atualizar profile: ' + profErr.message);
+
+    const { error: pendUpdErr } = await sb.from('companies_pending').update({ status: 'approved' }).eq('id', pendingId);
+    if (pendUpdErr) throw new Error('Erro ao fechar pending: ' + pendUpdErr.message);
+
+    alert('✅ Empresa aprovada com sucesso!' + (existing ? '\n(empresa pré-existente atualizada)' : ''));
     loadPendingCompanies();
   } catch(e) {
-    alert('Erro ao aprovar: ' + e.message);
+    alert('❌ Erro ao aprovar: ' + e.message);
+    console.error('approveCompany error:', e);
   }
 }
 
