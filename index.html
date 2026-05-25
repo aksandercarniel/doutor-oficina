@@ -1092,10 +1092,13 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .profile-rating{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap}
 .big-score{font-family:var(--font);font-weight:900;font-size:28px;color:var(--navy)}
 .profile-rcount{color:var(--muted);font-size:14px;font-weight:500}
-.raiox-badge{display:inline-flex;align-items:center;color:var(--navy);font-family:var(--font);font-size:13px;font-weight:800;letter-spacing:0.2px}
-.raiox-composition{flex-basis:100%;color:var(--muted);font-size:12px;font-weight:500;margin-bottom:10px;line-height:1.4}
-.raiox-composition .cta{color:var(--navy);font-weight:700;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
-.raiox-composition .cta:hover{color:var(--red)}
+.doxcore-badge{display:inline-flex;align-items:center;background:var(--blue-light);color:var(--navy);font-family:var(--font);font-size:12px;font-weight:800;letter-spacing:0.3px;padding:3px 10px;border-radius:20px}
+.doxcore-text{flex-basis:100%;font-size:13.5px;color:var(--text2);line-height:1.5;font-family:var(--font-body);margin:2px 0 4px;padding-left:46px}
+.doxcore-text strong{color:var(--navy);font-family:var(--font);font-weight:700}
+.doxcore-composition{flex-basis:100%;color:var(--muted);font-size:12px;font-weight:500;margin-bottom:10px;line-height:1.4}
+.doxcore-composition .cta{color:var(--navy);font-weight:700;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.doxcore-composition .cta:hover{color:var(--red)}
+@media(max-width:600px){.doxcore-text{padding-left:0}}
 .vote-stars-block{flex-basis:100%;display:flex;flex-direction:column;gap:6px;margin-top:4px}
 .vote-stars-label{color:var(--muted);font-size:12px;font-weight:500;line-height:1.4}
 .btn-raiox-full-wrap{text-align:center;margin-top:8px}
@@ -3518,8 +3521,8 @@ function renderVehicleProfileSkeleton(v) {
         <div class="profile-rating">
           <span class="big-stars" style="color:var(--muted2)">☆☆☆☆☆</span>
           <span class="big-score" style="color:var(--muted2)">—</span>
-          <span class="raiox-badge">Raio-X</span>
-          <span class="raiox-composition">carregando análise…</span>
+          <span class="doxcore-badge">Doxcore</span>
+          <span class="doxcore-composition">carregando análise…</span>
         </div>
         <div class="profile-tags"><span class="ptag" style="background:var(--bg2);color:var(--muted);border-color:var(--border)">Buscando dados…</span></div>
       </div>
@@ -3851,10 +3854,8 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
   };
   const badge = getBadge(displayRating);
 
-  // -- Veredicto
+  // -- Doxcore (texto curado da curadoria; renderizado no header)
   const verdictText = summary?.verdict || null;
-  const vClass = displayRating >= 4 ? '' : displayRating >= 3 ? 'verdict-warn' : 'verdict-danger';
-  const vIcon  = displayRating >= 4 ? '✅' : displayRating >= 3 ? '⚠️' : '🚨';
 
   // -- Distribuição de notas reais (do Supabase)
   const distRaw = stats ? [
@@ -4104,8 +4105,20 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + '<div class="profile-rating">'
     + (displayRating ? ('<span class="face-display">' + faceSvg(Math.round(displayRating), true) + '</span>') : '')
     + (displayRating ? ('<span class="big-score">' + displayRating.toFixed(1) + '</span>') : '')
-    + '<span class="raiox-badge">Raio-X</span>'
-    + '<span class="raiox-composition">' + raioxComposition + '</span>'
+    + '<span class="doxcore-badge">Doxcore</span>'
+    + (verdictText
+      ? (function(){
+          // D71: limite editorial absoluto 240 chars
+          // D74: negrito automático na primeira frase (até o primeiro ponto final)
+          const txt = verdictText.length > 240 ? verdictText.slice(0,240) + '…' : verdictText;
+          const dotIdx = txt.indexOf('.');
+          const html = (dotIdx > 0 && dotIdx < txt.length - 1)
+            ? '<strong>' + txt.slice(0, dotIdx + 1) + '</strong>' + txt.slice(dotIdx + 1)
+            : '<strong>' + txt + '</strong>';
+          return '<span class="doxcore-text">' + html + '</span>';
+        })()
+      : '')
+    + '<span class="doxcore-composition">' + raioxComposition + '</span>'
     + voteStarsHtml
     + '</div>'
     + '<div class="profile-tags">'
@@ -4117,16 +4130,13 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + '<div class="profile-right">'
     + '<div class="info-card">'
     + '<div class="ic-label">💰 Tabela FIPE</div>'
-    + (v.id && v.id.indexOf('direct-') === 0
-        ? '<div class="ic-sub" style="margin-top:8px;line-height:1.4">Para ver o preço, busque uma versão específica do ' + (v.name || 'veículo') + ' na barra de busca acima</div>'
-        : '<div class="ic-value" style="' + (fipePrice && fipePrice.isRange ? 'font-size:15px' : '') + '">'
-          + (fipePrice && fipePrice.isRange && fipePrice.priceMax
-              ? 'De ' + fipePrice.price + ' até ' + fipePrice.priceMax
-              : (fipePrice && fipePrice.price ? fipePrice.price : (v.fipePrice || 'R$ —'))
-            )
-          + '</div>'
-          + '<div class="ic-sub">' + (fipePrice && fipePrice.year ? 'Ano ' + fipePrice.year + ' · ' : '') + (fipePrice && fipePrice.ref ? fipePrice.ref : 'Referência atual') + '</div>'
-      )
+    + '<div class="ic-value" style="' + (fipePrice && fipePrice.isRange ? 'font-size:15px' : '') + '">' 
+      + (fipePrice && fipePrice.isRange && fipePrice.priceMax 
+          ? 'De ' + fipePrice.price + ' até ' + fipePrice.priceMax
+          : (fipePrice && fipePrice.price ? fipePrice.price : (v.fipePrice || 'R$ —'))
+        )
+    + '</div>'
+    + '<div class="ic-sub">' + (fipePrice && fipePrice.year ? 'Ano ' + fipePrice.year + ' · ' : '') + (fipePrice && fipePrice.ref ? fipePrice.ref : 'Referência atual') + '</div>'
     + '</div>'
     + '<div class="info-card">'
     + '<div class="ic-label">📋 Relatos na plataforma</div>'
@@ -4166,26 +4176,6 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
 
     // Coluna direita
     + '<div>'
-
-    // Card Veredicto
-    + '<div class="profile-card">'
-    + '<div class="pc-title">Veredicto</div>'
-    + (verdictText
-      ? '<div class="verdict ' + vClass + '"><span class="verdict-icon">' + vIcon + '</span><span class="verdict-text">' + verdictText + '</span></div>'
-      : '<div style="color:var(--muted);font-size:13px;padding:8px 0">Sem veredicto curado para este modelo ainda.</div>')
-    + (summary?.strengths?.length
-      ? '<div style="margin-top:14px">'
-        + '<div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Pontos fortes</div>'
-        + summary.strengths.map(s => '<div style="font-size:12.5px;color:var(--text2);padding:4px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px">✅ ' + s + '</div>').join('')
-        + '</div>'
-      : '')
-    + (summary?.weaknesses?.length
-      ? '<div style="margin-top:12px">'
-        + '<div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Pontos de atenção</div>'
-        + summary.weaknesses.map(w => '<div style="font-size:12.5px;color:var(--text2);padding:4px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px">⚠️ ' + w + '</div>').join('')
-        + '</div>'
-      : '')
-    + '</div>'
 
     // Card Distribuição de notas
     + '<div class="profile-card">'
