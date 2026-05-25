@@ -1733,27 +1733,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
           <!-- PASSO 3: Resto do formulário (só liberado após escolha de tipo + resolução de conflito) -->
           <div id="reg-company-rest" style="display:none">
 
-            <div class="auth-group"><label class="auth-label">Nome da empresa *</label><input type="text" class="auth-input" id="reg-company-name" placeholder="Razão social ou nome fantasia" autocomplete="off"/></div>
-
-            <!-- Campos dinâmicos por tipo -->
-            <div id="reg-fields-montadora" style="display:none">
-              <div class="auth-group" id="reg-fipe-models-group" style="display:none">
-                <label class="auth-label">Modelos fabricados <span style="font-weight:400;color:var(--muted);font-size:11px">(carregados automaticamente da FIPE)</span></label>
-                <div id="reg-fipe-models-status" style="font-size:13px;color:var(--muted);padding:8px 0">⏳ Aguardando seleção da marca…</div>
-                <input type="hidden" id="reg-company-models" value=""/>
-              </div>
-              <div class="auth-group"><label class="auth-label">Concessionárias autorizadas</label><input type="text" class="auth-input" id="reg-company-dealers" placeholder="Ex: Honda SP, Honda RJ" autocomplete="off"/></div>
-            </div>
-            <div id="reg-fields-oficina" style="display:none">
-              <div class="auth-group"><label class="auth-label">Especialidades</label><input type="text" class="auth-input" id="reg-company-specialties" placeholder="Ex: Mecânica, Funilaria, Elétrica" autocomplete="off"/></div>
-              <div class="auth-group"><label class="auth-label">Marcas atendidas</label><input type="text" class="auth-input" id="reg-company-brands" placeholder="Ex: Toyota, Honda, VW" autocomplete="off"/></div>
-            </div>
-            <div id="reg-fields-revenda" style="display:none">
-              <div class="auth-group"><label class="auth-label">Marcas comercializadas</label><input type="text" class="auth-input" id="reg-company-brands-rev" placeholder="Ex: Toyota, Honda, VW" autocomplete="off"/></div>
-            </div>
-            <div id="reg-fields-outro" style="display:none">
-              <div class="auth-group"><label class="auth-label">Descreva o tipo de empresa</label><input type="text" class="auth-input" id="reg-company-type-other" placeholder="Ex: Seguradora, Locadora, Despachante" autocomplete="off"/></div>
-            </div>
+            <!-- CNPJ no topo: primeiro campo. Ao consultar com sucesso, libera o resto. -->
             <div class="auth-group">
               <label class="auth-label">CNPJ *</label>
               <div style="display:flex;gap:8px">
@@ -1761,28 +1741,55 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
                 <button type="button" onclick="lookupCNPJ()" style="background:var(--navy);color:#fff;border:none;border-radius:10px;padding:0 14px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;white-space:nowrap">Consultar</button>
               </div>
               <div id="cnpj-status" style="font-size:12px;margin-top:6px;display:none"></div>
+              <div style="font-size:11px;color:var(--muted2);margin-top:6px">📋 Após consultar, os dados da empresa serão preenchidos automaticamente.</div>
             </div>
-            <div class="auth-group"><label class="auth-label">E-mail corporativo</label><input type="email" class="auth-input" id="reg-company-email" placeholder="contato@empresa.com" autocomplete="off"/></div>
-            <div class="auth-group"><label class="auth-label">Telefone *</label><input type="text" class="auth-input" id="reg-company-phone" placeholder="(11) 99999-9999" maxlength="15" oninput="maskPhone(this)" autocomplete="off"/></div>
-            <div class="auth-group"><label class="auth-label">Cidade</label><input type="text" class="auth-input" id="reg-company-city" placeholder="Ex: São Paulo" autocomplete="off"/></div>
-            <div class="auth-group"><label class="auth-label">Estado</label>
-              <select class="auth-input" id="reg-company-state" style="cursor:pointer">
-                <option value="">Selecione o estado</option>
-                <option>AC</option><option>AL</option><option>AM</option><option>AP</option><option>BA</option><option>CE</option><option>DF</option><option>ES</option><option>GO</option><option>MA</option><option>MG</option><option>MS</option><option>MT</option><option>PA</option><option>PB</option><option>PE</option><option>PI</option><option>PR</option><option>RJ</option><option>RN</option><option>RO</option><option>RR</option><option>RS</option><option>SC</option><option>SE</option><option>SP</option><option>TO</option>
-              </select>
-            </div>
-            <div class="auth-group"><label class="auth-label">Endereço *</label><input type="text" class="auth-input" id="reg-company-address" placeholder="Rua, número, cidade - estado" autocomplete="off"/></div>
-            <div class="auth-group">
-              <label class="auth-label">Documento do representante legal <span style="color:var(--muted);font-weight:400">(opcional)</span></label>
-              <div style="border:2px dashed var(--border2);border-radius:10px;padding:16px;text-align:center;cursor:pointer;background:var(--bg)" onclick="document.getElementById('reg-company-doc').click()">
-                <div id="reg-company-doc-label" style="font-size:13px;color:var(--muted)">📄 Clique para anexar CNH, RG ou Contrato Social (PDF ou imagem)</div>
-                <input type="file" id="reg-company-doc" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="previewCompanyDoc(this)"/>
+
+            <!-- Resto do formulário: liberado APÓS consulta de CNPJ bem-sucedida -->
+            <div id="reg-company-rest-after-cnpj" style="display:none">
+
+              <div class="auth-group"><label class="auth-label">Nome da empresa *</label><input type="text" class="auth-input" id="reg-company-name" placeholder="Razão social ou nome fantasia" autocomplete="off" readonly style="background:var(--bg2)"/></div>
+
+              <!-- Campos dinâmicos por tipo -->
+              <div id="reg-fields-montadora" style="display:none">
+                <div class="auth-group" id="reg-fipe-models-group" style="display:none">
+                  <label class="auth-label">Modelos fabricados <span style="font-weight:400;color:var(--muted);font-size:11px">(carregados automaticamente da FIPE)</span></label>
+                  <div id="reg-fipe-models-status" style="font-size:13px;color:var(--muted);padding:8px 0">⏳ Aguardando seleção da marca…</div>
+                  <input type="hidden" id="reg-company-models" value=""/>
+                </div>
+                <div class="auth-group"><label class="auth-label">Concessionárias autorizadas</label><input type="text" class="auth-input" id="reg-company-dealers" placeholder="Ex: Honda SP, Honda RJ" autocomplete="off"/></div>
               </div>
-              <div style="font-size:11px;color:var(--muted2);margin-top:4px">Será analisado manualmente. Pode enviar depois da aprovação inicial.</div>
-            </div>
-            <div style="display:flex;gap:10px;margin-top:4px">
-              <button class="auth-btn" style="flex:1;background:var(--bg);color:var(--navy);border:1.5px solid var(--border2)" onclick="skipCompanyRegister()">Pular por agora</button>
-              <button class="auth-btn" style="flex:1" onclick="doRegisterCompanyOnly()">Cadastrar empresa →</button>
+              <div id="reg-fields-oficina" style="display:none">
+                <div class="auth-group"><label class="auth-label">Especialidades</label><input type="text" class="auth-input" id="reg-company-specialties" placeholder="Ex: Mecânica, Funilaria, Elétrica" autocomplete="off"/></div>
+                <div class="auth-group"><label class="auth-label">Marcas atendidas</label><input type="text" class="auth-input" id="reg-company-brands" placeholder="Ex: Toyota, Honda, VW" autocomplete="off"/></div>
+              </div>
+              <div id="reg-fields-revenda" style="display:none">
+                <div class="auth-group"><label class="auth-label">Marcas comercializadas</label><input type="text" class="auth-input" id="reg-company-brands-rev" placeholder="Ex: Toyota, Honda, VW" autocomplete="off"/></div>
+              </div>
+              <div id="reg-fields-outro" style="display:none">
+                <div class="auth-group"><label class="auth-label">Descreva o tipo de empresa</label><input type="text" class="auth-input" id="reg-company-type-other" placeholder="Ex: Seguradora, Locadora, Despachante" autocomplete="off"/></div>
+              </div>
+              <div class="auth-group"><label class="auth-label">E-mail corporativo</label><input type="email" class="auth-input" id="reg-company-email" placeholder="contato@empresa.com" autocomplete="off"/></div>
+              <div class="auth-group"><label class="auth-label">Telefone *</label><input type="text" class="auth-input" id="reg-company-phone" placeholder="(11) 99999-9999" maxlength="15" oninput="maskPhone(this)" autocomplete="off"/></div>
+              <div class="auth-group"><label class="auth-label">Cidade</label><input type="text" class="auth-input" id="reg-company-city" placeholder="Ex: São Paulo" autocomplete="off"/></div>
+              <div class="auth-group"><label class="auth-label">Estado</label>
+                <select class="auth-input" id="reg-company-state" style="cursor:pointer">
+                  <option value="">Selecione o estado</option>
+                  <option>AC</option><option>AL</option><option>AM</option><option>AP</option><option>BA</option><option>CE</option><option>DF</option><option>ES</option><option>GO</option><option>MA</option><option>MG</option><option>MS</option><option>MT</option><option>PA</option><option>PB</option><option>PE</option><option>PI</option><option>PR</option><option>RJ</option><option>RN</option><option>RO</option><option>RR</option><option>RS</option><option>SC</option><option>SE</option><option>SP</option><option>TO</option>
+                </select>
+              </div>
+              <div class="auth-group"><label class="auth-label">Endereço *</label><input type="text" class="auth-input" id="reg-company-address" placeholder="Rua, número, cidade - estado" autocomplete="off"/></div>
+              <div class="auth-group">
+                <label class="auth-label">Documento do representante legal <span style="color:var(--muted);font-weight:400">(opcional)</span></label>
+                <div style="border:2px dashed var(--border2);border-radius:10px;padding:16px;text-align:center;cursor:pointer;background:var(--bg)" onclick="document.getElementById('reg-company-doc').click()">
+                  <div id="reg-company-doc-label" style="font-size:13px;color:var(--muted)">📄 Clique para anexar CNH, RG ou Contrato Social (PDF ou imagem)</div>
+                  <input type="file" id="reg-company-doc" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="previewCompanyDoc(this)"/>
+                </div>
+                <div style="font-size:11px;color:var(--muted2);margin-top:4px">Será analisado manualmente. Pode enviar depois da aprovação inicial.</div>
+              </div>
+              <div style="display:flex;gap:10px;margin-top:4px">
+                <button class="auth-btn" style="flex:1;background:var(--bg);color:var(--navy);border:1.5px solid var(--border2)" onclick="skipCompanyRegister()">Pular por agora</button>
+                <button class="auth-btn" style="flex:1" onclick="doRegisterCompanyOnly()">Cadastrar empresa →</button>
+              </div>
             </div>
           </div>
         </div>
@@ -2448,6 +2455,8 @@ function clearCompanyForm() {
   if (brandStep) brandStep.style.display = 'none';
   const rest = document.getElementById('reg-company-rest');
   if (rest) rest.style.display = 'none';
+  const restAfter = document.getElementById('reg-company-rest-after-cnpj');
+  if (restAfter) restAfter.style.display = 'none';
   const conflict = document.getElementById('reg-montadora-conflict');
   if (conflict) conflict.style.display = 'none';
   _montadoraConflictState = { fipeBrand: null, matches: [], userChoice: null };
@@ -2873,6 +2882,9 @@ async function lookupCNPJ() {
       const stateEl = document.getElementById('reg-company-state');
       if (stateEl) stateEl.value = d.uf;
     }
+    // NOVO: libera o resto do formulário após consulta bem-sucedida
+    const restAfterCnpj = document.getElementById('reg-company-rest-after-cnpj');
+    if (restAfterCnpj) restAfterCnpj.style.display = 'block';
     const situacao = d.descricao_situacao_cadastral || '';
     const ativa = situacao.toLowerCase().includes('ativa');
     status.style.color = ativa ? 'var(--green)' : 'var(--red)';
@@ -6071,9 +6083,22 @@ async function claimCompany(companyName) {
   switchRegisterType('company');
   openModal();
   clearCompanyForm();
+  // Reivindicação: já sabemos qual empresa. Libera todos os passos do form direto.
+  // (Não passa pela escolha de tipo nem pela trava de duplicação.)
+  sessionStorage.setItem('claiming_company', companyName);
+  // Marca tipo como "outro" por default (admin decide o tipo real depois)
+  // — pode ser ajustado pra puxar o type da company se quisermos no futuro
+  document.getElementById('reg-company-type').value = 'outro';
+  // Libera os 3 wrappers de visibilidade
+  const brandStep = document.getElementById('reg-fipe-brand-step');
+  if (brandStep) brandStep.style.display = 'none';
+  const rest = document.getElementById('reg-company-rest');
+  if (rest) rest.style.display = 'block';
+  const restAfter = document.getElementById('reg-company-rest-after-cnpj');
+  if (restAfter) restAfter.style.display = 'block';
+  // Pré-preenche nome (será o nome a reivindicar)
   document.getElementById('reg-company-name').value = companyName;
   document.getElementById('reg-company-name').readOnly = true;
-  sessionStorage.setItem('claiming_company', companyName);
 }
 
 // ══════════════════════════════════════════
