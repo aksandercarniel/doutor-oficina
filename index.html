@@ -3938,11 +3938,14 @@ async function renderManufacturerChip(brand, containerId) {
     let statsParts = [];
     if (npsAvg !== null) statsParts.push('NPS <span class="' + npsClass + '">' + npsAvg.toFixed(1) + '</span>');
     if (pctResolvidas !== null) statsParts.push(pctResolvidas + '% resolvidas');
-    const statsStr = statsParts.length > 0 ? statsParts.join(' · ') : 'sem dados ainda';
+    // Quando não há nenhum dado, deixa em branco — não polui o chip com "sem dados"
+    const statsStr = statsParts.join(' · ');
 
     let ctaStr;
     if (isRegistered) {
-      ctaStr = ' · <span style="color:var(--navy)">ver perfil →</span>';
+      // Se há stats, separa com bullet; se não, CTA fica no começo
+      const sep = statsStr ? ' · ' : '';
+      ctaStr = sep + '<span style="color:var(--navy)">ver perfil →</span>';
     } else {
       // Marca não cadastrada em companies (caso raro: chinesas novas, etc).
       // Chip fica informativo, sem CTA e sem clique.
