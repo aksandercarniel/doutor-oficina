@@ -574,8 +574,16 @@ header{
 }
 
 /* ── RANKING ── */
+.rank-tabs{display:inline-flex;gap:0;margin-bottom:14px;border:1.5px solid var(--border);border-radius:10px;padding:3px;background:var(--white)}
+.rank-tab{
+  font-family:var(--font);font-weight:700;font-size:13px;color:var(--muted);
+  padding:7px 16px;border:none;background:transparent;border-radius:7px;cursor:pointer;
+  transition:background .15s,color .15s;
+}
+.rank-tab:hover{color:var(--navy)}
+.rank-tab.active{background:var(--navy);color:var(--white)}
 .ranking-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-@media(max-width:700px){.ranking-grid{grid-template-columns:1fr}}
+@media(max-width:700px){.ranking-grid{grid-template-columns:1fr}.rank-tabs{width:100%;display:flex}.rank-tab{flex:1;text-align:center}}
 .rank-item{
   background:var(--white);border:1.5px solid var(--border);border-radius:12px;
   padding:14px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;
@@ -1567,7 +1575,11 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
     <div class="section-inner">
       <div class="section-header">
         <h2 class="section-title">🏆 Ranking de <span class="accent">confiabilidade</span></h2>
-        <a href="#" class="see-all" onclick="event.preventDefault();showPage('vehicles',{sort:'best_rating'});return false;">Ranking completo →</a>
+        <a href="#" class="see-all" id="ranking-see-all" onclick="event.preventDefault();showPage('vehicles',{sort:'best_rating'});return false;">Ranking completo →</a>
+      </div>
+      <div class="rank-tabs" role="tablist">
+        <button class="rank-tab active" role="tab" id="rank-tab-best" onclick="setRankingMode('best')">🏆 Melhores</button>
+        <button class="rank-tab" role="tab" id="rank-tab-worst" onclick="setRankingMode('worst')">⚠️ Piores</button>
       </div>
       <div class="ranking-grid" id="ranking-grid"></div>
     </div>
@@ -3347,6 +3359,30 @@ async function renderVehicles(){
   })();
 }
 
+// Estado da aba ativa do ranking da home ('best' | 'worst')
+let _rankingMode = 'best';
+
+// Alterna entre Melhores/Piores no bloco de ranking da home.
+// Atualiza visual das abas, re-renderiza o grid, e ajusta o link "Ranking completo →"
+// pra levar pra ordenação correspondente na página de veículos.
+function setRankingMode(mode){
+  if (mode !== 'best' && mode !== 'worst') return;
+  if (mode === _rankingMode) return;
+  _rankingMode = mode;
+  // Atualiza estado visual das abas
+  const tabBest = document.getElementById('rank-tab-best');
+  const tabWorst = document.getElementById('rank-tab-worst');
+  if (tabBest) tabBest.classList.toggle('active', mode === 'best');
+  if (tabWorst) tabWorst.classList.toggle('active', mode === 'worst');
+  // Atualiza o link "Ranking completo →" pra refletir a aba ativa
+  const seeAll = document.getElementById('ranking-see-all');
+  if (seeAll) {
+    const sort = mode === 'best' ? 'best_rating' : 'worst_rating';
+    seeAll.setAttribute('onclick', `event.preventDefault();showPage('vehicles',{sort:'${sort}'});return false;`);
+  }
+  renderRanking();
+}
+
 async function renderRanking(){
   const grid = document.getElementById('ranking-grid');
   if (!grid) return;
@@ -3354,12 +3390,15 @@ async function renderRanking(){
 
   // Mesma fonte do renderVehicles: vehicle_known_issues agrupado por marca+modelo,
   // pegando o registro summary (is_summary=true) com reliability_score.
+  // Modo 'best': ordena desc (maiores notas no topo)
+  // Modo 'worst': ordena asc (menores notas no topo) — destaca o que comprar com cautela
+  const ascending = _rankingMode === 'worst';
   let allRows = [];
   try {
     const { data } = await sb.from('vehicle_known_issues')
       .select('vehicle_brand, vehicle_model, vehicle_type, is_summary, reliability_score')
       .eq('is_summary', true)
-      .order('reliability_score', { ascending: false })
+      .order('reliability_score', { ascending })
       .limit(8);
     allRows = data || [];
   } catch(e) { console.error('Erro ao buscar ranking:', e); }
@@ -3375,7 +3414,8 @@ async function renderRanking(){
   grid.innerHTML = allRows.map((r, i) => {
     const pos = i + 1;
     const pc = pos <= 3 ? `pos-${pos}` : 'pos-o';
-    const medal = pos <= 3 ? medals[pos-1] : pos;
+    // No modo 'piores' a numeração ainda é 1/2/3... mas sem medalhas (não há vitória aqui)
+    const medal = (_rankingMode === 'best' && pos <= 3) ? medals[pos-1] : pos;
     const score = parseFloat(r.reliability_score) || 0;
     const emoji = typeEmoji(r.vehicle_type);
     const safeBrand = r.vehicle_brand.replace(/'/g, "\\'");
