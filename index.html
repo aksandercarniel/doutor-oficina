@@ -1098,9 +1098,11 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .profile-rating:has(.doxcore-velocimetro-wrap) > .doxcore-composition{padding-left:0;flex-basis:auto;justify-self:stretch}
 .doxcore-velocimetro-wrap{display:inline-block;line-height:0}
 @media(max-width:600px){
-  .profile-rating:has(.doxcore-velocimetro-wrap){grid-template-columns:1fr;justify-items:center;text-align:center}
-  .profile-rating:has(.doxcore-velocimetro-wrap) > .doxcore-velocimetro-wrap{grid-column:1;grid-row:auto}
-  .profile-rating:has(.doxcore-velocimetro-wrap) > *:not(.doxcore-velocimetro-wrap){grid-column:1;text-align:left;width:100%}
+  .profile-rating:has(.doxcore-velocimetro-wrap){grid-template-columns:1fr;justify-items:start;text-align:left}
+  .profile-rating:has(.doxcore-velocimetro-wrap) > .doxcore-velocimetro-wrap{grid-column:1;grid-row:auto;justify-self:center;margin-bottom:8px}
+  .profile-rating:has(.doxcore-velocimetro-wrap) > .doxcore-badge{justify-self:start}
+  .profile-rating:has(.doxcore-velocimetro-wrap) > .doxcore-text,
+  .profile-rating:has(.doxcore-velocimetro-wrap) > .doxcore-composition{justify-self:stretch;width:100%}
 }
 .big-score{font-family:var(--font);font-weight:900;font-size:28px;color:var(--navy)}
 .profile-rcount{color:var(--muted);font-size:14px;font-weight:500}
