@@ -1123,6 +1123,8 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .doxcore-velocimetro{display:inline-flex;flex-direction:column;align-items:center;line-height:1;flex-shrink:0}
 .doxcore-velocimetro svg{display:block}
 .doxcore-velocimetro-score{font-family:var(--font);font-weight:600;color:var(--navy);margin-top:4px;line-height:1}
+.vc-rating-velocimetro{display:flex;justify-content:center;margin:8px 0}
+.rank-velocimetro{display:flex;align-items:center;justify-content:center;flex:1;min-width:0}
 /* Card de avaliação (D89 — bloco separado pra dar protagonismo ao voto) */
 .vote-card .vote-stars-block{margin-top:6px;gap:10px}
 .vote-card .vote-stars-label{font-size:13px}
@@ -3230,11 +3232,6 @@ async function renderVehicles(){
     const s = v.summary;
     const rating = parseFloat(s.reliability_score) || 0;
     const topProblem = v.issues[0]?.issue_title || s.weaknesses?.[0] || 'Verificar manual';
-    const trustPct = Math.round(rating / 5 * 100);
-    const barColor = rating >= 4 ? 'var(--green)' : rating >= 3 ? 'var(--yellow)' : 'var(--red)';
-    const trend = rating >= 4 ? '📈 Estável' : rating >= 3 ? '⚠️ +8% este mês' : '🔴 +15% este mês';
-    const trendClass = rating >= 4 ? 'green' : rating >= 3 ? 'orange' : 'red';
-    const resolved = Math.round(55 + rating * 5);
     const emoji = typeEmoji(v.type);
     const verdict = (s.verdict || '').slice(0, 70) + ((s.verdict||'').length > 70 ? '…' : '');
     const safeKey = `${v.brand}-${v.model}`.replace(/[^a-zA-Z0-9-]/g, '_');
@@ -3249,29 +3246,14 @@ async function renderVehicles(){
       </div>
       <div class="vc-brand">${v.brand}</div>
       <div class="vc-version">${verdict}</div>
-      <div class="vc-rating"><span class="stars">${starsHtml(rating)}</span><span class="star-val">${rating.toFixed(1)}</span></div>
+      <div class="vc-rating-velocimetro">${renderDoxcoreVelocimetro(rating, 'medium')}</div>
       <div class="vc-count">${v.issues.length} problema${v.issues.length !== 1 ? 's' : ''} mapeado${v.issues.length !== 1 ? 's' : ''}</div>
       <div class="vc-divider"></div>
       <div class="vc-info-grid">
-        <div class="vc-info-item">
+        <div class="vc-info-item" style="grid-column:1/-1">
           <span class="vc-info-label">⚠️ Mais relatado</span>
           <span class="vc-info-value red">${topProblem}</span>
         </div>
-        <div class="vc-info-item">
-          <span class="vc-info-label">✅ Resolvidas</span>
-          <span class="vc-info-value green">${resolved}%</span>
-        </div>
-        <div class="vc-info-item" style="grid-column:1/-1">
-          <span class="vc-info-label">📈 Tendência</span>
-          <span class="vc-info-value ${trendClass}">${trend}</span>
-        </div>
-      </div>
-      <div class="vc-trust-bar">
-        <div class="vc-trust-label">
-          <span class="vc-trust-text">📊 Confiabilidade</span>
-          <span class="vc-trust-pct">${trustPct}%</span>
-        </div>
-        <div class="vc-trust-bg"><div class="vc-trust-fill" style="width:${trustPct}%;background:${barColor}"></div></div>
       </div>
       <div class="vc-price">
         <span class="price-label">Tabela FIPE</span>
@@ -3360,7 +3342,7 @@ async function renderRanking(){
     return `<div class="rank-item" onclick="showVehicleProfileByBrandModel('${safeBrand}','${safeModel}')">
       <span class="rank-pos ${pc}">${medal}</span>
       <div class="rank-info"><div class="rank-name"><span class="rank-icon">${vehicleIcon(emoji, r.vehicle_model)}</span>${r.vehicle_model}</div><div class="rank-brand">${r.vehicle_brand}</div></div>
-      <div class="rank-bar-wrap"><div class="rank-bar-bg"><div class="rank-bar" style="width:${(score/5*100).toFixed(0)}%"></div></div></div>
+      <div class="rank-velocimetro">${renderDoxcoreVelocimetro(score, 'compact')}</div>
       <span class="rank-score">${score.toFixed(1)}</span>
     </div>`;
   }).join('');
@@ -4153,7 +4135,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + '<span class="doxcore-composition">' + raioxComposition + '</span>'
     + '</div>'
     + '<div class="profile-tags">'
-    + '<span class="ptag ' + badge.cls + '">' + badge.label + '</span>'
+    + (displayRating ? ('<span class="ptag ' + badge.cls + '">' + badge.label + '</span>') : '')
     + strengthTags
     + weaknessTags
     + '</div>'
