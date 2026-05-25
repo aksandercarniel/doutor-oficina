@@ -4175,14 +4175,6 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + '</div>'
     + '</div>'
 
-    // Card de avaliação (D89 — separado do hero pra dar protagonismo próprio)
-    + (voteStarsHtml
-      ? '<div class="profile-card vote-card">'
-        + '<div class="pc-title"><span class="pc-emoji">📝</span> Avalie esse veículo</div>'
-        + voteStarsHtml
-        + '</div>'
-      : '')
-
     // Grid principal
     + '<div class="profile-grid">'
 
@@ -4223,6 +4215,14 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + '<div class="dist-bars">' + distBars + '</div>'
     + (distTotal === 0 ? '<div style="font-size:12px;color:var(--muted);margin-top:8px;text-align:center">Baseado em ' + totalComplaints + ' ' + (totalComplaints === 1 ? 'relato' : 'relatos') + ' — avalie após registrar sua reclamação</div>' : '')
     + '</div>'
+
+    // Card de avaliação (D89 — abaixo de Distribuição de notas pra agrupar "ver notas da comunidade" + "dar minha nota")
+    + (voteStarsHtml
+      ? '<div class="profile-card vote-card">'
+        + '<div class="pc-title"><span class="pc-emoji">📝</span> Avalie esse veículo</div>'
+        + voteStarsHtml
+        + '</div>'
+      : '')
 
     // Card FIPE comparativo
     + '<div class="profile-card">'
