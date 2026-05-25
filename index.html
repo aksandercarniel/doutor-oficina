@@ -3602,7 +3602,7 @@ function renderVehicleProfileSkeleton(v) {
   // Chip da montadora começa a carregar já no skeleton (não precisa esperar o full render)
   if (v.brand) {
     const mfrChipId = 'mfr-chip-skeleton-' + v.brand.replace(/[^a-zA-Z0-9]/g,'_');
-    renderManufacturerChip(v.brand, mfrChipId, v.type);
+    renderManufacturerChip(v.brand, mfrChipId, v.type, v.fipeBrandCode);
   }
 }
 
@@ -3882,8 +3882,9 @@ async function loadFipePriceForVehicle(v, opts) {
 // Renderiza o chip da montadora no header do perfil do veículo
 // Substitui o label estático da marca por um mini-bloco clicável com stats
 // Skeleton-first: chip vazio aparece imediatamente, dados populam em ~500ms
-// vehicleType: 'carro' | 'moto' | 'caminhao' — usado pra escolher empresa certa quando há múltiplas (ex: Honda Carros vs Moto Honda)
-async function renderManufacturerChip(brand, containerId, vehicleType) {
+// vehicleType: 'carro' | 'moto' | 'caminhao' — usado pra escolher empresa certa quando há múltiplas
+// fipeBrandCode: identificador único da marca (Honda Carros=25, Moto Honda=80) — match preciso quando disponível
+async function renderManufacturerChip(brand, containerId, vehicleType, fipeBrandCode) {
   if (!brand) return;
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -3892,24 +3893,31 @@ async function renderManufacturerChip(brand, containerId, vehicleType) {
   container.innerHTML = '<div class="mfr-chip-skeleton"></div>';
 
   try {
-    // 2. Busca todas as empresas que casam com a marca
-    //    Ex: brand "HONDA" retorna 2 (Honda Automóveis + Moto Honda)
-    //    Heurística pra escolher: prioriza match por segment; fallback pra primeira
-    const { data: companies } = await sb
-      .from('companies')
-      .select('name, is_claimed, owner_id, segment')
-      .ilike('name', '%' + brand + '%');
+    // 2. Busca empresa.
+    //    Caminho preciso (FIPE-exata): usa fipe_brand_code (único, desambigua Honda Carros vs Moto Honda).
+    //    Caminho fallback (modelo-genérico): ilike por nome + hierarquia de desempate.
+    let companies = null;
+    if (fipeBrandCode) {
+      const res = await sb
+        .from('companies')
+        .select('name, is_claimed, owner_id, segment')
+        .eq('fipe_brand_code', fipeBrandCode);
+      companies = res.data;
+    } else {
+      const res = await sb
+        .from('companies')
+        .select('name, is_claimed, owner_id, segment')
+        .ilike('name', '%' + brand + '%');
+      companies = res.data;
+    }
 
     let company = null;
     if (companies && companies.length > 0) {
       if (companies.length === 1) {
         company = companies[0];
       } else {
-        // Múltiplas empresas com a mesma marca (ex: Honda Carros vs Moto Honda).
-        // Hierarquia de seleção:
-        //   1. Match por segment (quando preenchido — futuro)
-        //   2. Reivindicada (is_claimed=true) tem prioridade sobre não-reivindicada
-        //   3. Fallback: primeira retornada
+        // Múltiplas empresas (só acontece no caminho fallback por nome).
+        // Hierarquia: segment match → reivindicada → primeira
         const bySegment = vehicleType ? companies.find(c => c.segment === vehicleType) : null;
         const claimed = companies.find(c => c.is_claimed);
         company = bySegment || claimed || companies[0];
@@ -4407,7 +4415,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
   // Chip da montadora: skeleton-first, dados populam em ~500ms
   if (v.brand) {
     const mfrChipId = 'mfr-chip-' + v.brand.replace(/[^a-zA-Z0-9]/g,'_');
-    renderManufacturerChip(v.brand, mfrChipId, v.type);
+    renderManufacturerChip(v.brand, mfrChipId, v.type, v.fipeBrandCode);
   }
 
   // Skeleton → fill: carrega voto atual do usuário e atualiza só o bloco de estrelas
