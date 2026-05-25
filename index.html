@@ -6079,15 +6079,22 @@ async function openCompanyProfile(companyName) {
 async function claimCompany(companyName) {
   if (!currentUser) { openAuth('login'); return; }
   if (!confirm(`Deseja reivindicar a titularidade de "${companyName}"?\n\nVocê será direcionado ao formulário de cadastro de empresa.`)) return;
-  switchAuth('register');
-  switchRegisterType('company');
-  openModal();
+
+  // Mesmo padrão de openRegisterCompanyFromProfile: usuário JÁ está logado,
+  // então abre direto o form de empresa.
   clearCompanyForm();
+  document.getElementById('register-type-select').style.display = 'none';
+  document.getElementById('register-form-user').style.display = 'none';
+  document.getElementById('register-form-lawyer').style.display = 'none';
+  document.getElementById('register-form-company').style.display = 'block';
+  switchAuth('register');
+  document.getElementById('auth-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+
   // Reivindicação: já sabemos qual empresa. Libera todos os passos do form direto.
   // (Não passa pela escolha de tipo nem pela trava de duplicação.)
   sessionStorage.setItem('claiming_company', companyName);
   // Marca tipo como "outro" por default (admin decide o tipo real depois)
-  // — pode ser ajustado pra puxar o type da company se quisermos no futuro
   document.getElementById('reg-company-type').value = 'outro';
   // Libera os 3 wrappers de visibilidade
   const brandStep = document.getElementById('reg-fipe-brand-step');
@@ -6096,9 +6103,11 @@ async function claimCompany(companyName) {
   if (rest) rest.style.display = 'block';
   const restAfter = document.getElementById('reg-company-rest-after-cnpj');
   if (restAfter) restAfter.style.display = 'block';
-  // Pré-preenche nome (será o nome a reivindicar)
+  // Pré-preenche nome (será o nome a reivindicar) e e-mail do usuário
   document.getElementById('reg-company-name').value = companyName;
   document.getElementById('reg-company-name').readOnly = true;
+  const emailEl = document.getElementById('reg-company-email');
+  if (emailEl && currentUser?.email) emailEl.value = currentUser.email;
 }
 
 // ══════════════════════════════════════════
