@@ -1217,7 +1217,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 17h-2v-11a1 1 0 0 1 1 -1h9v12m-4 0h6m4 0h2v-6h-8m0 -5h5l3 5"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
         </button>
       </div>
-      <div class="sfipe-selects" id="sb-selects">
+      <div class="sfipe-selects">
         <div class="sfipe-group">
           <select class="sfipe-select" id="sb-brand" onchange="sbOnBrandChange()" disabled>
             <option>⏳ Carregando marcas…</option>
@@ -1373,7 +1373,6 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px">
     <div>
       <h2 style="font-family:var(--font);font-size:24px;font-weight:900;color:var(--navy);margin:0">🏢 Painel da Empresa</h2>
-      <p style="color:var(--muted);font-size:14px;margin:4px 0 0" id="company-panel-name"></p>
     </div>
     <button onclick="goBack()" style="background:none;border:1.5px solid var(--border2);border-radius:8px;padding:8px 16px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;color:var(--navy)">← Voltar</button>
   </div>
@@ -1636,8 +1635,8 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
   <div class="auth-box">
     <div class="auth-header">
       <div class="auth-logo-wrap" id="auth-logo-wrap"></div>
-      <div class="auth-title" id="auth-modal-title">Entrar na sua conta</div>
-      <div class="auth-subtitle" id="auth-modal-subtitle">Para reclamar você precisa estar logado</div>
+      <div class="auth-title">Entrar na sua conta</div>
+      <div class="auth-subtitle">Para reclamar você precisa estar logado</div>
       <button class="auth-close" onclick="closeAuth()">✕</button>
     </div>
     <div class="auth-tabs">
@@ -1824,7 +1823,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
         </div>
       </div>
     </div>
-    <div class="profile-card" id="profile-actions-card">
+    <div class="profile-card">
       <div class="pc-title"><span class="dot"></span>Minha conta</div>
       <div id="profile-actions-content" style="padding:4px 0">
         <div style="color:var(--muted);font-size:14px;padding:12px 0">Carregando…</div>
@@ -3310,13 +3309,13 @@ function renderVehicleProfileSkeleton(v) {
       <div class="profile-right">
         <div class="info-card">
           <div class="ic-label">💰 Tabela FIPE</div>
-          <div class="ic-value" id="sk-fipe">—</div>
-          <div class="ic-sub" id="sk-fipe-ref">buscando…</div>
+          <div class="ic-value">—</div>
+          <div class="ic-sub">buscando…</div>
         </div>
         <div class="info-card">
           <div class="ic-label">📋 Reclamações na plataforma</div>
-          <div class="ic-value ic-value-red" id="sk-count">—</div>
-          <div class="ic-sub" id="sk-resolved">buscando…</div>
+          <div class="ic-value ic-value-red">—</div>
+          <div class="ic-sub">buscando…</div>
         </div>
         <button class="btn-primary" style="width:100%;justify-content:center" onclick="requireAuthForCurrentVehicle()">🚨 Reclamar deste veículo</button>
       </div>
@@ -8585,10 +8584,6 @@ async function fetchAndRenderAllComplaints(reset = false) {
     if (_allComplaintsState.items.length === 0) {
       listEl.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--muted);background:var(--white);border:1.5px solid var(--border);border-radius:12px">Nenhuma reclamação encontrada com esses filtros.</div>';
     } else {
-      // Salva temporariamente o target do renderComplaintsList (ele escreve em #complaints-list)
-      // Como o renderComplaintsList é hard-coded pra #complaints-list, fazemos um swap temporário pelo DOM
-      const tempDiv = document.createElement('div');
-      tempDiv.id = '__tmp_complaints_render';
       // hack mais limpo: replicamos a lógica de render aqui mesmo, em vez de monkey-patch
       listEl.innerHTML = _allComplaintsState.items.map((c,i) => buildComplaintCardHtml(c, i)).join('');
     }
