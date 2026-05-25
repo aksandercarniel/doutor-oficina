@@ -4070,7 +4070,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
   // -- Reclamações reais da plataforma
   const complaintCards = complaints.length > 0
     ? complaints.slice(0, 3).map(c =>
-        '<div class="complaint-card" style="margin-bottom:10px;background:var(--bg);cursor:pointer" onclick="showComplaintDetail(\'' + c.id + '\')">'
+        '<div class="complaint-card" style="margin-bottom:10px;background:var(--bg);cursor:pointer" onclick="openComplaintDetail(\'' + c.id + '\')">'
         + '<div class="cc-top">'
         + '<div><div class="cc-vname">' + c.title + '</div><div class="cc-vbrand">' + c.date + '</div></div>'
         + '<span class="cc-status ' + c.status + '">' + c.statusLabel + '</span>'
