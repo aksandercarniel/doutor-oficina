@@ -1132,17 +1132,6 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .raiox-subtitle .count{margin-left:auto;font-size:11px;color:var(--red);text-transform:none;letter-spacing:0}
 .raiox-divider{height:1px;background:var(--border);margin:18px -22px 18px;border:none}
 
-.problems-list{display:flex;flex-direction:column;gap:10px}
-.problem-item{display:flex;align-items:center;gap:12px}
-.prob-name{flex:1;font-size:13.5px;font-weight:500;color:var(--text2)}
-.prob-bar-wrap{width:110px}
-.prob-bar-bg{height:5px;background:var(--bg2);border-radius:3px;overflow:hidden}
-.prob-bar{height:100%;border-radius:3px}
-.bar-red{background:var(--red)}
-.bar-orange{background:var(--orange)}
-.bar-yellow{background:var(--yellow)}
-.prob-count{font-family:var(--font);font-weight:700;font-size:13px;color:var(--muted);min-width:28px;text-align:right}
-
 .dist-bars{display:flex;flex-direction:column;gap:8px}
 .dist-row{display:flex;align-items:center;gap:10px}
 .dist-label{font-family:var(--font);font-weight:700;font-size:12px;color:var(--muted);min-width:20px;text-align:right}
@@ -2318,15 +2307,6 @@ async function sbLoadVehicleStats(brand, model) {
     .eq('vehicle_model', model)
     .single();
   return data;
-}
-
-async function sbLoadTopProblems(brand, model) {
-  const { data } = await sb.from('top_problems')
-    .select('*')
-    .eq('vehicle_brand', brand)
-    .eq('vehicle_model', model)
-    .limit(5);
-  return data || [];
 }
 
 async function sbSaveComplaint(complaint) {
