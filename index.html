@@ -2694,8 +2694,8 @@ async function regLoadFipeModels() {
   document.getElementById('reg-fipe-brand-code').value = code;
 
   // NOVO: checagem de conflito em paralelo. Se houver match, esconde "rest" e mostra opções.
-  // Se não houver, libera "rest".
-  checkMontadoraConflict(name);
+  // Se não houver, libera "rest". Usa o código FIPE (preciso) em vez de nome (fuzzy).
+  checkMontadoraConflict(name, code);
 
   const group = document.getElementById('reg-fipe-models-group');
   const status = document.getElementById('reg-fipe-models-status');
@@ -2738,7 +2738,7 @@ async function regLoadFipeModels() {
 // e ESCONDE o resto do form (até resolução). Se não, libera o resto.
 let _montadoraConflictState = { fipeBrand: null, matches: [], userChoice: null };
 
-async function checkMontadoraConflict(fipeBrandName) {
+async function checkMontadoraConflict(fipeBrandName, fipeBrandCode) {
   const box     = document.getElementById('reg-montadora-conflict');
   const msg     = document.getElementById('reg-montadora-conflict-msg');
   const optsEl  = document.getElementById('reg-montadora-conflict-options');
@@ -2753,18 +2753,17 @@ async function checkMontadoraConflict(fipeBrandName) {
   rest.style.display = 'none';
 
   const brand = (fipeBrandName || '').trim();
-  if (!brand) return;
+  const code  = (fipeBrandCode || '').trim();
+  if (!brand || !code) return;
 
   try {
-    // Heurística: pega só a primeira palavra da marca FIPE pra busca ampla
-    // Ex: "GM - Chevrolet" → "GM"; "VW - VolksWagen" → "VW"; "Honda" → "Honda"
-    const firstWord = brand.split(/[\s\-/]/)[0].toLowerCase();
-    if (firstWord.length < 2) return; // proteção contra match vazio
+    // Busca PRECISA: por fipe_brand_code (único por marca+segmento).
+    // Ex: Honda Carros = 25, Honda Motos = 80. Selecionar Carros traz só HONDA AUTOMÓVEIS.
     const { data, error } = await sb
       .from('companies')
-      .select('id, name, cnpj, city, state, fipe_brand_code')
+      .select('id, name, cnpj, city, state, fipe_brand_code, type')
       .eq('type', 'montadora')
-      .ilike('name', `%${firstWord}%`);
+      .eq('fipe_brand_code', code);
     if (error) { console.warn('checkMontadoraConflict:', error.message); rest.style.display = 'block'; return; }
 
     if (!data || !data.length) {
