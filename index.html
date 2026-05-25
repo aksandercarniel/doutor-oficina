@@ -1130,6 +1130,10 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .profile-card{background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px 22px;margin-bottom:14px;box-shadow:var(--shadow)}
 .pc-title{font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy);margin-bottom:16px;display:flex;align-items:center;gap:4px}
 .pc-title .pc-emoji{font-size:22px;line-height:1}
+/* Sub-blocos dentro do Raio-X (D78): Curadoria + Relatos da comunidade */
+.raiox-subtitle{font-family:var(--font);font-weight:700;font-size:12px;color:var(--muted2);text-transform:uppercase;letter-spacing:.8px;margin:0 0 12px;display:flex;align-items:center;gap:6px}
+.raiox-subtitle .count{margin-left:auto;font-size:11px;color:var(--red);text-transform:none;letter-spacing:0}
+.raiox-divider{height:1px;background:var(--border);margin:18px -22px 18px;border:none}
 
 .problems-list{display:flex;flex-direction:column;gap:10px}
 .problem-item{display:flex;align-items:center;gap:12px}
@@ -4153,26 +4157,30 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     // Coluna esquerda
     + '<div>'
 
-    // Card Raio-X (análise curada do modelo)
+    // ═══ Bloco Raio-X (D78): card-pai com 2 sub-blocos ═══
     + '<div class="profile-card">'
     + '<div class="pc-title"><span class="pc-emoji">👨‍🔧</span> Raio-X</div>'
+
+    // ── Sub-bloco 1: Curadoria ──
+    + '<div class="raiox-subtitle">Curadoria</div>'
     + (summary
       ? '<div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px;padding:12px 14px;background:' + summaryColors.bg + ';border-radius:10px;border:1px solid ' + summaryColors.border + '">' + summary.issue_description
         + (summary.source ? '<div style="margin-top:8px;font-size:10px;font-weight:600;color:var(--muted);text-align:right">Análise: ' + summary.source + '</div>' : '')
         + '</div>'
       : '')
     + raioXCards
-    + '</div>'
 
-    // Card Relatos da comunidade
-    + '<div class="profile-card">'
-    + '<div class="pc-title"><span class="dot"></span>💬 Relatos da comunidade'
-    + (complaints.length > 0 ? '<span style="margin-left:auto;font-size:11px;font-weight:700;color:var(--red)">' + complaints.length + ' relatos</span>' : '')
+    // ── Divisor ──
+    + '<hr class="raiox-divider">'
+
+    // ── Sub-bloco 2: Relatos da comunidade ──
+    + '<div class="raiox-subtitle">💬 Relatos da comunidade'
+    + (complaints.length > 0 ? '<span class="count">' + complaints.length + ' relatos</span>' : '')
     + '</div>'
     + complaintCards
     + (complaints.length > 3 ? '<button onclick="showPage(\'complaints\',{brand:\'' + v.brand.replace(/'/g,"\\'") + '\',model:\'' + v.name.replace(/'/g,"\\'") + '\'})" style="width:100%;background:none;border:1.5px solid var(--border2);border-radius:8px;padding:10px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;color:var(--navy);margin-top:6px">Confira todos os relatos da comunidade →</button>' : '')
-    + '</div>'
-    + '</div>'
+    + '</div>' // fecha .profile-card (Raio-X)
+    + '</div>' // fecha coluna esquerda
 
     // Coluna direita
     + '<div>'
