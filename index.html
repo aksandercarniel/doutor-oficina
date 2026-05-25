@@ -3602,7 +3602,7 @@ function renderVehicleProfileSkeleton(v) {
   // Chip da montadora começa a carregar já no skeleton (não precisa esperar o full render)
   if (v.brand) {
     const mfrChipId = 'mfr-chip-skeleton-' + v.brand.replace(/[^a-zA-Z0-9]/g,'_');
-    renderManufacturerChip(v.brand, mfrChipId);
+    renderManufacturerChip(v.brand, mfrChipId, v.type);
   }
 }
 
@@ -3882,7 +3882,8 @@ async function loadFipePriceForVehicle(v, opts) {
 // Renderiza o chip da montadora no header do perfil do veículo
 // Substitui o label estático da marca por um mini-bloco clicável com stats
 // Skeleton-first: chip vazio aparece imediatamente, dados populam em ~500ms
-async function renderManufacturerChip(brand, containerId) {
+// vehicleType: 'carro' | 'moto' | 'caminhao' — usado pra escolher empresa certa quando há múltiplas (ex: Honda Carros vs Moto Honda)
+async function renderManufacturerChip(brand, containerId, vehicleType) {
   if (!brand) return;
   const container = document.getElementById(containerId);
   if (!container) return;
@@ -3891,13 +3892,23 @@ async function renderManufacturerChip(brand, containerId) {
   container.innerHTML = '<div class="mfr-chip-skeleton"></div>';
 
   try {
-    // 2. Busca empresa (ilike com wildcards pra pegar nomes jurídicos completos)
-    //    Ex: brand "TOYOTA" precisa achar "TOYOTA DO BRASIL LTDA"
-    const { data: company } = await sb
+    // 2. Busca todas as empresas que casam com a marca
+    //    Ex: brand "HONDA" retorna 2 (Honda Automóveis + Moto Honda)
+    //    Heurística pra escolher: prioriza match por segment; fallback pra primeira
+    const { data: companies } = await sb
       .from('companies')
-      .select('name, is_claimed, owner_id')
-      .ilike('name', '%' + brand + '%')
-      .maybeSingle();
+      .select('name, is_claimed, owner_id, segment')
+      .ilike('name', '%' + brand + '%');
+
+    let company = null;
+    if (companies && companies.length > 0) {
+      if (vehicleType && companies.length > 1) {
+        // Tenta achar empresa com segment correspondente ao tipo do veículo
+        company = companies.find(c => c.segment === vehicleType) || companies[0];
+      } else {
+        company = companies[0];
+      }
+    }
 
     // 3. Busca NPS e reclamações em paralelo
     //    Nota: complaints.company_name e nps_ratings.company_name são preenchidos
@@ -4390,7 +4401,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
   // Chip da montadora: skeleton-first, dados populam em ~500ms
   if (v.brand) {
     const mfrChipId = 'mfr-chip-' + v.brand.replace(/[^a-zA-Z0-9]/g,'_');
-    renderManufacturerChip(v.brand, mfrChipId);
+    renderManufacturerChip(v.brand, mfrChipId, v.type);
   }
 
   // Skeleton → fill: carrega voto atual do usuário e atualiza só o bloco de estrelas
