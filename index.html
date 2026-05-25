@@ -6073,16 +6073,80 @@ async function sendResolutionMessage(complaintId) {
 }
 
 async function markResolved(complaintId) {
-  if (!confirm('Confirma que o problema foi resolvido?')) return;
+  // Busca company_name da reclamação pra mostrar no modal
+  let companyName = '';
+  if (currentResolution && currentResolution.complaint?.id === complaintId) {
+    companyName = currentResolution.complaint.company_name || '';
+  } else {
+    try {
+      const { data } = await sb.from('complaints').select('company_name').eq('id', complaintId).maybeSingle();
+      companyName = data?.company_name || '';
+    } catch(e) { /* segue sem nome */ }
+  }
+  openNPSModal(complaintId, companyName);
+}
+
+function openNPSModal(complaintId, companyName) {
+  // Reset estado do voto a cada abertura
+  npsScore = null;
+  // Remove modal anterior se existir (segurança)
+  const old = document.getElementById('nps-resolve-modal');
+  if (old) old.remove();
+  const modal = document.createElement('div');
+  modal.id = 'nps-resolve-modal';
+  modal.className = 'modal-overlay open';
+  modal.innerHTML = `
+    <div class="modal" style="max-width:520px">
+      <div class="modal-header">
+        <h2 class="modal-title">Marcar como <span class="accent">resolvido</span></h2>
+        <button class="modal-close" onclick="closeNPSModal()" aria-label="Cancelar">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy);margin-bottom:6px;text-align:center">Como foi a experiência com ${companyName||'a empresa'}?</div>
+        <div style="font-size:13px;color:var(--muted);text-align:center;margin-bottom:20px">De 0 a 10, qual a chance de você voltar a fazer negócio com essa empresa?</div>
+        <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:14px">
+          ${[0,1,2,3,4,5,6,7,8,9,10].map(n=>`<button class="nps-btn" onclick="selectNPS(${n},this,'${complaintId}')">${n}</button>`).join('')}
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:16px;padding:0 4px">
+          <span>Definitivamente não</span><span>Definitivamente sim</span>
+        </div>
+        <textarea id="nps-comment" placeholder="Comentário opcional…" style="width:100%;min-height:70px;border:1.5px solid var(--border2);border-radius:10px;padding:12px;font-family:var(--font-body);font-size:13px;resize:none;outline:none;box-sizing:border-box;margin-bottom:16px"></textarea>
+        <button onclick="submitNPSModal('${complaintId}','${(companyName||'').replace(/'/g,"\\'")}',true)" id="nps-submit-btn" disabled style="width:100%;background:var(--red);color:#fff;border:none;border-radius:10px;padding:12px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px;opacity:.5;margin-bottom:10px">Enviar avaliação e concluir</button>
+        <button onclick="submitNPSModal('${complaintId}','${(companyName||'').replace(/'/g,"\\'")}',false)" style="width:100%;background:none;border:none;color:var(--muted);cursor:pointer;font-family:var(--font-body);font-size:12px;text-decoration:underline;padding:4px">Marcar resolvido sem avaliar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function closeNPSModal() {
+  const m = document.getElementById('nps-resolve-modal');
+  if (m) m.remove();
+  npsScore = null;
+}
+
+async function submitNPSModal(complaintId, companyName, withNPS) {
+  // Se for enviar avaliação, valida que tem score
+  if (withNPS && npsScore === null) return;
+  const comment = withNPS ? (document.getElementById('nps-comment')?.value.trim() || null) : null;
+  const scoreToSend = withNPS ? npsScore : null;
   try {
+    // UPDATE status
     await sb.from('complaints').update({ status:'resolved' }).eq('id', complaintId);
+    // INSERT NPS (só se tiver score)
+    if (withNPS) {
+      await sb.from('nps_ratings').insert([{ complaint_id:complaintId, user_id:currentUser.id, score:scoreToSend, comment:comment, company_name:companyName||null }]);
+    }
+    closeNPSModal();
+    // Atualiza estado local se estamos na página resolution
     if (currentResolution && currentResolution.complaint?.id === complaintId) {
       currentResolution.complaint.status = 'resolved';
+      if (withNPS) currentResolution.nps = { score:scoreToSend, comment };
       renderResolutionPage();
     } else {
+      // Vindo da página complaint, navega pra resolution pra ver o resultado
       showResolution(complaintId);
     }
-  } catch(e) { alert('Erro ao marcar como resolvido.'); }
+  } catch(e) { alert('Erro ao concluir. Tente novamente.'); }
 }
 
 // ══════════════════════════════════════════
