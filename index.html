@@ -3902,11 +3902,17 @@ async function renderManufacturerChip(brand, containerId, vehicleType) {
 
     let company = null;
     if (companies && companies.length > 0) {
-      if (vehicleType && companies.length > 1) {
-        // Tenta achar empresa com segment correspondente ao tipo do veículo
-        company = companies.find(c => c.segment === vehicleType) || companies[0];
-      } else {
+      if (companies.length === 1) {
         company = companies[0];
+      } else {
+        // Múltiplas empresas com a mesma marca (ex: Honda Carros vs Moto Honda).
+        // Hierarquia de seleção:
+        //   1. Match por segment (quando preenchido — futuro)
+        //   2. Reivindicada (is_claimed=true) tem prioridade sobre não-reivindicada
+        //   3. Fallback: primeira retornada
+        const bySegment = vehicleType ? companies.find(c => c.segment === vehicleType) : null;
+        const claimed = companies.find(c => c.is_claimed);
+        company = bySegment || claimed || companies[0];
       }
     }
 
