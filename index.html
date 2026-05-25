@@ -40,15 +40,7 @@
 }
 /* ── ÍCONES SVG FILLED LATERAL ── */
 svg.ico{display:inline-block;width:20px;height:20px;fill:currentColor;stroke:none;vertical-align:middle;flex-shrink:0;}
-svg.ico-sm{width:15px;height:15px}
-svg.ico-lg{width:28px;height:28px}
-svg.ico-xl{width:44px;height:44px}
-svg.ico-medal{width:22px;height:22px}
-svg.ico,svg.ico-sm,svg.ico-lg,svg.ico-xl,svg.ico-medal{color:var(--navy)}
-.pos-1 svg.ico-medal{color:var(--yellow)}
-.pos-2 svg.ico-medal{color:#9ca3af}
-.pos-3 svg.ico-medal{color:#b45309}
-.pos-o svg.ico-medal{color:var(--muted2)}
+svg.ico{color:var(--navy)}
 
 .btn-primary svg.ico,.btn-nav-reclamar svg.ico,.auth-btn svg.ico{color:#fff}
 .vote-btn svg.ico{color:var(--muted)}
@@ -157,7 +149,7 @@ header{
   .hero h1{font-size:24px;margin-bottom:10px}
   .hero p{font-size:14px;margin-bottom:22px}
   .hero-stats{font-size:12px;margin:-10px auto 18px}
-  .btn-primary,.btn-outline{font-size:14px;padding:11px 18px}
+  .btn-primary{font-size:14px;padding:11px 18px}
   .section{padding:24px 16px}
   .section-title{font-size:18px}
   .vehicles-grid{grid-template-columns:1fr 1fr;gap:10px}
@@ -170,9 +162,6 @@ header{
   .hero p{font-size:14px;margin-bottom:20px}
 }
 .logo{display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0}
-.logo-text{display:flex;flex-direction:column;line-height:1.1}
-.logo-top{font-family:var(--font);font-weight:700;font-size:12px;color:rgba(255,255,255,.65);letter-spacing:.5px}
-.logo-bot{font-family:var(--font);font-weight:900;font-size:15px;color:#fff;letter-spacing:1px;text-transform:uppercase}
 .nav-search{flex:1;max-width:620px;position:relative}
 .nav-search input{
   width:100%;height:42px;background:rgba(255,255,255,.1);
@@ -337,12 +326,9 @@ header{
 .sug-history:hover{background:var(--bg)}
 .sug-no-results{padding:20px 16px;text-align:center;color:var(--muted);font-size:13px}
 .sug-highlight{color:var(--red);font-weight:800}
-.quick-filters{display:flex;align-items:center;gap:6px;margin-top:10px;flex-wrap:wrap}
-.qf-label{font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
 .qf-btn{background:var(--bg);border:1.5px solid var(--border2);color:var(--muted);font-family:var(--font);font-weight:700;font-size:12px;padding:5px 12px;border-radius:20px;cursor:pointer;transition:all .15s;white-space:nowrap}
 .qf-btn:hover{border-color:var(--navy);color:var(--navy)}
 .qf-btn.active{background:var(--navy);border-color:var(--navy);color:#fff}
-.trending-wrap{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
 .trending-tag{background:var(--red-light);border:1px solid var(--red-light2);color:var(--red);font-family:var(--font);font-weight:700;font-size:12px;padding:4px 12px;border-radius:20px;cursor:pointer;transition:all .15s}
 .trending-tag:hover{background:var(--red);color:#fff}
 
@@ -485,13 +471,6 @@ header{
   box-shadow:0 4px 18px rgba(232,24,74,.3);
 }
 .btn-primary:hover{background:var(--red2);transform:translateY(-2px);box-shadow:0 6px 24px rgba(232,24,74,.4)}
-.btn-outline{
-  background:var(--white);color:var(--navy);font-family:var(--font);font-weight:700;
-  font-size:15px;border:1.5px solid var(--border2);padding:14px 28px;border-radius:10px;
-  cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:9px;
-  transition:all .2s;
-}
-.btn-outline:hover{border-color:var(--navy);background:var(--bg);transform:translateY(-2px)}
 @keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
 
 /* ── SECTION ── */
@@ -1072,9 +1051,6 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .face-row:has(.face-btn.active) .face-btn:not(.active){opacity:0.35}
 .face-btn.active{box-shadow:0 0 0 3px var(--navy)}
 .face-label{color:var(--muted);font-size:12px;font-weight:600;line-height:1.4;margin-top:2px;min-height:18px}
-/* Display da nota: 1 carinha colorida (header do perfil) */
-.face-display{width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
-.face-display svg{width:36px;height:36px;display:block}
 .profile-tags{display:flex;gap:7px;flex-wrap:wrap}
 .ptag{background:var(--red-light);border:1px solid var(--red-light2);color:var(--red);font-size:11px;padding:4px 12px;border-radius:20px;font-weight:700;font-family:var(--font)}
 
