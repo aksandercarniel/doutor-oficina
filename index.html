@@ -992,6 +992,8 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .mfr-chip-wrap{grid-column:2;margin-bottom:6px;min-height:32px}
 .mfr-chip{display:inline-flex;align-items:center;gap:8px;background:#f9fafb;border:1px solid var(--border);border-radius:8px;padding:5px 10px 5px 7px;cursor:pointer;transition:border-color .2s,background .2s;text-decoration:none}
 .mfr-chip:hover{border-color:var(--navy);background:#fff}
+.mfr-chip-static{cursor:default}
+.mfr-chip-static:hover{border-color:var(--border);background:#f9fafb}
 .mfr-chip-avatar{position:relative;width:22px;height:22px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font);font-size:10px;font-weight:700;flex-shrink:0}
 .mfr-chip-verified{position:absolute;bottom:-2px;right:-2px;width:11px;height:11px;background:#2563eb;color:#fff;border:1.5px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;line-height:1}
 .mfr-chip-text{display:flex;flex-direction:column;line-height:1.15}
@@ -1002,7 +1004,6 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .mfr-chip-nps-regular{color:#d97706;font-weight:700}
 .mfr-chip-nps-ruim{color:#ea580c;font-weight:700}
 .mfr-chip-nps-pessimo{color:#dc2626;font-weight:700}
-.mfr-chip-cta-reivindicar{color:var(--navy);font-weight:700;text-decoration:underline}
 .mfr-chip-skeleton{background:linear-gradient(90deg,#f3f4f6 0%,#e5e7eb 50%,#f3f4f6 100%);background-size:200% 100%;animation:mfr-shimmer 1.2s infinite;border-radius:8px;height:32px;width:180px;display:inline-block}
 @keyframes mfr-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 .profile-name{grid-column:2;font-family:var(--font);font-weight:900;font-size:38px;line-height:1;color:var(--navy);margin-bottom:5px}
@@ -3890,18 +3891,21 @@ async function renderManufacturerChip(brand, containerId) {
   container.innerHTML = '<div class="mfr-chip-skeleton"></div>';
 
   try {
-    // 2. Busca empresa (ilike pra evitar problemas de caixa)
+    // 2. Busca empresa (ilike com wildcards pra pegar nomes jurídicos completos)
+    //    Ex: brand "TOYOTA" precisa achar "TOYOTA DO BRASIL LTDA"
     const { data: company } = await sb
       .from('companies')
       .select('name, is_claimed, owner_id')
-      .ilike('name', brand)
+      .ilike('name', '%' + brand + '%')
       .maybeSingle();
 
-    // 3. Busca NPS e reclamações em paralelo (usa o nome canônico se achou empresa)
-    const companyName = company?.name || brand;
+    // 3. Busca NPS e reclamações em paralelo
+    //    Nota: complaints.company_name e nps_ratings.company_name são preenchidos
+    //    pelo usuário ao reclamar, então usam o nome curto ("Toyota"), não o jurídico.
+    //    Buscamos pelo brand original do veículo, que é o mesmo padrão.
     const [{ data: npsRatings }, { data: complaints }] = await Promise.all([
-      sb.from('nps_ratings').select('score').ilike('company_name', companyName),
-      sb.from('complaints').select('status').ilike('company_name', companyName)
+      sb.from('nps_ratings').select('score').ilike('company_name', '%' + brand + '%'),
+      sb.from('complaints').select('status').ilike('company_name', '%' + brand + '%')
     ]);
 
     // 4. Calcula stats
@@ -3926,7 +3930,10 @@ async function renderManufacturerChip(brand, containerId) {
     const inicial = brand.trim().charAt(0).toUpperCase();
     const isClaimed = !!(company && company.is_claimed);
     const isRegistered = !!company;
+    // safeBrand pra reivindicar (passa o brand do veículo)
     const safeBrand = brand.replace(/'/g, "\\'");
+    // safeCompanyName pra abrir perfil (usa o nome jurídico exato do banco, que openCompanyProfile busca com eq)
+    const safeCompanyName = (company?.name || brand).replace(/'/g, "\\'");
 
     let statsParts = [];
     if (npsAvg !== null) statsParts.push('NPS <span class="' + npsClass + '">' + npsAvg.toFixed(1) + '</span>');
@@ -3937,14 +3944,18 @@ async function renderManufacturerChip(brand, containerId) {
     if (isRegistered) {
       ctaStr = ' · <span style="color:var(--navy)">ver perfil →</span>';
     } else {
-      ctaStr = ' · <span class="mfr-chip-cta-reivindicar">É da ' + brand + '? Reivindicar →</span>';
+      // Marca não cadastrada em companies (caso raro: chinesas novas, etc).
+      // Chip fica informativo, sem CTA e sem clique.
+      ctaStr = '';
     }
 
     // 7. Tooltip e onclick conforme estado
     const tooltipVerified = isClaimed ? 'Conta verificada — administrada pela ' + brand : '';
-    const onClickAction = isRegistered
-      ? 'openCompanyProfile(\'' + safeBrand + '\')'
-      : 'openRegisterCompanyFromProfile(\'' + safeBrand + '\')';
+    // Sem onclick quando não está cadastrada — chip vira informativo
+    const onClickAttr = isRegistered
+      ? ' onclick="openCompanyProfile(\'' + safeCompanyName + '\')"'
+      : '';
+    const chipClass = isRegistered ? 'mfr-chip' : 'mfr-chip mfr-chip-static';
 
     // 8. Monta HTML final
     const verifiedBadge = isClaimed
@@ -3952,7 +3963,7 @@ async function renderManufacturerChip(brand, containerId) {
       : '';
 
     container.innerHTML =
-      '<a class="mfr-chip" onclick="' + onClickAction + '">' +
+      '<a class="' + chipClass + '"' + onClickAttr + '>' +
         '<div class="mfr-chip-avatar">' + inicial + verifiedBadge + '</div>' +
         '<div class="mfr-chip-text">' +
           '<span class="mfr-chip-name">' + brand + '</span>' +
