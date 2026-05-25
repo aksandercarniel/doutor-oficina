@@ -1090,6 +1090,18 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .profile-sub{grid-column:2;color:var(--muted);font-size:14px;margin-bottom:14px;font-family:var(--font-body)}
 .profile-rating,.profile-tags{grid-column:1/-1}
 .profile-rating{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap}
+/* Quando tem velocímetro: layout 2 colunas (velocímetro à esquerda, texto à direita) */
+.profile-rating:has(.doxcore-velocimetro-wrap){display:grid;grid-template-columns:auto 1fr;column-gap:20px;align-items:start}
+.profile-rating:has(.doxcore-velocimetro-wrap) > .doxcore-velocimetro-wrap{grid-column:1;grid-row:1/span 4;align-self:center}
+.profile-rating:has(.doxcore-velocimetro-wrap) > *:not(.doxcore-velocimetro-wrap){grid-column:2}
+.profile-rating:has(.doxcore-velocimetro-wrap) .doxcore-text,
+.profile-rating:has(.doxcore-velocimetro-wrap) .doxcore-composition{padding-left:0;flex-basis:auto}
+.doxcore-velocimetro-wrap{display:inline-block;line-height:0}
+@media(max-width:600px){
+  .profile-rating:has(.doxcore-velocimetro-wrap){grid-template-columns:1fr;justify-items:center;text-align:center}
+  .profile-rating:has(.doxcore-velocimetro-wrap) > .doxcore-velocimetro-wrap{grid-column:1;grid-row:auto}
+  .profile-rating:has(.doxcore-velocimetro-wrap) > *:not(.doxcore-velocimetro-wrap){grid-column:1;text-align:left;width:100%}
+}
 .big-score{font-family:var(--font);font-weight:900;font-size:28px;color:var(--navy)}
 .profile-rcount{color:var(--muted);font-size:14px;font-weight:500}
 .doxcore-badge{display:inline-flex;align-items:center;background:var(--blue-light);color:var(--navy);font-family:var(--font);font-size:12px;font-weight:800;letter-spacing:0.3px;padding:3px 10px;border-radius:20px}
@@ -1104,12 +1116,23 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .btn-raiox-full-wrap{text-align:center;margin-top:8px}
 .btn-raiox-full{display:inline-flex;align-items:center;justify-content:center;gap:6px;margin:20px auto 0;padding:10px 20px;background:transparent;border:1.5px solid var(--navy);color:var(--navy);font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;transition:all .15s;text-decoration:none;font-family:inherit}
 .btn-raiox-full:hover{background:var(--navy);color:#fff}
-/* Widget de voto: 5 carinhas (Sprint 2 — D51) */
-.face-row{display:flex;gap:2px;flex-wrap:wrap}
-.face-btn{width:32px;height:32px;padding:0;background:none;border:2px solid transparent;border-radius:50%;cursor:pointer;transition:transform .15s,border-color .15s;display:flex;align-items:center;justify-content:center;line-height:0}
-.face-btn svg{display:block;width:28px;height:28px}
-.face-btn:hover{transform:scale(1.1)}
-.face-btn.active{transform:scale(1.1)}
+/* Velocímetro Doxcore (instrumento de leitura — D89) */
+.doxcore-velocimetro{display:inline-flex;flex-direction:column;align-items:center;line-height:1;flex-shrink:0}
+.doxcore-velocimetro svg{display:block}
+.doxcore-velocimetro-score{font-family:var(--font);font-weight:600;color:var(--navy);margin-top:4px;line-height:1}
+/* Widget de voto: 5 quadrados coloridos com carinha branca (D89 — barra de voto) */
+.face-row{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;max-width:340px}
+.face-btn{aspect-ratio:1;width:auto;height:auto;padding:0;border:0.5px solid rgba(0,0,0,0.08);border-radius:10px;cursor:pointer;transition:transform .15s,opacity .15s,box-shadow .15s;display:flex;align-items:center;justify-content:center;line-height:0}
+.face-btn[data-n="1"]{background:#E24B4A}
+.face-btn[data-n="2"]{background:#EF9F27}
+.face-btn[data-n="3"]{background:#FAC775}
+.face-btn[data-n="4"]{background:#97C459}
+.face-btn[data-n="5"]{background:#639922}
+.face-btn svg{display:block;width:70%;height:70%}
+.face-btn:hover{transform:scale(1.05)}
+/* Quando há um ativo: outros esmaecem, ativo recebe destaque navy */
+.face-row:has(.face-btn.active) .face-btn:not(.active){opacity:0.35}
+.face-btn.active{box-shadow:0 0 0 3px var(--navy)}
 .face-label{color:var(--muted);font-size:12px;font-weight:600;line-height:1.4;margin-top:2px;min-height:18px}
 /* Display da nota: 1 carinha colorida (header do perfil) */
 .face-display{width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -4107,8 +4130,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + '<div class="profile-name">' + v.name + '</div>'
     + ((v.version || v.year) ? ('<div class="profile-sub">' + [v.version, v.year].filter(x => x && x !== '—').join(' · ') + '</div>') : '')
     + '<div class="profile-rating">'
-    + (displayRating ? ('<span class="face-display">' + faceSvg(Math.round(displayRating), true) + '</span>') : '')
-    + (displayRating ? ('<span class="big-score">' + displayRating.toFixed(1) + '</span>') : '')
+    + (displayRating ? ('<span class="doxcore-velocimetro-wrap">' + renderDoxcoreVelocimetro(displayRating, 'large') + '</span>') : '')
     + '<span class="doxcore-badge">Doxcore</span>'
     + (verdictText
       ? (function(){
@@ -4175,7 +4197,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
 
     // ── Sub-bloco 2: Relatos da comunidade ──
     + '<div class="raiox-subtitle">💬 Relatos da comunidade'
-    + (complaints.length > 0 ? '<span class="count">' + complaints.length + ' relatos</span>' : '')
+    + (complaints.length > 0 ? '<span class="count">' + complaints.length + ' ' + (complaints.length === 1 ? 'relato' : 'relatos') + '</span>' : '')
     + '</div>'
     + complaintCards
     + (complaints.length > 3 ? '<button onclick="showPage(\'complaints\',{brand:\'' + v.brand.replace(/'/g,"\\'") + '\',model:\'' + v.name.replace(/'/g,"\\'") + '\'})" style="width:100%;background:none;border:1.5px solid var(--border2);border-radius:8px;padding:10px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;color:var(--navy);margin-top:6px">Confira todos os relatos da comunidade →</button>' : '')
@@ -4189,7 +4211,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + '<div class="profile-card">'
     + '<div class="pc-title"><span class="dot"></span>Distribuição de notas</div>'
     + '<div class="dist-bars">' + distBars + '</div>'
-    + (distTotal === 0 ? '<div style="font-size:12px;color:var(--muted);margin-top:8px;text-align:center">Baseado em ' + totalComplaints + ' relato(s) — avalie após registrar sua reclamação</div>' : '')
+    + (distTotal === 0 ? '<div style="font-size:12px;color:var(--muted);margin-top:8px;text-align:center">Baseado em ' + totalComplaints + ' ' + (totalComplaints === 1 ? 'relato' : 'relatos') + ' — avalie após registrar sua reclamação</div>' : '')
     + '</div>'
 
     // Card FIPE comparativo
@@ -4813,7 +4835,6 @@ function renderFormFaces(){
     html += '<button class="face-btn' + activeClass + '"'
       + ' data-n="' + i + '"'
       + ' data-active="' + (isActive ? '1' : '0') + '"'
-      + ' style="' + (isActive ? 'border-color:' + FACE_COLORS[i] : '') + '"'
       + ' onmouseenter="faceHoverEnter(this)"'
       + ' onmouseleave="faceHoverLeave(this)"'
       + ' onclick="setRating(' + i + ')"'
@@ -8765,10 +8786,57 @@ const FACE_COLORS = {
 };
 const FACE_LABELS = { 1:'Péssimo', 2:'Ruim', 3:'Regular', 4:'Bom', 5:'Excelente' };
 
+// Gera o SVG do velocímetro segmentado Doxcore (instrumento de leitura).
+// rating: número 1-5 (aceita decimais — agulha aponta posição proporcional). Null/0 = sem agulha.
+// size: 'large' (header, 200px), 'medium' (cards, 140px), 'compact' (rankings, 80px).
+// Geometria fixa: viewBox 220x130, centro (110,110), raio ext 95, int 50.
+// 5 fatias de 36°, varrendo 180°→0°.
+function renderDoxcoreVelocimetro(rating, size){
+  const sizes = { large: 200, medium: 140, compact: 80 };
+  const widthPx = sizes[size] || sizes.large;
+  const showScore = (size !== 'compact');
+  const scoreSizes = { large: 44, medium: 28, compact: 0 };
+  const scoreSize = scoreSizes[size] || 44;
+  // Paths das 5 fatias (pré-calculados — vermelho→laranja→amarelo→verde-claro→verde-forte)
+  const slices = [
+    {d:'M 15.0,110.0 A 95,95 0 0 1 33.14,54.16 L 69.55,80.61 A 50,50 0 0 0 60.0,110.0 Z', fill:'#E24B4A'},
+    {d:'M 33.14,54.16 A 95,95 0 0 1 80.64,19.65 L 94.55,62.45 A 50,50 0 0 0 69.55,80.61 Z', fill:'#EF9F27'},
+    {d:'M 80.64,19.65 A 95,95 0 0 1 139.36,19.65 L 125.45,62.45 A 50,50 0 0 0 94.55,62.45 Z', fill:'#FAC775'},
+    {d:'M 139.36,19.65 A 95,95 0 0 1 186.86,54.16 L 150.45,80.61 A 50,50 0 0 0 125.45,62.45 Z', fill:'#97C459'},
+    {d:'M 186.86,54.16 A 95,95 0 0 1 205.0,110.0 L 160.0,110.0 A 50,50 0 0 0 150.45,80.61 Z', fill:'#639922'}
+  ];
+  let pathsHtml = '';
+  slices.forEach(s => { pathsHtml += '<path d="' + s.d + '" fill="' + s.fill + '"/>'; });
+  // Agulha: ângulo proporcional ao rating (rating 1 → 162°, rating 5 → 18°, varrendo 180°→0°)
+  // Mapeamento: angle = 180 - (rating - 0.5) * 36, com rating clamp [1,5]
+  let needleHtml = '';
+  if (rating && rating > 0){
+    const r = Math.max(1, Math.min(5, rating));
+    const angle = 180 - (r - 0.5) * 36;
+    const rad = angle * Math.PI / 180;
+    const tipX = (110 + 80 * Math.cos(rad)).toFixed(2);
+    const tipY = (110 - 80 * Math.sin(rad)).toFixed(2);
+    needleHtml = '<line x1="110" y1="110" x2="' + tipX + '" y2="' + tipY + '" stroke="#042C53" stroke-width="3.5" stroke-linecap="round"/>'
+      + '<circle cx="110" cy="110" r="7" fill="#042C53"/>'
+      + '<circle cx="110" cy="110" r="3" fill="#fff"/>';
+  } else {
+    // Sem agulha: só o pivô central pra fechar visualmente
+    needleHtml = '<circle cx="110" cy="110" r="7" fill="#042C53"/>';
+  }
+  const svg = '<svg viewBox="0 0 220 130" width="' + widthPx + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Doxcore ' + (rating ? rating.toFixed(1) : 'sem nota') + '">'
+    + pathsHtml + needleHtml + '</svg>';
+  const scoreHtml = (showScore && rating > 0)
+    ? '<div class="doxcore-velocimetro-score" style="font-size:' + scoreSize + 'px">' + rating.toFixed(1) + '</div>'
+    : '';
+  return '<div class="doxcore-velocimetro doxcore-velocimetro-' + (size || 'large') + '">' + svg + scoreHtml + '</div>';
+}
+
 // Gera o SVG inline de uma carinha (n = 1..5, active = se está colorida ou cinza).
 // Reusada pelo display da nota no header e pelos botões de voto.
+// Gera o SVG inline de uma carinha BRANCA (n = 1..5).
+// O fundo colorido vem do .face-btn no CSS (D89 — quadrado colorido fixo).
+// Param 'active' mantido por compatibilidade mas não afeta o desenho (cor é sempre branca).
 function faceSvg(n, active) {
-  const fill = active ? FACE_COLORS[n] : '#e5e7eb';
   let mouth;
   if (n === 1)      mouth = '<path d="M 13 27 Q 20 20 27 27" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
   else if (n === 2) mouth = '<path d="M 13 26 Q 20 23 27 26" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
@@ -8776,9 +8844,9 @@ function faceSvg(n, active) {
   else if (n === 4) mouth = '<path d="M 13 24 Q 20 27 27 24" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
   else              mouth = '<path d="M 13 23 Q 20 29 27 23" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
   return '<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">'
-    + '<circle cx="20" cy="20" r="18" fill="' + fill + '"/>'
-    + '<circle cx="14" cy="16" r="2" fill="#fff"/>'
-    + '<circle cx="26" cy="16" r="2" fill="#fff"/>'
+    + '<circle cx="20" cy="20" r="17" fill="none" stroke="#fff" stroke-width="2"/>'
+    + '<circle cx="14" cy="16" r="1.6" fill="#fff"/>'
+    + '<circle cx="26" cy="16" r="1.6" fill="#fff"/>'
     + mouth
     + '</svg>';
 }
@@ -8869,7 +8937,6 @@ function renderVoteStars(fipeCode, currentVote) {
     facesHtml += '<button class="face-btn' + activeClass + '"'
       + ' data-n="' + i + '"'
       + ' data-active="' + (isActive ? '1' : '0') + '"'
-      + ' style="' + (isActive ? 'border-color:' + FACE_COLORS[i] : '') + '"'
       + ' onmouseenter="faceHoverEnter(this)"'
       + ' onmouseleave="faceHoverLeave(this)"'
       + ' onclick="castQuickVote(\'' + safeFipe + '\', ' + i + ', this)"'
@@ -8896,7 +8963,6 @@ async function castQuickVote(fipeCode, rating, btnEl) {
   const prevState = Array.from(allFaces).map(b => ({
     active: b.classList.contains('active'),
     dataActive: b.dataset.active || '0',
-    border: b.style.borderColor,
     svg: b.innerHTML
   }));
   const labelEl = block ? block.querySelector('.vote-stars-label') : null;
@@ -8910,7 +8976,6 @@ async function castQuickVote(fipeCode, rating, btnEl) {
     const isSelected = (n === rating);
     b.classList.toggle('active', isSelected);
     b.dataset.active = isSelected ? '1' : '0';
-    b.style.borderColor = isSelected ? FACE_COLORS[n] : '';
     b.innerHTML = faceSvg(n, isSelected);
     b.disabled = true;
   });
@@ -8925,7 +8990,6 @@ async function castQuickVote(fipeCode, rating, btnEl) {
     allFaces.forEach((b, i) => {
       b.classList.toggle('active', prevState[i].active);
       b.dataset.active = prevState[i].dataActive;
-      b.style.borderColor = prevState[i].border;
       b.innerHTML = prevState[i].svg;
       b.disabled = false;
     });
