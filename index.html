@@ -2463,6 +2463,9 @@ function clearCompanyForm() {
     b.style.background = 'var(--white)';
     b.style.borderColor = 'var(--border2)';
     b.style.color = 'var(--navy)';
+    b.disabled = false;
+    b.style.cursor = 'pointer';
+    b.style.opacity = '1';
   });
   // Reset segmento
   const segVal = document.getElementById('reg-company-segment');
