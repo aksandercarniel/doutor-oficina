@@ -50,7 +50,7 @@ svg.ico,svg.ico-sm,svg.ico-lg,svg.ico-xl,svg.ico-medal{color:var(--navy)}
 .pos-3 svg.ico-medal{color:#b45309}
 .pos-o svg.ico-medal{color:var(--muted2)}
 
-.btn-primary svg.ico,.btn-nav-reclamar svg.ico,.auth-btn svg.ico,.sb-btn svg.ico{color:#fff}
+.btn-primary svg.ico,.btn-nav-reclamar svg.ico,.auth-btn svg.ico{color:#fff}
 .vote-btn svg.ico{color:var(--muted)}
 .vote-btn.voted svg.ico{color:#fff}
 .stab.active svg.ico{color:#fff}
@@ -298,8 +298,6 @@ header{
 .voice-btn:hover{background:var(--red-light);border-color:var(--red)}
 .voice-btn.listening{background:var(--red-light);border-color:var(--red);animation:pulse-border 1s ease infinite}
 @keyframes pulse-border{0%,100%{border-color:var(--red)}50%{border-color:var(--red2);box-shadow:0 0 0 3px rgba(232,24,74,.15)}}
-.search-free input{border-radius:10px 0 0 10px!important}
-.sb-btn{border-radius:0 10px 10px 0!important}
 .smart-suggestions{
   position:absolute;left:0;right:0;top:calc(100% - 4px);z-index:300;
   background:var(--white);border:1.5px solid var(--border2);
@@ -357,29 +355,6 @@ header{
 .stab.active{background:var(--navy);color:#fff;border-color:var(--navy)}
 .search-panel{display:none}
 .search-panel.active{display:block}
-.search-free{display:flex;gap:0}
-.search-free input{
-  flex:1;height:46px;background:var(--bg);border:1.5px solid var(--border2);
-  border-right:none;border-radius:10px 0 0 10px;
-  font-family:var(--font-body);font-size:15px;color:var(--text);
-  padding:0 18px;outline:none;transition:border-color .2s,box-shadow .2s;
-}
-.search-free input::placeholder{color:var(--muted2)}
-.search-free input:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(13,31,60,.07);background:var(--white)}
-.sb-btn{
-  height:46px;padding:0 28px;background:var(--navy);color:#fff;
-  border:none;border-radius:0 10px 10px 0;font-family:var(--font);
-  font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap;
-  transition:background .2s;flex-shrink:0;
-}
-.sb-btn:hover{background:var(--navy2)}
-.search-suggestions{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
-.sug-tag{
-  background:var(--bg);border:1.5px solid var(--border2);color:var(--text2);
-  font-family:var(--font);font-weight:600;font-size:12px;
-  padding:5px 14px;border-radius:20px;cursor:pointer;transition:all .15s;
-}
-.sug-tag:hover{border-color:var(--navy);color:var(--navy);background:var(--white)}
 /* ── FIPE Searchbar — ícones de tipo + selects ────────────── */
 .sfipe-row{
   display:flex;gap:10px;align-items:center;flex-wrap:nowrap;
@@ -407,7 +382,6 @@ header{
 
 .sfipe-selects{display:flex;gap:10px;flex:1;min-width:0}
 .sfipe-group{display:flex;flex-direction:column;flex:1 1 0;min-width:0}
-.sfipe-label{font-family:var(--font);font-weight:700;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
 .sfipe-select{
   width:100%;height:40px;background:var(--bg);border:1.5px solid var(--border2);border-radius:10px;
   font-family:var(--font-body);font-size:14px;color:var(--text);
@@ -428,10 +402,6 @@ header{
   align-items:center;gap:28px;flex-wrap:wrap;
 }
 .sb-fipe-result.show{display:flex}
-.sbr-item{display:flex;flex-direction:column}
-.sbr-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;font-family:var(--font)}
-.sbr-value{font-family:var(--font);font-weight:800;font-size:17px;color:var(--navy)}
-.sbr-green{color:var(--green)!important}
 
 /* Mobile: linha 1 = título à esquerda + ícones à direita.
    Linha 2 = selects empilhados (só aparece quando .is-open).
