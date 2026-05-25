@@ -6559,7 +6559,7 @@ async function renderProfile() {
           <div style="font-size:12px;color:var(--muted);margin-top:2px">Montadora, oficina, revenda ou outro tipo</div>
         </div>
       </button>`;
-    if (role === 'client') {
+    if (role === 'client' || role === 'user' || !role) {
       actionsHtml = `
         <div style="display:flex;flex-direction:column;gap:10px;padding:4px 0">
           <div style="font-size:13px;color:var(--muted);margin-bottom:4px">Você está cadastrado como <strong>usuário comum</strong>. Quer expandir seu acesso?</div>
