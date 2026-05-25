@@ -1712,7 +1712,20 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
             <input type="hidden" id="reg-company-type" value=""/>
           </div>
 
-          <!-- PASSO 2 (só montadora): Marca FIPE -->
+          <!-- PASSO 2 (só montadora): Segmento (carro/moto/caminhão) -->
+          <div id="reg-segment-step" style="display:none">
+            <div class="auth-group">
+              <label class="auth-label">Sua montadora fabrica o quê? *</label>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:4px">
+                <button type="button" class="company-segment-btn" data-segment="carro" onclick="selectSegment('carro',this)" style="padding:10px 8px;border:2px solid var(--border2);border-radius:10px;background:var(--white);color:var(--navy);font-family:var(--font);font-weight:700;font-size:13px;cursor:pointer">🚗 Carros</button>
+                <button type="button" class="company-segment-btn" data-segment="moto" onclick="selectSegment('moto',this)" style="padding:10px 8px;border:2px solid var(--border2);border-radius:10px;background:var(--white);color:var(--navy);font-family:var(--font);font-weight:700;font-size:13px;cursor:pointer">🏍️ Motos</button>
+                <button type="button" class="company-segment-btn" data-segment="caminhao" onclick="selectSegment('caminhao',this)" style="padding:10px 8px;border:2px solid var(--border2);border-radius:10px;background:var(--white);color:var(--navy);font-family:var(--font);font-weight:700;font-size:13px;cursor:pointer">🚛 Caminhões</button>
+              </div>
+              <input type="hidden" id="reg-company-segment" value=""/>
+            </div>
+          </div>
+
+          <!-- PASSO 3 (só montadora): Marca FIPE -->
           <div id="reg-fipe-brand-step" style="display:none">
             <div class="auth-group">
               <label class="auth-label">Qual a marca da sua montadora? *</label>
@@ -2451,6 +2464,16 @@ function clearCompanyForm() {
     b.style.borderColor = 'var(--border2)';
     b.style.color = 'var(--navy)';
   });
+  // Reset segmento
+  const segVal = document.getElementById('reg-company-segment');
+  if (segVal) segVal.value = '';
+  document.querySelectorAll('.company-segment-btn').forEach(b => {
+    b.style.background = 'var(--white)';
+    b.style.borderColor = 'var(--border2)';
+    b.style.color = 'var(--navy)';
+  });
+  const segStep = document.getElementById('reg-segment-step');
+  if (segStep) segStep.style.display = 'none';
   const brandStep = document.getElementById('reg-fipe-brand-step');
   if (brandStep) brandStep.style.display = 'none';
   const rest = document.getElementById('reg-company-rest');
@@ -2498,6 +2521,7 @@ async function doRegisterCompanyOnly() {
   const brands_served      = document.getElementById('reg-company-brands')?.value.trim() || document.getElementById('reg-company-brands-rev')?.value.trim() || null;
   const type_other         = document.getElementById('reg-company-type-other')?.value.trim() || null;
   const fipe_brand_code    = document.getElementById('reg-fipe-brand-code')?.value || null;
+  const segment            = document.getElementById('reg-company-segment')?.value || null;
   const errEl = document.getElementById('register-error-company');
   errEl.classList.remove('show');
   // Validação 1: tipo é obrigatório (primeira coisa que a pessoa escolhe)
@@ -2507,6 +2531,10 @@ async function doRegisterCompanyOnly() {
   }
   if (!name || !cnpj || !phone || !address) {
     errEl.textContent = 'Preencha todos os campos obrigatórios.';
+    errEl.classList.add('show'); return;
+  }
+  if (type === 'montadora' && !segment) {
+    errEl.textContent = 'Selecione o segmento da montadora (carros, motos ou caminhões).';
     errEl.classList.add('show'); return;
   }
   if (type === 'montadora' && !fipe_brand_code) {
@@ -2524,7 +2552,7 @@ async function doRegisterCompanyOnly() {
     const hasDoc = !!document.getElementById('reg-company-doc')?.files?.[0];
     const isClaiming = !!sessionStorage.getItem('claiming_company');
     sessionStorage.removeItem('claiming_company');
-    const { error: insertErr } = await sb.from('companies_pending').insert([{ user_id: currentUser.id, name, cnpj, email, phone, address, status: isClaiming ? 'dispute' : 'pending', has_document: hasDoc, type, city, state, models_made, authorized_dealers, specialties, brands_served, type_other, fipe_brand_code }]);
+    const { error: insertErr } = await sb.from('companies_pending').insert([{ user_id: currentUser.id, name, cnpj, email, phone, address, status: isClaiming ? 'dispute' : 'pending', has_document: hasDoc, type, city, state, models_made, authorized_dealers, specialties, brands_served, type_other, fipe_brand_code, segment }]);
     if (insertErr) throw new Error(insertErr.message || JSON.stringify(insertErr));
     closeModal();
     alert('✅ Solicitação enviada!\nSua empresa será analisada e você receberá uma resposta em breve.');
@@ -2599,7 +2627,43 @@ function openRegisterLawyerFromProfile() {
 }
 
 // ── FIPE no cadastro de montadora ──────────────────────────────
-async function regInitFipeBrands() {
+// Mapa segmento → endpoint FIPE
+const _FIPE_SEGMENT_ENDPOINTS = {
+  'carro':    'cars',
+  'moto':     'motorcycles',
+  'caminhao': 'trucks'
+};
+
+function selectSegment(segment, btn) {
+  document.getElementById('reg-company-segment').value = segment;
+  document.querySelectorAll('.company-segment-btn').forEach(b => {
+    b.style.background = 'var(--white)';
+    b.style.borderColor = 'var(--border2)';
+    b.style.color = 'var(--navy)';
+  });
+  if (btn) {
+    btn.style.background = 'var(--navy)';
+    btn.style.borderColor = 'var(--navy)';
+    btn.style.color = '#fff';
+  }
+  // Reset estado da marca FIPE
+  _montadoraConflictState = { fipeBrand: null, matches: [], userChoice: null };
+  const conflict = document.getElementById('reg-montadora-conflict');
+  if (conflict) conflict.style.display = 'none';
+  const rest = document.getElementById('reg-company-rest');
+  if (rest) rest.style.display = 'none';
+  const sel = document.getElementById('reg-fipe-brand');
+  if (sel) sel.value = '';
+  const code = document.getElementById('reg-fipe-brand-code');
+  if (code) code.value = '';
+
+  // Mostra passo da marca FIPE e carrega marcas SÓ daquele segmento
+  const brandStep = document.getElementById('reg-fipe-brand-step');
+  if (brandStep) brandStep.style.display = 'block';
+  regInitFipeBrands(segment);
+}
+
+async function regInitFipeBrands(segment) {
   const sel = document.getElementById('reg-fipe-brand');
   if (!sel) return;
   // Limpa estado anterior
@@ -2607,22 +2671,13 @@ async function regInitFipeBrands() {
   document.getElementById('reg-company-models').value = '';
   const g = document.getElementById('reg-fipe-models-group');
   if (g) g.style.display = 'none';
+  // Se segmento não informado, default = carros (fluxo legado)
+  const endpoint = _FIPE_SEGMENT_ENDPOINTS[segment] || 'cars';
+  sel.innerHTML = '<option value="">⏳ Carregando marcas…</option>';
   try {
-    const r = await fetch('https://parallelum.com.br/fipe/api/v2/cars/brands');
+    const r = await fetch(`https://parallelum.com.br/fipe/api/v2/${endpoint}/brands`);
     const brands = await r.json();
-    // Também carrega motos e caminhões para cobrir todos os tipos
-    const [moto, truck] = await Promise.all([
-      fetch('https://parallelum.com.br/fipe/api/v2/motorcycles/brands').then(x=>x.json()),
-      fetch('https://parallelum.com.br/fipe/api/v2/trucks/brands').then(x=>x.json())
-    ]);
-    // Mescla e remove duplicatas por nome
-    const all = [...brands, ...moto, ...truck];
-    const seen = new Set();
-    const unique = all.filter(b => {
-      const k = b.name.toLowerCase();
-      if (seen.has(k)) return false;
-      seen.add(k); return true;
-    }).sort((a,b) => a.name.localeCompare(b.name));
+    const unique = [...brands].sort((a,b) => a.name.localeCompare(b.name));
 
     sel.innerHTML = '<option value="">Selecione a marca</option>' +
       unique.map(b => `<option value="${b.code}" data-name="${b.name}">${b.name}</option>`).join('');
@@ -2653,15 +2708,12 @@ async function regLoadFipeModels() {
   hidden.value = '';
 
   try {
-    // Tenta carros, motos e caminhões em paralelo para a marca
-    const tries = await Promise.allSettled([
-      fetch(`https://parallelum.com.br/fipe/api/v2/cars/brands/${code}/models`).then(x=>x.json()),
-      fetch(`https://parallelum.com.br/fipe/api/v2/motorcycles/brands/${code}/models`).then(x=>x.json()),
-      fetch(`https://parallelum.com.br/fipe/api/v2/trucks/brands/${code}/models`).then(x=>x.json())
-    ]);
-    const allModels = tries
-      .filter(t => t.status === 'fulfilled' && Array.isArray(t.value))
-      .flatMap(t => t.value);
+    // Usa o segmento escolhido (carro/moto/caminhão) pra buscar modelos da marca
+    const segment = document.getElementById('reg-company-segment')?.value || 'carro';
+    const endpoint = _FIPE_SEGMENT_ENDPOINTS[segment] || 'cars';
+    const res = await fetch(`https://parallelum.com.br/fipe/api/v2/${endpoint}/brands/${code}/models`);
+    const models = res.ok ? await res.json() : [];
+    const allModels = Array.isArray(models) ? models : [];
 
     if (!allModels.length) {
       status.innerHTML = '⚠️ Nenhum modelo encontrado para esta marca.';
@@ -2791,18 +2843,26 @@ function selectCompanyType(type, btn) {
   });
 
   // NOVO: fluxo de visibilidade por tipo
+  const segStep   = document.getElementById('reg-segment-step');
   const brandStep = document.getElementById('reg-fipe-brand-step');
   const rest      = document.getElementById('reg-company-rest');
   const conflict  = document.getElementById('reg-montadora-conflict');
 
   if (type === 'montadora') {
-    // Passo 2: escolher marca FIPE. O resto SÓ libera depois (sem conflito ou "nenhuma dessas")
-    if (brandStep) brandStep.style.display = 'block';
+    // Passo 2: escolher segmento. Marca e resto SÓ liberam depois.
+    if (segStep)   segStep.style.display = 'block';
+    if (brandStep) brandStep.style.display = 'none';
     if (rest)      rest.style.display = 'none';
     if (conflict)  conflict.style.display = 'none';
     // Reset estado da trava
     _montadoraConflictState = { fipeBrand: null, matches: [], userChoice: null };
-    // Reset dropdown FIPE pra forçar nova checagem
+    // Reset segmento e marca FIPE pra forçar nova escolha
+    document.getElementById('reg-company-segment').value = '';
+    document.querySelectorAll('.company-segment-btn').forEach(b => {
+      b.style.background = 'var(--white)';
+      b.style.borderColor = 'var(--border2)';
+      b.style.color = 'var(--navy)';
+    });
     const sel = document.getElementById('reg-fipe-brand');
     if (sel) sel.value = '';
     const code = document.getElementById('reg-fipe-brand-code');
@@ -2810,7 +2870,8 @@ function selectCompanyType(type, btn) {
     const modelsGroup = document.getElementById('reg-fipe-models-group');
     if (modelsGroup) modelsGroup.style.display = 'none';
   } else {
-    // Tipo não-montadora: libera o resto direto, esconde FIPE
+    // Tipo não-montadora: libera o resto direto, esconde segmento e FIPE
+    if (segStep)   segStep.style.display = 'none';
     if (brandStep) brandStep.style.display = 'none';
     if (rest)      rest.style.display = 'block';
     if (conflict)  conflict.style.display = 'none';
@@ -6078,10 +6139,22 @@ async function openCompanyProfile(companyName) {
 
 async function claimCompany(companyName) {
   if (!currentUser) { openAuth('login'); return; }
-  if (!confirm(`Deseja reivindicar a titularidade de "${companyName}"?\n\nVocê será direcionado ao formulário de cadastro de empresa.`)) return;
+  if (!confirm(`Deseja reivindicar a titularidade de "${companyName}"?\n\nVocê será direcionado ao formulário com os dados atuais. Pode editar se algum estiver desatualizado.`)) return;
 
-  // Mesmo padrão de openRegisterCompanyFromProfile: usuário JÁ está logado,
-  // então abre direto o form de empresa.
+  // Busca os dados completos da empresa no banco antes de abrir o modal
+  let company = null;
+  try {
+    const { data } = await sb
+      .from('companies')
+      .select('*')
+      .ilike('name', companyName)
+      .limit(1);
+    if (data && data.length) company = data[0];
+  } catch (e) {
+    console.warn('Erro ao buscar dados da empresa pra reivindicação:', e);
+  }
+
+  // Mesmo padrão de openRegisterCompanyFromProfile: usuário JÁ está logado.
   clearCompanyForm();
   document.getElementById('register-type-select').style.display = 'none';
   document.getElementById('register-form-user').style.display = 'none';
@@ -6091,23 +6164,62 @@ async function claimCompany(companyName) {
   document.getElementById('auth-modal').classList.add('open');
   document.body.style.overflow = 'hidden';
 
-  // Reivindicação: já sabemos qual empresa. Libera todos os passos do form direto.
-  // (Não passa pela escolha de tipo nem pela trava de duplicação.)
+  // Marca claim no sessionStorage (lido por doRegisterCompanyOnly pra status='dispute')
   sessionStorage.setItem('claiming_company', companyName);
-  // Marca tipo como "outro" por default (admin decide o tipo real depois)
-  document.getElementById('reg-company-type').value = 'outro';
-  // Libera os 3 wrappers de visibilidade
+
+  // Determina o tipo: usa o que vem do banco, ou 'outro' como fallback
+  const tipo = company?.type || 'outro';
+
+  // Marca o tipo visualmente e dispara o selectCompanyType pra ajustar visibilidade dos campos específicos
+  const typeBtnMap = { 'montadora': 0, 'oficina': 1, 'revenda': 2, 'outro': 3 };
+  const btnIndex = typeBtnMap[tipo];
+  const btns = document.querySelectorAll('.company-type-btn');
+  if (btns && btns[btnIndex]) {
+    selectCompanyType(tipo, btns[btnIndex]);
+  }
+
+  // TRAVAR o tipo: na reivindicação, o tipo vem do banco e não pode ser mudado
+  btns.forEach(b => { b.disabled = true; b.style.cursor = 'not-allowed'; b.style.opacity = '0.7'; });
+
+  // Como é montadora, selectCompanyType esconde o resto e mostra Segmento.
+  // Mas na reivindicação não queremos passar por nenhum desses passos — forçamos visibilidade aqui.
+  const segStep = document.getElementById('reg-segment-step');
+  if (segStep) segStep.style.display = 'none';
   const brandStep = document.getElementById('reg-fipe-brand-step');
   if (brandStep) brandStep.style.display = 'none';
   const rest = document.getElementById('reg-company-rest');
   if (rest) rest.style.display = 'block';
   const restAfter = document.getElementById('reg-company-rest-after-cnpj');
   if (restAfter) restAfter.style.display = 'block';
-  // Pré-preenche nome (será o nome a reivindicar) e e-mail do usuário
-  document.getElementById('reg-company-name').value = companyName;
+
+  // Pré-preenche TODOS os campos com dados do banco (se encontrou)
+  const setVal = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
+  setVal('reg-company-name', companyName);
   document.getElementById('reg-company-name').readOnly = true;
-  const emailEl = document.getElementById('reg-company-email');
-  if (emailEl && currentUser?.email) emailEl.value = currentUser.email;
+  if (company) {
+    setVal('reg-company-cnpj', company.cnpj);
+    setVal('reg-company-phone', company.phone);
+    setVal('reg-company-email', company.email || currentUser?.email);
+    setVal('reg-company-address', company.address);
+    setVal('reg-company-city', company.city);
+    setVal('reg-company-state', company.state);
+    // Campos específicos por tipo
+    setVal('reg-company-dealers', company.authorized_dealers);
+    setVal('reg-company-models', company.models_made);
+    setVal('reg-company-specialties', company.specialties);
+    setVal('reg-company-brands', company.brands_served);
+    setVal('reg-company-brands-rev', company.brands_served);
+    setVal('reg-company-type-other', company.type_other);
+    setVal('reg-company-segment', company.segment);
+    // Se for montadora, preserva o código FIPE pro INSERT (sem mostrar o passo FIPE)
+    if (company.fipe_brand_code) {
+      const codeEl = document.getElementById('reg-fipe-brand-code');
+      if (codeEl) codeEl.value = company.fipe_brand_code;
+    }
+  } else {
+    // Não achou no banco: pelo menos preserva o e-mail do usuário
+    setVal('reg-company-email', currentUser?.email);
+  }
 }
 
 // ══════════════════════════════════════════
