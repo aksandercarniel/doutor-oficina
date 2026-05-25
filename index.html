@@ -1699,78 +1699,91 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
             <div style="font-size:13px;color:var(--muted);margin-top:4px">Conta criada! Agora cadastre sua empresa.</div>
           </div>
           <div class="auth-error" id="register-error-company"></div>
-          <div class="auth-group"><label class="auth-label">Nome da empresa *</label><input type="text" class="auth-input" id="reg-company-name" placeholder="Razão social ou nome fantasia" autocomplete="off"/></div>
+
+          <!-- PASSO 1: Tipo de empresa (sempre visível) -->
           <div class="auth-group">
-            <label class="auth-label">Tipo de empresa *</label>
+            <label class="auth-label">Que tipo de empresa você é? *</label>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
-              <button type="button" class="company-type-btn active" onclick="selectCompanyType('montadora',this)" style="padding:10px 8px;border:2px solid var(--navy);border-radius:10px;background:var(--navy);color:#fff;font-family:var(--font);font-weight:700;font-size:13px;cursor:pointer">🏭 Montadora</button>
+              <button type="button" class="company-type-btn" onclick="selectCompanyType('montadora',this)" style="padding:10px 8px;border:2px solid var(--border2);border-radius:10px;background:var(--white);color:var(--navy);font-family:var(--font);font-weight:700;font-size:13px;cursor:pointer">🏭 Montadora</button>
               <button type="button" class="company-type-btn" onclick="selectCompanyType('oficina',this)" style="padding:10px 8px;border:2px solid var(--border2);border-radius:10px;background:var(--white);color:var(--navy);font-family:var(--font);font-weight:700;font-size:13px;cursor:pointer">🔧 Oficina</button>
               <button type="button" class="company-type-btn" onclick="selectCompanyType('revenda',this)" style="padding:10px 8px;border:2px solid var(--border2);border-radius:10px;background:var(--white);color:var(--navy);font-family:var(--font);font-weight:700;font-size:13px;cursor:pointer">🚗 Revenda</button>
               <button type="button" class="company-type-btn" onclick="selectCompanyType('outro',this)" style="padding:10px 8px;border:2px solid var(--border2);border-radius:10px;background:var(--white);color:var(--navy);font-family:var(--font);font-weight:700;font-size:13px;cursor:pointer">📋 Outro</button>
             </div>
-            <input type="hidden" id="reg-company-type" value="montadora"/>
+            <input type="hidden" id="reg-company-type" value=""/>
           </div>
-          <!-- Campos dinâmicos por tipo -->
-          <div id="reg-fields-montadora">
+
+          <!-- PASSO 2 (só montadora): Marca FIPE -->
+          <div id="reg-fipe-brand-step" style="display:none">
             <div class="auth-group">
-              <label class="auth-label">Marca FIPE *</label>
+              <label class="auth-label">Qual a marca da sua montadora? *</label>
               <select class="auth-input" id="reg-fipe-brand" onchange="regLoadFipeModels()" style="cursor:pointer">
                 <option value="">Carregando marcas…</option>
               </select>
               <input type="hidden" id="reg-fipe-brand-code" value=""/>
             </div>
-            <div class="auth-group" id="reg-fipe-models-group" style="display:none">
-              <label class="auth-label">Modelos fabricados <span style="font-weight:400;color:var(--muted);font-size:11px">(carregados automaticamente da FIPE)</span></label>
-              <div id="reg-fipe-models-status" style="font-size:13px;color:var(--muted);padding:8px 0">⏳ Aguardando seleção da marca…</div>
-              <input type="hidden" id="reg-company-models" value=""/>
-            </div>
-            <div class="auth-group"><label class="auth-label">Concessionárias autorizadas</label><input type="text" class="auth-input" id="reg-company-dealers" placeholder="Ex: Honda SP, Honda RJ" autocomplete="off"/></div>
-            <!-- NOVO: aviso de conflito quando a marca FIPE já tem montadora pré-cadastrada -->
-            <div id="reg-montadora-conflict" style="display:none;margin-top:14px;padding:14px;border:2px solid var(--orange);border-radius:12px;background:#fff8f0">
+
+            <!-- Aviso de conflito: marca FIPE já tem montadora pré-cadastrada -->
+            <div id="reg-montadora-conflict" style="display:none;margin-top:6px;padding:14px;border:2px solid var(--orange);border-radius:12px;background:#fff8f0">
               <div style="font-family:var(--font);font-weight:800;font-size:14px;color:var(--navy);margin-bottom:6px">⚠️ Esta marca já está pré-cadastrada</div>
               <div id="reg-montadora-conflict-msg" style="font-size:13px;color:var(--text2);margin-bottom:10px;line-height:1.5"></div>
               <div id="reg-montadora-conflict-options" style="display:flex;flex-direction:column;gap:8px"></div>
             </div>
           </div>
-          <div id="reg-fields-oficina" style="display:none">
-            <div class="auth-group"><label class="auth-label">Especialidades</label><input type="text" class="auth-input" id="reg-company-specialties" placeholder="Ex: Mecânica, Funilaria, Elétrica" autocomplete="off"/></div>
-            <div class="auth-group"><label class="auth-label">Marcas atendidas</label><input type="text" class="auth-input" id="reg-company-brands" placeholder="Ex: Toyota, Honda, VW" autocomplete="off"/></div>
-          </div>
-          <div id="reg-fields-revenda" style="display:none">
-            <div class="auth-group"><label class="auth-label">Marcas comercializadas</label><input type="text" class="auth-input" id="reg-company-brands-rev" placeholder="Ex: Toyota, Honda, VW" autocomplete="off"/></div>
-          </div>
-          <div id="reg-fields-outro" style="display:none">
-            <div class="auth-group"><label class="auth-label">Descreva o tipo de empresa</label><input type="text" class="auth-input" id="reg-company-type-other" placeholder="Ex: Seguradora, Locadora, Despachante" autocomplete="off"/></div>
-          </div>
-          <div class="auth-group">
-            <label class="auth-label">CNPJ *</label>
-            <div style="display:flex;gap:8px">
-              <input type="text" class="auth-input" id="reg-company-cnpj" placeholder="00.000.000/0001-00" maxlength="18" oninput="maskCNPJ(this)" style="flex:1" autocomplete="off"/>
-              <button type="button" onclick="lookupCNPJ()" style="background:var(--navy);color:#fff;border:none;border-radius:10px;padding:0 14px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;white-space:nowrap">Consultar</button>
+
+          <!-- PASSO 3: Resto do formulário (só liberado após escolha de tipo + resolução de conflito) -->
+          <div id="reg-company-rest" style="display:none">
+
+            <div class="auth-group"><label class="auth-label">Nome da empresa *</label><input type="text" class="auth-input" id="reg-company-name" placeholder="Razão social ou nome fantasia" autocomplete="off"/></div>
+
+            <!-- Campos dinâmicos por tipo -->
+            <div id="reg-fields-montadora" style="display:none">
+              <div class="auth-group" id="reg-fipe-models-group" style="display:none">
+                <label class="auth-label">Modelos fabricados <span style="font-weight:400;color:var(--muted);font-size:11px">(carregados automaticamente da FIPE)</span></label>
+                <div id="reg-fipe-models-status" style="font-size:13px;color:var(--muted);padding:8px 0">⏳ Aguardando seleção da marca…</div>
+                <input type="hidden" id="reg-company-models" value=""/>
+              </div>
+              <div class="auth-group"><label class="auth-label">Concessionárias autorizadas</label><input type="text" class="auth-input" id="reg-company-dealers" placeholder="Ex: Honda SP, Honda RJ" autocomplete="off"/></div>
             </div>
-            <div id="cnpj-status" style="font-size:12px;margin-top:6px;display:none"></div>
-          </div>
-          <div class="auth-group"><label class="auth-label">E-mail corporativo</label><input type="email" class="auth-input" id="reg-company-email" placeholder="contato@empresa.com" autocomplete="off"/></div>
-          <div class="auth-group"><label class="auth-label">Telefone *</label><input type="text" class="auth-input" id="reg-company-phone" placeholder="(11) 99999-9999" maxlength="15" oninput="maskPhone(this)" autocomplete="off"/></div>
-          <div class="auth-group"><label class="auth-label">Cidade</label><input type="text" class="auth-input" id="reg-company-city" placeholder="Ex: São Paulo" autocomplete="off"/></div>
-          <div class="auth-group"><label class="auth-label">Estado</label>
-            <select class="auth-input" id="reg-company-state" style="cursor:pointer">
-              <option value="">Selecione o estado</option>
-              <option>AC</option><option>AL</option><option>AM</option><option>AP</option><option>BA</option><option>CE</option><option>DF</option><option>ES</option><option>GO</option><option>MA</option><option>MG</option><option>MS</option><option>MT</option><option>PA</option><option>PB</option><option>PE</option><option>PI</option><option>PR</option><option>RJ</option><option>RN</option><option>RO</option><option>RR</option><option>RS</option><option>SC</option><option>SE</option><option>SP</option><option>TO</option>
-            </select>
-          </div>
-          <div class="auth-group"><label class="auth-label">Endereço *</label><input type="text" class="auth-input" id="reg-company-address" placeholder="Rua, número, cidade - estado" autocomplete="off"/></div>
-          <div class="auth-group">
-            <label class="auth-label">Documento do representante legal <span style="color:var(--muted);font-weight:400">(opcional)</span></label>
-            <div style="border:2px dashed var(--border2);border-radius:10px;padding:16px;text-align:center;cursor:pointer;background:var(--bg)" onclick="document.getElementById('reg-company-doc').click()">
-              <div id="reg-company-doc-label" style="font-size:13px;color:var(--muted)">📄 Clique para anexar CNH, RG ou Contrato Social (PDF ou imagem)</div>
-              <input type="file" id="reg-company-doc" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="previewCompanyDoc(this)"/>
+            <div id="reg-fields-oficina" style="display:none">
+              <div class="auth-group"><label class="auth-label">Especialidades</label><input type="text" class="auth-input" id="reg-company-specialties" placeholder="Ex: Mecânica, Funilaria, Elétrica" autocomplete="off"/></div>
+              <div class="auth-group"><label class="auth-label">Marcas atendidas</label><input type="text" class="auth-input" id="reg-company-brands" placeholder="Ex: Toyota, Honda, VW" autocomplete="off"/></div>
             </div>
-            <div style="font-size:11px;color:var(--muted2);margin-top:4px">Será analisado manualmente. Pode enviar depois da aprovação inicial.</div>
-          </div>
-          <div style="display:flex;gap:10px;margin-top:4px">
-            <button class="auth-btn" style="flex:1;background:var(--bg);color:var(--navy);border:1.5px solid var(--border2)" onclick="skipCompanyRegister()">Pular por agora</button>
-            <button class="auth-btn" style="flex:1" onclick="doRegisterCompanyOnly()">Cadastrar empresa →</button>
+            <div id="reg-fields-revenda" style="display:none">
+              <div class="auth-group"><label class="auth-label">Marcas comercializadas</label><input type="text" class="auth-input" id="reg-company-brands-rev" placeholder="Ex: Toyota, Honda, VW" autocomplete="off"/></div>
+            </div>
+            <div id="reg-fields-outro" style="display:none">
+              <div class="auth-group"><label class="auth-label">Descreva o tipo de empresa</label><input type="text" class="auth-input" id="reg-company-type-other" placeholder="Ex: Seguradora, Locadora, Despachante" autocomplete="off"/></div>
+            </div>
+            <div class="auth-group">
+              <label class="auth-label">CNPJ *</label>
+              <div style="display:flex;gap:8px">
+                <input type="text" class="auth-input" id="reg-company-cnpj" placeholder="00.000.000/0001-00" maxlength="18" oninput="maskCNPJ(this)" style="flex:1" autocomplete="off"/>
+                <button type="button" onclick="lookupCNPJ()" style="background:var(--navy);color:#fff;border:none;border-radius:10px;padding:0 14px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;white-space:nowrap">Consultar</button>
+              </div>
+              <div id="cnpj-status" style="font-size:12px;margin-top:6px;display:none"></div>
+            </div>
+            <div class="auth-group"><label class="auth-label">E-mail corporativo</label><input type="email" class="auth-input" id="reg-company-email" placeholder="contato@empresa.com" autocomplete="off"/></div>
+            <div class="auth-group"><label class="auth-label">Telefone *</label><input type="text" class="auth-input" id="reg-company-phone" placeholder="(11) 99999-9999" maxlength="15" oninput="maskPhone(this)" autocomplete="off"/></div>
+            <div class="auth-group"><label class="auth-label">Cidade</label><input type="text" class="auth-input" id="reg-company-city" placeholder="Ex: São Paulo" autocomplete="off"/></div>
+            <div class="auth-group"><label class="auth-label">Estado</label>
+              <select class="auth-input" id="reg-company-state" style="cursor:pointer">
+                <option value="">Selecione o estado</option>
+                <option>AC</option><option>AL</option><option>AM</option><option>AP</option><option>BA</option><option>CE</option><option>DF</option><option>ES</option><option>GO</option><option>MA</option><option>MG</option><option>MS</option><option>MT</option><option>PA</option><option>PB</option><option>PE</option><option>PI</option><option>PR</option><option>RJ</option><option>RN</option><option>RO</option><option>RR</option><option>RS</option><option>SC</option><option>SE</option><option>SP</option><option>TO</option>
+              </select>
+            </div>
+            <div class="auth-group"><label class="auth-label">Endereço *</label><input type="text" class="auth-input" id="reg-company-address" placeholder="Rua, número, cidade - estado" autocomplete="off"/></div>
+            <div class="auth-group">
+              <label class="auth-label">Documento do representante legal <span style="color:var(--muted);font-weight:400">(opcional)</span></label>
+              <div style="border:2px dashed var(--border2);border-radius:10px;padding:16px;text-align:center;cursor:pointer;background:var(--bg)" onclick="document.getElementById('reg-company-doc').click()">
+                <div id="reg-company-doc-label" style="font-size:13px;color:var(--muted)">📄 Clique para anexar CNH, RG ou Contrato Social (PDF ou imagem)</div>
+                <input type="file" id="reg-company-doc" accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="previewCompanyDoc(this)"/>
+              </div>
+              <div style="font-size:11px;color:var(--muted2);margin-top:4px">Será analisado manualmente. Pode enviar depois da aprovação inicial.</div>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:4px">
+              <button class="auth-btn" style="flex:1;background:var(--bg);color:var(--navy);border:1.5px solid var(--border2)" onclick="skipCompanyRegister()">Pular por agora</button>
+              <button class="auth-btn" style="flex:1" onclick="doRegisterCompanyOnly()">Cadastrar empresa →</button>
+            </div>
           </div>
         </div>
 
@@ -2424,8 +2437,20 @@ function clearCompanyForm() {
   if(fipeBrandCode) fipeBrandCode.value = '';
   const fipeModelsGroup = document.getElementById('reg-fipe-models-group');
   if(fipeModelsGroup) fipeModelsGroup.style.display = 'none';
-  // Reset tipo para montadora
-  selectCompanyType('montadora', document.querySelector('.company-type-btn'));
+  // Reset NOVO: tipo sem seleção, containers escondidos, trava resetada
+  document.getElementById('reg-company-type').value = '';
+  document.querySelectorAll('.company-type-btn').forEach(b => {
+    b.style.background = 'var(--white)';
+    b.style.borderColor = 'var(--border2)';
+    b.style.color = 'var(--navy)';
+  });
+  const brandStep = document.getElementById('reg-fipe-brand-step');
+  if (brandStep) brandStep.style.display = 'none';
+  const rest = document.getElementById('reg-company-rest');
+  if (rest) rest.style.display = 'none';
+  const conflict = document.getElementById('reg-montadora-conflict');
+  if (conflict) conflict.style.display = 'none';
+  _montadoraConflictState = { fipeBrand: null, matches: [], userChoice: null };
 }
 
 function showPostRegisterForm() {
@@ -2455,7 +2480,7 @@ async function doRegisterCompanyOnly() {
   const email   = document.getElementById('reg-company-email').value.trim() || currentUser.email;
   const phone   = document.getElementById('reg-company-phone').value.trim();
   const address = document.getElementById('reg-company-address').value.trim();
-  const type    = document.getElementById('reg-company-type').value || 'outro';
+  const type    = document.getElementById('reg-company-type').value || '';
   const city    = document.getElementById('reg-company-city')?.value.trim() || null;
   const state   = document.getElementById('reg-company-state')?.value || null;
   const models_made        = document.getElementById('reg-company-models')?.value.trim() || null;
@@ -2466,6 +2491,11 @@ async function doRegisterCompanyOnly() {
   const fipe_brand_code    = document.getElementById('reg-fipe-brand-code')?.value || null;
   const errEl = document.getElementById('register-error-company');
   errEl.classList.remove('show');
+  // Validação 1: tipo é obrigatório (primeira coisa que a pessoa escolhe)
+  if (!type) {
+    errEl.textContent = 'Selecione o tipo de empresa.';
+    errEl.classList.add('show'); return;
+  }
   if (!name || !cnpj || !phone || !address) {
     errEl.textContent = 'Preencha todos os campos obrigatórios.';
     errEl.classList.add('show'); return;
@@ -2474,8 +2504,7 @@ async function doRegisterCompanyOnly() {
     errEl.textContent = 'Selecione a marca FIPE da montadora.';
     errEl.classList.add('show'); return;
   }
-  // NOVO: cinto de segurança da trava anti-duplicação
-  // Se houve detecção de conflito e a pessoa NÃO marcou "nenhuma dessas", bloqueia
+  // Cinto de segurança da trava anti-duplicação
   if (type === 'montadora'
       && _montadoraConflictState.matches.length > 0
       && _montadoraConflictState.userChoice !== 'none-of-these') {
@@ -2600,7 +2629,8 @@ async function regLoadFipeModels() {
   const name = sel.options[sel.selectedIndex]?.dataset?.name || '';
   document.getElementById('reg-fipe-brand-code').value = code;
 
-  // NOVO: checagem de conflito em paralelo, sem bloquear a lógica FIPE
+  // NOVO: checagem de conflito em paralelo. Se houver match, esconde "rest" e mostra opções.
+  // Se não houver, libera "rest".
   checkMontadoraConflict(name);
 
   const group = document.getElementById('reg-fipe-models-group');
@@ -2643,21 +2673,23 @@ async function regLoadFipeModels() {
 }
 // ── NOVO: Trava anti-duplicação de montadora pré-cadastrada ────
 // Quando a pessoa seleciona uma marca FIPE, checa se já existe montadora
-// pré-cadastrada com nome similar. Se houver, mostra opções de reivindicação.
-// Estado guardado pra cinto de segurança em doRegisterCompanyOnly.
+// pré-cadastrada com nome similar. Se houver, mostra opções de reivindicação
+// e ESCONDE o resto do form (até resolução). Se não, libera o resto.
 let _montadoraConflictState = { fipeBrand: null, matches: [], userChoice: null };
 
 async function checkMontadoraConflict(fipeBrandName) {
   const box     = document.getElementById('reg-montadora-conflict');
   const msg     = document.getElementById('reg-montadora-conflict-msg');
   const optsEl  = document.getElementById('reg-montadora-conflict-options');
-  if (!box || !msg || !optsEl) return;
+  const rest    = document.getElementById('reg-company-rest');
+  if (!box || !msg || !optsEl || !rest) return;
 
   // Reset
   _montadoraConflictState = { fipeBrand: null, matches: [], userChoice: null };
   box.style.display = 'none';
   msg.innerHTML = '';
   optsEl.innerHTML = '';
+  rest.style.display = 'none';
 
   const brand = (fipeBrandName || '').trim();
   if (!brand) return;
@@ -2665,7 +2697,6 @@ async function checkMontadoraConflict(fipeBrandName) {
   try {
     // Heurística: pega só a primeira palavra da marca FIPE pra busca ampla
     // Ex: "GM - Chevrolet" → "GM"; "VW - VolksWagen" → "VW"; "Honda" → "Honda"
-    // Depois filtra no cliente por inclusão case-insensitive
     const firstWord = brand.split(/[\s\-/]/)[0].toLowerCase();
     if (firstWord.length < 2) return; // proteção contra match vazio
     const { data, error } = await sb
@@ -2673,9 +2704,15 @@ async function checkMontadoraConflict(fipeBrandName) {
       .select('id, name, cnpj, city, state, fipe_brand_code')
       .eq('type', 'montadora')
       .ilike('name', `%${firstWord}%`);
-    if (error) { console.warn('checkMontadoraConflict:', error.message); return; }
-    if (!data || !data.length) return;
+    if (error) { console.warn('checkMontadoraConflict:', error.message); rest.style.display = 'block'; return; }
 
+    if (!data || !data.length) {
+      // Sem conflito: libera resto do form
+      rest.style.display = 'block';
+      return;
+    }
+
+    // Há conflito: mostra opções, mantém resto escondido
     _montadoraConflictState.fipeBrand = brand;
     _montadoraConflictState.matches = data;
 
@@ -2693,7 +2730,7 @@ async function checkMontadoraConflict(fipeBrandName) {
         <div style="font-size:11px;color:var(--muted);margin-top:2px">CNPJ ${c.cnpj || '—'}${c.city ? ` · ${c.city}/${c.state || ''}` : ''}</div>
       </button>
     `).join('') + `
-      <button type="button" onclick="_montadoraConflictState.userChoice='none-of-these'; document.getElementById('reg-montadora-conflict').style.borderColor='var(--border2)'; this.parentElement.querySelectorAll('button').forEach(b=>b.style.opacity='0.5'); this.style.opacity='1'; this.style.background='var(--bg2)';"
+      <button type="button" onclick="markNoneOfThese(this)"
         style="text-align:left;background:none;border:1.5px dashed var(--border2);color:var(--muted);border-radius:10px;padding:10px 14px;cursor:pointer;font-family:var(--font);font-size:12px;margin-top:2px">
         Nenhuma dessas — sou uma empresa diferente (ex: concessionária local)
       </button>
@@ -2701,7 +2738,20 @@ async function checkMontadoraConflict(fipeBrandName) {
     box.style.display = 'block';
   } catch (e) {
     console.warn('checkMontadoraConflict catch:', e);
+    rest.style.display = 'block'; // fail-open: se a checagem falhar, libera o form
   }
+}
+
+function markNoneOfThese(btn) {
+  _montadoraConflictState.userChoice = 'none-of-these';
+  // Visual: opaca todas as opções, destaca a "nenhuma dessas"
+  btn.parentElement.querySelectorAll('button').forEach(b => b.style.opacity = '0.5');
+  btn.style.opacity = '1';
+  btn.style.background = 'var(--bg2)';
+  btn.style.borderStyle = 'solid';
+  // Libera o resto do form
+  const rest = document.getElementById('reg-company-rest');
+  if (rest) rest.style.display = 'block';
 }
 
 function goToClaimFromRegister(companyName) {
@@ -2721,13 +2771,41 @@ function selectCompanyType(type, btn) {
     b.style.borderColor = 'var(--border2)';
     b.style.color = 'var(--navy)';
   });
-  btn.style.background = 'var(--navy)';
-  btn.style.borderColor = 'var(--navy)';
-  btn.style.color = '#fff';
+  if (btn) {
+    btn.style.background = 'var(--navy)';
+    btn.style.borderColor = 'var(--navy)';
+    btn.style.color = '#fff';
+  }
   ['montadora','oficina','revenda','outro'].forEach(t => {
     const el = document.getElementById(`reg-fields-${t}`);
     if (el) el.style.display = t === type ? 'block' : 'none';
   });
+
+  // NOVO: fluxo de visibilidade por tipo
+  const brandStep = document.getElementById('reg-fipe-brand-step');
+  const rest      = document.getElementById('reg-company-rest');
+  const conflict  = document.getElementById('reg-montadora-conflict');
+
+  if (type === 'montadora') {
+    // Passo 2: escolher marca FIPE. O resto SÓ libera depois (sem conflito ou "nenhuma dessas")
+    if (brandStep) brandStep.style.display = 'block';
+    if (rest)      rest.style.display = 'none';
+    if (conflict)  conflict.style.display = 'none';
+    // Reset estado da trava
+    _montadoraConflictState = { fipeBrand: null, matches: [], userChoice: null };
+    // Reset dropdown FIPE pra forçar nova checagem
+    const sel = document.getElementById('reg-fipe-brand');
+    if (sel) sel.value = '';
+    const code = document.getElementById('reg-fipe-brand-code');
+    if (code) code.value = '';
+    const modelsGroup = document.getElementById('reg-fipe-models-group');
+    if (modelsGroup) modelsGroup.style.display = 'none';
+  } else {
+    // Tipo não-montadora: libera o resto direto, esconde FIPE
+    if (brandStep) brandStep.style.display = 'none';
+    if (rest)      rest.style.display = 'block';
+    if (conflict)  conflict.style.display = 'none';
+  }
 }
 
 
