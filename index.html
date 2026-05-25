@@ -6104,8 +6104,8 @@ function openNPSModal(complaintId, companyName) {
       <div class="modal-body">
         <div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy);margin-bottom:6px;text-align:center">Como foi a experiência com ${companyName||'a empresa'}?</div>
         <div style="font-size:13px;color:var(--muted);text-align:center;margin-bottom:20px">De 0 a 10, qual a chance de você voltar a fazer negócio com essa empresa?</div>
-        <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:14px">
-          ${[0,1,2,3,4,5,6,7,8,9,10].map(n=>`<button class="nps-btn" onclick="selectNPS(${n},this,'${complaintId}')">${n}</button>`).join('')}
+        <div style="display:flex;gap:6px;justify-content:center;flex-wrap:nowrap;margin-bottom:14px">
+          ${[0,1,2,3,4,5,6,7,8,9,10].map(n=>`<button class="nps-btn" style="flex:1;min-width:0;max-width:44px" onclick="selectNPS(${n},this,'${complaintId}')">${n}</button>`).join('')}
         </div>
         <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:16px;padding:0 4px">
           <span>Definitivamente não</span><span>Definitivamente sim</span>
