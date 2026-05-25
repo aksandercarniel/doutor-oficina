@@ -6241,6 +6241,12 @@ async function openCompanyProfile(companyName) {
     const tipo = company?.type || 'outro';
     const isOwned = !!company?.owner_id;
     const isOwner = currentUser && company?.owner_id === currentUser.id;
+    const isClaimed = !!company?.is_claimed;
+    // Selo de verificada — só aparece quando is_claimed=true (admin já aprovou a posse).
+    // Estilo consistente com o do chip no perfil do veículo (azul ✓).
+    const verifiedBadge = isClaimed
+      ? '<span title="Conta verificada — administrada pela empresa" style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;background:#2563eb;color:#fff;border-radius:50%;font-size:13px;font-weight:700;vertical-align:middle;margin-left:8px;line-height:1">✓</span>'
+      : '';
 
     let extraFields = '';
     if (company) {
@@ -6265,7 +6271,7 @@ async function openCompanyProfile(companyName) {
         <!-- Coluna esquerda: identidade -->
         <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:28px">
           <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">${typeLabel[tipo]||'📋 Outro'}</div>
-          <h2 style="font-family:var(--font);font-weight:900;font-size:28px;color:var(--navy);margin:0 0 10px;line-height:1.2">${companyName}</h2>
+          <h2 style="font-family:var(--font);font-weight:900;font-size:28px;color:var(--navy);margin:0 0 10px;line-height:1.2">${companyName}${verifiedBadge}</h2>
           <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px">
             ${company?.cnpj ? `<div style="font-size:13px;color:var(--muted)">📋 CNPJ: ${company.cnpj}</div>` : ''}
             ${company?.city||company?.state ? `<div style="font-size:13px;color:var(--muted)">📍 ${[company.city,company.state].filter(Boolean).join(' — ')}</div>` : ''}
