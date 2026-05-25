@@ -7563,114 +7563,6 @@ function sbResetSearchBar(opts) {
     _sbResetSelect(bSel, 'Selecione a marca', true);
   }
 }
-async function sbShowPrice() {
-  const type = document.getElementById('sb-type').value;
-  const brand = document.getElementById('sb-brand').value;
-  const model = document.getElementById('sb-model').value;
-  const year = document.getElementById('sb-year').value; // ex: "2021"
-  if (!model || !year) return;
-  const res = document.getElementById('sb-fipe-result');
-  res.innerHTML = '<span style="color:var(--muted);font-size:13px">Carregando…</span>';
-  res.classList.add('show');
-  try {
-    // Busca os anos do modelo para encontrar o código correto (ex: 2021-5)
-    const anos = await fipeFetch(fipeUrl(type, 'brands', brand, 'models', model, 'years'));
-    const anoMatch = (Array.isArray(anos) ? anos : []).find(a =>
-      (a.name||a.nome||'').split(' ')[0] === year
-    );
-    if (!anoMatch) throw new Error('Ano não encontrado');
-    const yearCode = anoMatch.code || anoMatch.codigo;
-
-    const d = await fipeFetch(fipeUrl(type, 'brands', brand, 'models', model, 'years', yearCode));
-    const brandTxt = document.getElementById('sb-brand').options[document.getElementById('sb-brand').selectedIndex]?.text || '';
-    const modelTxt = document.getElementById('sb-model').options[document.getElementById('sb-model').selectedIndex]?.text || '';
-    const typeEmoji = {'carros':'🚗','motos':'🏍️','caminhoes':'🚚'}[type] || '🚗';
-    // Registra veículo atual para o botão Reclamar pré-preencher
-    _currentVehicle = {
-      brand: brandTxt,
-      name: modelTxt,
-      emoji: typeEmoji,
-      fipeBrandCode: brand,
-      fipeModelCode: model,
-      fipeType: type
-    };
-
-    // ─────────────────────────────────────────────────────────────
-    // Sprint 2 — Etapa 2.3: Search bar FIPE → perfil FIPE-exata
-    // ─────────────────────────────────────────────────────────────
-    // Caminho 1 (decidido com Aksander): em vez de mostrar cartão de
-    // preço inline, navega direto pro perfil completo (que já inclui
-    // o preço dentro do header). Mais alinhado com a visão "Raio-X
-    // é o produto principal" — o preço sozinho é commodity.
-    //
-    // O hint reúne todos os dados que a API FIPE retornou, pra que
-    // getOrFetchFipeVehicle consiga fazer o UPSERT em fipe_vehicles
-    // sem precisar bater na API de novo.
-    const fipeCode = d.codeFipe || d.CodigoFipe;
-    if (fipeCode) {
-      const hint = {
-        brand: brandTxt,
-        name: modelTxt,
-        version: modelTxt,                    // FIPE retorna versão dentro do modelTxt
-        modelYear: parseInt(d.modelYear || d.AnoModelo || year),
-        fuel: d.fuel || d.Combustivel || null,
-        fipeBrandCode: brand,
-        fipeModelCode: model,
-        fipeYearCode: yearCode,
-        fipeType: type,
-        fipePrice: d.price || d.Valor || null  // pra evitar nova requisição em loadFipePriceForVehicle
-      };
-      // Esconde o card de resultado e navega
-      res.classList.remove('show');
-      res.innerHTML = '';
-      await showVehicleProfileByFipe(fipeCode, hint);
-      return;
-    }
-
-    // Fallback: se por algum motivo a API não retornou codeFipe,
-    // mantém o comportamento antigo (card de preço) pra não quebrar
-    res.innerHTML = `
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid rgba(0,168,120,.15)">
-        <span style="font-size:36px">${typeEmoji}</span>
-        <div>
-          <div style="font-family:var(--font);font-weight:900;font-size:18px;color:var(--navy)">${brandTxt} ${modelTxt}</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">${d.fuel||d.Combustivel||''} · Ano modelo ${d.modelYear||d.AnoModelo||year} · Cód. FIPE: ${d.codeFipe||d.CodigoFipe||'—'}</div>
-        </div>
-        <div style="margin-left:auto;text-align:right">
-          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">💰 Preço FIPE</div>
-          <div style="font-family:var(--font);font-weight:900;font-size:26px;color:var(--green)">${d.price||d.Valor||'—'}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px">Ref: ${d.referenceMonth||d.MesReferencia||'—'}</div>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px">
-        <div style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:10px 14px">
-          <div style="font-size:10px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Tipo</div>
-          <div style="font-family:var(--font);font-weight:700;font-size:14px;color:var(--navy)">${typeEmoji} ${type === 'carros' ? 'Carro' : type === 'motos' ? 'Moto' : 'Caminhão'}</div>
-        </div>
-        <div style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:10px 14px">
-          <div style="font-size:10px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Combustível</div>
-          <div style="font-family:var(--font);font-weight:700;font-size:14px;color:var(--navy)">${d.fuel||d.Combustivel||'—'}</div>
-        </div>
-        <div style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:10px 14px">
-          <div style="font-size:10px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Ano modelo</div>
-          <div style="font-family:var(--font);font-weight:700;font-size:14px;color:var(--navy)">${d.modelYear||d.AnoModelo||year}</div>
-        </div>
-        <div style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:10px 14px">
-          <div style="font-size:10px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Código FIPE</div>
-          <div style="font-family:var(--font);font-weight:700;font-size:14px;color:var(--navy)">${d.codeFipe||d.CodigoFipe||'—'}</div>
-        </div>
-      </div>
-      <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn-primary" style="font-size:13px;padding:10px 18px" onclick="requireAuthForCurrentVehicle()">🚨 Reclamar deste veículo</button>
-        <button class="btn-outline" style="font-size:13px;padding:10px 18px" onclick="document.getElementById('ranking-section').scrollIntoView({behavior:'smooth'})">📊 Ver ranking</button>
-      </div>
-    `;
-  } catch(e) {
-    console.error('sbShowPrice erro:', e);
-    res.innerHTML = '<span style="color:var(--red)">Erro ao buscar preço. Tente outro modelo ou ano.</span>';
-  }
-}
-
 async function doFipeSearch() {
   // Captura valores no momento exato da chamada
   const sbType  = document.getElementById('sb-type');
@@ -7734,10 +7626,11 @@ async function doFipeSearch() {
     // voto 1-clique). O caminho antigo abaixo (id 'dynamic') vira
     // fallback pra casos onde a FIPE não retornou code.
     //
-    // NOTA: a sessão de 24/05 implementou esse trecho dentro de
-    // sbShowPrice() — função que ninguém chama. Quem é chamado
+    // NOTA: a sessão de 24/05 implementou esse trecho dentro de uma
+    // função antiga (sbShowPrice) que ninguém chamava. Quem é chamado
     // pela search bar é doFipeSearch. Por isso o Caminho 1 nunca
-    // executava antes desta correção.
+    // executava antes desta correção. A função morta foi removida na
+    // sessão de 25/05 (faxina de dívidas técnicas).
     const fipeCode = fipeData && (fipeData.codeFipe || fipeData.CodigoFipe);
     if (fipeCode && yearCode) {
       const hint = {
