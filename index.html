@@ -1099,7 +1099,8 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .doxcore-velocimetro-wrap{display:inline-block;line-height:0}
 @media(max-width:600px){
   .profile-rating:has(.doxcore-velocimetro-wrap){grid-template-columns:1fr;justify-items:start;text-align:left}
-  .profile-rating:has(.doxcore-velocimetro-wrap) > .doxcore-velocimetro-wrap{grid-column:1;grid-row:auto;justify-self:center;margin-bottom:8px}
+  .profile-rating:has(.doxcore-velocimetro-wrap) > *{grid-column:1}
+  .profile-rating:has(.doxcore-velocimetro-wrap) > .doxcore-velocimetro-wrap{grid-row:auto;justify-self:center;margin:8px 0}
   .profile-rating:has(.doxcore-velocimetro-wrap) > .doxcore-badge{justify-self:start}
   .profile-rating:has(.doxcore-velocimetro-wrap) > .doxcore-text,
   .profile-rating:has(.doxcore-velocimetro-wrap) > .doxcore-composition{justify-self:stretch;width:100%}
@@ -4135,8 +4136,8 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + '<div class="profile-name">' + v.name + '</div>'
     + ((v.version || v.year) ? ('<div class="profile-sub">' + [v.version, v.year].filter(x => x && x !== '—').join(' · ') + '</div>') : '')
     + '<div class="profile-rating">'
-    + (displayRating ? ('<span class="doxcore-velocimetro-wrap">' + renderDoxcoreVelocimetro(displayRating, 'large') + '</span>') : '')
     + '<span class="doxcore-badge">Doxcore</span>'
+    + (displayRating ? ('<span class="doxcore-velocimetro-wrap">' + renderDoxcoreVelocimetro(displayRating, 'large') + '</span>') : '')
     + (verdictText
       ? (function(){
           // D71: limite editorial absoluto 240 chars
