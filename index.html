@@ -2614,6 +2614,7 @@ function openRegisterCompanyFromProfile() {
   const emailEl = document.getElementById('reg-company-email');
   if (emailEl && currentUser?.email) emailEl.value = currentUser.email;
   switchAuth('register');
+  setAuthModalChrome({ showTabs: false, title: 'Cadastrar nova empresa', subtitle: 'Preencha os dados para análise' });
   document.getElementById('auth-modal').classList.add('open');
   document.body.style.overflow = 'hidden';
   regInitFipeBrands();
@@ -2625,6 +2626,7 @@ function openRegisterLawyerFromProfile() {
   document.getElementById('register-form-company').style.display = 'none';
   document.getElementById('register-form-lawyer').style.display = 'block';
   switchAuth('register');
+  setAuthModalChrome({ showTabs: false, title: 'Cadastrar como advogado', subtitle: 'Inscreva-se como parceiro' });
   document.getElementById('auth-modal').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
@@ -6163,6 +6165,7 @@ async function claimCompany(companyName) {
   document.getElementById('register-form-lawyer').style.display = 'none';
   document.getElementById('register-form-company').style.display = 'block';
   switchAuth('register');
+  setAuthModalChrome({ showTabs: false, title: 'Reivindicar empresa', subtitle: 'Confira os dados e envie pra análise' });
   document.getElementById('auth-modal').classList.add('open');
   document.body.style.overflow = 'hidden';
 
@@ -7466,12 +7469,25 @@ function saveData() {
 
 function openAuth(tab='login') {
   switchAuth(tab);
+  setAuthModalChrome({ showTabs: true, title: 'Entrar na sua conta', subtitle: 'Para reclamar você precisa estar logado' });
   document.getElementById('auth-modal').classList.add('open');
   document.body.style.overflow = 'hidden';
   // Usa o logo símbolo (só infinito) no modal
   const srcImg = document.querySelector('header img.logo-mobile');
   const wrap = document.getElementById('auth-logo-wrap');
   if (srcImg && wrap) wrap.innerHTML = `<img src="${srcImg.src}" style="height:44px;width:auto;" alt="Doutor Oficina"/>`;
+}
+
+// NOVO: controla a visibilidade dos elementos "chrome" do modal de auth (título,
+// subtítulo, tabs entrar/criar). Pra usuário JÁ LOGADO que está só usando o
+// modal como caixa de formulário, esconde os elementos de login.
+function setAuthModalChrome({ showTabs = true, title = null, subtitle = null } = {}) {
+  const titleEl = document.querySelector('#auth-modal .auth-title');
+  const subEl   = document.querySelector('#auth-modal .auth-subtitle');
+  const tabsEl  = document.querySelector('#auth-modal .auth-tabs');
+  if (titleEl && title !== null)    titleEl.textContent = title;
+  if (subEl   && subtitle !== null) subEl.textContent   = subtitle;
+  if (tabsEl) tabsEl.style.display = showTabs ? '' : 'none';
 }
 let _authMouseDownTarget = null;
 function closeAuth() {
