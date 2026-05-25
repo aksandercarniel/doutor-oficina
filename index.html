@@ -1581,20 +1581,11 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
         <button class="rank-tab active" role="tab" id="rank-tab-best" onclick="setRankingMode('best')">🏆 Melhores</button>
         <button class="rank-tab" role="tab" id="rank-tab-worst" onclick="setRankingMode('worst')">⚠️ Piores</button>
       </div>
-      <div class="ranking-grid" id="ranking-grid"></div>
+      <div class="vehicles-grid" id="ranking-grid"></div>
     </div>
   </section>
 
-  <!-- VEÍCULOS EM DESTAQUE -->
-  <section class="section">
-    <div class="section-inner">
-      <div class="section-header">
-        <h2 class="section-title">Veículos mais <span class="accent">avaliados</span></h2>
-        <a href="#" class="see-all" onclick="event.preventDefault();showPage('vehicles');return false;">Ver todos →</a>
-      </div>
-      <div class="vehicles-grid" id="vehicles-grid"></div>
-    </div>
-  </section>
+  <!-- VEÍCULOS EM DESTAQUE — removido: substituído pelo Ranking com abas Melhores/Piores e cards cheios -->
 
   <!-- RECLAMAÇÕES RECENTES -->
   <section class="section section-alt">
@@ -3259,14 +3250,51 @@ const fipePrices={'1':'R$ 142.990','2':'R$ 61.490','3':'R$ 78.900','4':'R$ 18.59
 // ══ RENDER ══
 function starsHtml(r){let s='';for(let i=1;i<=5;i++)s+=i<=Math.round(r)?'★':'☆';return s}
 
-// Estado de expansão da seção "Veículos mais avaliados" — removido (agora "Ver todos" leva à página dedicada)
+// renderVehicles removida: o bloco 'Veículos mais avaliados' foi fundido
+// no Ranking (que agora usa cards via renderRanking, com abas Melhores/Piores).
 
-async function renderVehicles(){
-  const grid = document.getElementById('vehicles-grid');
+
+// Estado da aba ativa do ranking da home ('best' | 'worst')
+let _rankingMode = 'best';
+
+// Alterna entre Melhores/Piores no bloco de ranking da home.
+// Atualiza visual das abas, re-renderiza o grid, e ajusta o link "Ranking completo →"
+// pra levar pra ordenação correspondente na página de veículos.
+function setRankingMode(mode){
+  if (mode !== 'best' && mode !== 'worst') return;
+  if (mode === _rankingMode) return;
+  _rankingMode = mode;
+  // Atualiza estado visual das abas
+  const tabBest = document.getElementById('rank-tab-best');
+  const tabWorst = document.getElementById('rank-tab-worst');
+  if (tabBest) tabBest.classList.toggle('active', mode === 'best');
+  if (tabWorst) tabWorst.classList.toggle('active', mode === 'worst');
+  // Atualiza o link "Ranking completo →" pra refletir a aba ativa
+  const seeAll = document.getElementById('ranking-see-all');
+  if (seeAll) {
+    const sort = mode === 'best' ? 'best_rating' : 'worst_rating';
+    seeAll.setAttribute('onclick', `event.preventDefault();showPage('vehicles',{sort:'${sort}'});return false;`);
+  }
+  renderRanking();
+}
+
+// Token anti-race-condition: se o usuário trocar de aba antes do FIPE
+// terminar de carregar, requests em vôo escrevem em DOM antigo. O token
+// invalida updates de gerações anteriores.
+let _rankingRenderToken = 0;
+
+async function renderRanking(){
+  const grid = document.getElementById('ranking-grid');
   if (!grid) return;
+
+  // Nova geração: invalida qualquer FIPE em vôo da render anterior
+  _rankingRenderToken++;
+  const myToken = _rankingRenderToken;
+
   grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Carregando veículos…</div>';
 
-  // Busca todos os registros (summary + issues) e agrupa por marca+modelo
+  // Busca todos os registros (summary + issues) e agrupa por marca+modelo.
+  // Mesma fonte do bloco antigo "Veículos mais avaliados" (que foi removido).
   let allRows = [];
   try {
     const { data } = await sb.from('vehicle_known_issues')
@@ -3277,6 +3305,9 @@ async function renderVehicles(){
     allRows = data || [];
   } catch(e) { console.error('Erro ao buscar veículos:', e); }
 
+  // Geração obsoleta? Aborta sem tocar no DOM.
+  if (myToken !== _rankingRenderToken) return;
+
   // Agrupa por marca+modelo: cada grupo = 1 summary + N issues
   const groups = {};
   allRows.forEach(row => {
@@ -3286,9 +3317,19 @@ async function renderVehicles(){
     else groups[key].issues.push(row);
   });
 
-  const vehicles = Object.values(groups).filter(v => v.summary).slice(0, 4);
+  // Filtra grupos válidos e ordena por reliability_score conforme o modo da aba
+  const ascending = _rankingMode === 'worst';
+  const vehicles = Object.values(groups)
+    .filter(v => v.summary && v.summary.reliability_score != null)
+    .sort((a, b) => {
+      const sa = parseFloat(a.summary.reliability_score) || 0;
+      const sb_ = parseFloat(b.summary.reliability_score) || 0;
+      return ascending ? sa - sb_ : sb_ - sa;
+    })
+    .slice(0, 4);
+
   if (!vehicles.length) {
-    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Nenhum veículo encontrado no Raio-X.</div>';
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Sem dados de ranking ainda.</div>';
     return;
   }
 
@@ -3328,12 +3369,15 @@ async function renderVehicles(){
     </div>`;
   }).join('');
 
-  // Carrega preços FIPE em fila (não paralelo) para evitar rate limit
+  // Carrega preços FIPE em fila (não paralelo) para evitar rate limit.
+  // O myToken garante que se o usuário trocou de aba, os updates antigos morrem.
   (async () => {
-    // Pré-aquece cache de marcas
     try { await fipeFetch(FIPE_V2 + '/cars/brands'); } catch(e) {}
 
     for (let i = 0; i < vehicles.length; i++) {
+      // Geração obsoleta? Aborta a fila inteira.
+      if (myToken !== _rankingRenderToken) return;
+
       const v = vehicles[i];
       const safeKey = `${v.brand}-${v.model}`.replace(/[^a-zA-Z0-9-]/g, '_');
       const el = document.getElementById('fipe-card-' + safeKey);
@@ -3341,6 +3385,8 @@ async function renderVehicles(){
       const vObj = { brand: v.brand, name: v.model, emoji: typeEmoji(v.type) };
       try {
         const result = await loadFipePriceForVehicle(vObj);
+        // Re-checa token após o await: se trocou de aba durante o request, descarta
+        if (myToken !== _rankingRenderToken) return;
         if (result) {
           el.className = 'price-val';
           el.textContent = result.isRange
@@ -3351,82 +3397,13 @@ async function renderVehicles(){
           el.textContent = '—';
         }
       } catch(e) {
+        if (myToken !== _rankingRenderToken) return;
         el.className = 'price-val';
         el.textContent = '—';
       }
       if (i < vehicles.length - 1) await new Promise(r => setTimeout(r, 200));
     }
   })();
-}
-
-// Estado da aba ativa do ranking da home ('best' | 'worst')
-let _rankingMode = 'best';
-
-// Alterna entre Melhores/Piores no bloco de ranking da home.
-// Atualiza visual das abas, re-renderiza o grid, e ajusta o link "Ranking completo →"
-// pra levar pra ordenação correspondente na página de veículos.
-function setRankingMode(mode){
-  if (mode !== 'best' && mode !== 'worst') return;
-  if (mode === _rankingMode) return;
-  _rankingMode = mode;
-  // Atualiza estado visual das abas
-  const tabBest = document.getElementById('rank-tab-best');
-  const tabWorst = document.getElementById('rank-tab-worst');
-  if (tabBest) tabBest.classList.toggle('active', mode === 'best');
-  if (tabWorst) tabWorst.classList.toggle('active', mode === 'worst');
-  // Atualiza o link "Ranking completo →" pra refletir a aba ativa
-  const seeAll = document.getElementById('ranking-see-all');
-  if (seeAll) {
-    const sort = mode === 'best' ? 'best_rating' : 'worst_rating';
-    seeAll.setAttribute('onclick', `event.preventDefault();showPage('vehicles',{sort:'${sort}'});return false;`);
-  }
-  renderRanking();
-}
-
-async function renderRanking(){
-  const grid = document.getElementById('ranking-grid');
-  if (!grid) return;
-  grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--muted)">Carregando ranking…</div>';
-
-  // Mesma fonte do renderVehicles: vehicle_known_issues agrupado por marca+modelo,
-  // pegando o registro summary (is_summary=true) com reliability_score.
-  // Modo 'best': ordena desc (maiores notas no topo)
-  // Modo 'worst': ordena asc (menores notas no topo) — destaca o que comprar com cautela
-  const ascending = _rankingMode === 'worst';
-  let allRows = [];
-  try {
-    const { data } = await sb.from('vehicle_known_issues')
-      .select('vehicle_brand, vehicle_model, vehicle_type, is_summary, reliability_score')
-      .eq('is_summary', true)
-      .order('reliability_score', { ascending })
-      .limit(8);
-    allRows = data || [];
-  } catch(e) { console.error('Erro ao buscar ranking:', e); }
-
-  if (!allRows.length) {
-    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--muted)">Sem dados de ranking ainda.</div>';
-    return;
-  }
-
-  const typeEmoji = (t) => t === 'moto' ? '🏍️' : t === 'caminhao' ? '🚚' : '🚗';
-  const medals = ['🥇','🥈','🥉'];
-
-  grid.innerHTML = allRows.map((r, i) => {
-    const pos = i + 1;
-    const pc = pos <= 3 ? `pos-${pos}` : 'pos-o';
-    // No modo 'piores' a numeração ainda é 1/2/3... mas sem medalhas (não há vitória aqui)
-    const medal = (_rankingMode === 'best' && pos <= 3) ? medals[pos-1] : pos;
-    const score = parseFloat(r.reliability_score) || 0;
-    const emoji = typeEmoji(r.vehicle_type);
-    const safeBrand = r.vehicle_brand.replace(/'/g, "\\'");
-    const safeModel = r.vehicle_model.replace(/'/g, "\\'");
-    return `<div class="rank-item" onclick="showVehicleProfileByBrandModel('${safeBrand}','${safeModel}')">
-      <span class="rank-pos ${pc}">${medal}</span>
-      <div class="rank-info"><div class="rank-name"><span class="rank-icon">${vehicleIcon(emoji, r.vehicle_model)}</span>${r.vehicle_model}</div><div class="rank-brand">${r.vehicle_brand}</div></div>
-      <div class="rank-velocimetro">${renderDoxcoreVelocimetro(score, 'compact')}</div>
-      <span class="rank-score">${score.toFixed(1)}</span>
-    </div>`;
-  }).join('');
 }
 
 // ══ VEHICLE PROFILE ══
@@ -9565,7 +9542,6 @@ async function updateHeroStats(){
   }catch(e){ /* silencia: mantém fallback "dezenas de" */ }
 }
 updateHeroStats();
-renderVehicles();
 renderRanking();
 initCompare();
 initSearch();
