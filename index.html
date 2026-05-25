@@ -1007,8 +1007,6 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
   .profile-rating:has(.doxcore-velocimetro-wrap) > .doxcore-composition{grid-column:1}
   .profile-rating:has(.doxcore-velocimetro-wrap) > .doxcore-velocimetro-wrap{grid-row:auto;justify-self:center}
 }
-.big-score{font-family:var(--font);font-weight:900;font-size:28px;color:var(--navy)}
-.profile-rcount{color:var(--muted);font-size:14px;font-weight:500}
 .doxcore-badge{display:inline-flex;align-items:center;background:var(--blue-light);color:var(--navy);font-family:var(--font);font-size:12px;font-weight:800;letter-spacing:0.3px;padding:3px 10px;border-radius:20px}
 .doxcore-text{flex-basis:100%;font-size:13.5px;color:var(--text2);line-height:1.5;font-family:var(--font-body);margin:2px 0 4px;padding-left:46px}
 .doxcore-text strong{color:var(--navy);font-family:var(--font);font-weight:700}
@@ -3291,8 +3289,6 @@ function renderVehicleProfileSkeleton(v) {
         <div class="profile-name">${v.name || ''}</div>
         ${(v.version || v.year) ? `<div class="profile-sub">${[v.version, v.year].filter(x => x && x !== '—').join(' · ')}</div>` : ''}
         <div class="profile-rating">
-          <span class="big-stars" style="color:var(--muted2)">☆☆☆☆☆</span>
-          <span class="big-score" style="color:var(--muted2)">—</span>
           <span class="doxcore-badge">Doxcore</span>
           <span class="doxcore-composition">carregando análise…</span>
         </div>
