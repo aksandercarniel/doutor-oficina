@@ -5348,11 +5348,34 @@ function renderSearchList(tab) {
 async function showSearchResults(val, fipeResults, complaintResults, mockResults) {
   const valLower = val.toLowerCase();
   
-  // Busca empresas
+  // Busca empresas em DUAS fontes: cadastradas (companies) + citadas em reclamações (complaints.company_name)
   let companyResults = [];
   try {
-    const { data } = await sb.from('companies').select('*').ilike('name', `%${val}%`).limit(10);
-    companyResults = data || [];
+    // 1. Empresas cadastradas
+    const { data: registered } = await sb.from('companies').select('*').ilike('name', `%${val}%`).limit(10);
+    // 2. Empresas citadas em reclamações (mesmo sem cadastro)
+    const { data: cited } = await sb.from('complaints')
+      .select('company_name, company_cnpj, company_address, company_phone')
+      .ilike('company_name', `%${val}%`)
+      .not('company_name', 'is', null)
+      .limit(20);
+    // 3. Dedupe (case-insensitive): registered tem prioridade
+    const seen = new Set((registered||[]).map(c => (c.name||'').toLowerCase()));
+    const citedUnique = [];
+    (cited||[]).forEach(c => {
+      const key = (c.company_name||'').toLowerCase();
+      if (key && !seen.has(key)) {
+        seen.add(key);
+        citedUnique.push({
+          name: c.company_name,
+          cnpj: c.company_cnpj,
+          address: c.company_address,
+          phone: c.company_phone,
+          _fromComplaint: true
+        });
+      }
+    });
+    companyResults = [...(registered||[]), ...citedUnique];
   } catch(e) {}
   const allCompanies = companyResults || [];
 
