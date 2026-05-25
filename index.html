@@ -5025,7 +5025,11 @@ async function searchFipeModels(val, append = false) {
           const dm = await fipeFetch(`${FIPE_V2}/${t.key}/brands/${bCode}/models`);
           const models = dm.models || dm.modelos || dm;
           return (Array.isArray(models) ? models : [])
-            .filter(m => (m.name||m.nome||'').toLowerCase().includes(cacheKey))
+            .filter(m => {
+              const modelName = (m.name||m.nome||'').toLowerCase();
+              const brandName = (brand.name||brand.nome||'').toLowerCase();
+              return modelName.includes(cacheKey) || brandName.includes(cacheKey);
+            })
             .map(m => ({
               brand: brand.name||brand.nome,
               model: m.name||m.nome,
@@ -5076,7 +5080,7 @@ function renderFipeSuggestions(val, results, append = false) {
   if (append && html) html += '<div class="sug-divider"></div>';
   html += `<div class="sug-section">🚗 Modelos FIPE</div>`;
 
-  results.forEach(r => {
+  results.slice(0, 10).forEach(r => {
     const label = r.model ? `${r.brand} ${r.model}` : r.brand;
     sugItems.push({ action:'fipe', brand: r.brand, model: r.model, type: r.type, label });
     html += `<div class="sug-item" onclick="selectSuggestion(${sugItems.length-1})">
