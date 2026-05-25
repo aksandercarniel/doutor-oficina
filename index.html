@@ -988,6 +988,23 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .profile-emoji{grid-column:1;grid-row:1/span 3;align-self:center;display:block;line-height:1}
 .profile-emoji .vehicle-icon-svg{display:block;width:64px;height:64px;color:var(--navy);stroke-width:1.25}
 .profile-brand-label{grid-column:2;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:1.2px;font-weight:700;margin-bottom:6px}
+/* Chip da montadora — substitui o .profile-brand-label quando há dados de empresa */
+.mfr-chip-wrap{grid-column:2;margin-bottom:6px;min-height:32px}
+.mfr-chip{display:inline-flex;align-items:center;gap:8px;background:#f9fafb;border:1px solid var(--border);border-radius:8px;padding:5px 10px 5px 7px;cursor:pointer;transition:border-color .2s,background .2s;text-decoration:none}
+.mfr-chip:hover{border-color:var(--navy);background:#fff}
+.mfr-chip-avatar{position:relative;width:22px;height:22px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font);font-size:10px;font-weight:700;flex-shrink:0}
+.mfr-chip-verified{position:absolute;bottom:-2px;right:-2px;width:11px;height:11px;background:#2563eb;color:#fff;border:1.5px solid #fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;line-height:1}
+.mfr-chip-text{display:flex;flex-direction:column;line-height:1.15}
+.mfr-chip-name{font-family:var(--font);font-size:11px;font-weight:700;color:var(--navy);letter-spacing:.3px;text-transform:uppercase}
+.mfr-chip-stats{font-size:10px;color:var(--muted)}
+.mfr-chip-nps-otimo{color:#16a34a;font-weight:700}
+.mfr-chip-nps-bom{color:#2563eb;font-weight:700}
+.mfr-chip-nps-regular{color:#d97706;font-weight:700}
+.mfr-chip-nps-ruim{color:#ea580c;font-weight:700}
+.mfr-chip-nps-pessimo{color:#dc2626;font-weight:700}
+.mfr-chip-cta-reivindicar{color:var(--navy);font-weight:700;text-decoration:underline}
+.mfr-chip-skeleton{background:linear-gradient(90deg,#f3f4f6 0%,#e5e7eb 50%,#f3f4f6 100%);background-size:200% 100%;animation:mfr-shimmer 1.2s infinite;border-radius:8px;height:32px;width:180px;display:inline-block}
+@keyframes mfr-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 .profile-name{grid-column:2;font-family:var(--font);font-weight:900;font-size:38px;line-height:1;color:var(--navy);margin-bottom:5px}
 .profile-sub{grid-column:2;color:var(--muted);font-size:14px;margin-bottom:14px;font-family:var(--font-body)}
 .profile-rating,.profile-tags{grid-column:1/-1}
@@ -3553,7 +3570,7 @@ function renderVehicleProfileSkeleton(v) {
     <div class="profile-hero">
       <div class="profile-left">
         <span class="profile-emoji">${vehicleIcon(v.emoji, v.name)}</span>
-        <div class="profile-brand-label">${v.brand || ''}</div>
+        <div class="mfr-chip-wrap" id="mfr-chip-skeleton-${(v.brand||'').replace(/[^a-zA-Z0-9]/g,'_')}"><div class="mfr-chip-skeleton"></div></div>
         <div class="profile-name">${v.name || ''}</div>
         ${(v.version || v.year) ? `<div class="profile-sub">${[v.version, v.year].filter(x => x && x !== '—').join(' · ')}</div>` : ''}
         <div class="profile-rating">
@@ -3580,6 +3597,12 @@ function renderVehicleProfileSkeleton(v) {
       <span class="ai-spinner" style="border-color:rgba(13,31,60,.2);border-top-color:var(--navy)"></span>
       Buscando raio-x e reclamações para <strong>${v.brand} ${v.name}</strong>…
     </div>`;
+
+  // Chip da montadora começa a carregar já no skeleton (não precisa esperar o full render)
+  if (v.brand) {
+    const mfrChipId = 'mfr-chip-skeleton-' + v.brand.replace(/[^a-zA-Z0-9]/g,'_');
+    renderManufacturerChip(v.brand, mfrChipId);
+  }
 }
 
 // Carrega todos os dados reais e renderiza a página completa
@@ -3852,6 +3875,94 @@ async function loadFipePriceForVehicle(v, opts) {
     return null;
   } catch(e) {
     return null;
+  }
+}
+
+// Renderiza o chip da montadora no header do perfil do veículo
+// Substitui o label estático da marca por um mini-bloco clicável com stats
+// Skeleton-first: chip vazio aparece imediatamente, dados populam em ~500ms
+async function renderManufacturerChip(brand, containerId) {
+  if (!brand) return;
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  // 1. Mostra skeleton imediatamente
+  container.innerHTML = '<div class="mfr-chip-skeleton"></div>';
+
+  try {
+    // 2. Busca empresa (ilike pra evitar problemas de caixa)
+    const { data: company } = await sb
+      .from('companies')
+      .select('name, is_claimed, owner_id')
+      .ilike('name', brand)
+      .maybeSingle();
+
+    // 3. Busca NPS e reclamações em paralelo (usa o nome canônico se achou empresa)
+    const companyName = company?.name || brand;
+    const [{ data: npsRatings }, { data: complaints }] = await Promise.all([
+      sb.from('nps_ratings').select('score').ilike('company_name', companyName),
+      sb.from('complaints').select('status').ilike('company_name', companyName)
+    ]);
+
+    // 4. Calcula stats
+    const npsScores = (npsRatings || []).map(n => n.score);
+    const npsAvg = npsScores.length ? (npsScores.reduce((a,b)=>a+b,0)/npsScores.length) : null;
+    const totalRel = (complaints || []).length;
+    // Atenção: openCompanyProfile usa 'resolved' (sem prefixo s-). Mesma lógica aqui.
+    const resolvedRel = (complaints || []).filter(c => c.status === 'resolved' || c.status === 's-resolved').length;
+    const pctResolvidas = totalRel > 0 ? Math.round((resolvedRel/totalRel)*100) : null;
+
+    // 5. Classe de cor do NPS (mesma lógica de openCompanyProfile)
+    let npsClass = '';
+    if (npsAvg !== null) {
+      if (npsAvg >= 8.1) npsClass = 'mfr-chip-nps-otimo';
+      else if (npsAvg >= 6.1) npsClass = 'mfr-chip-nps-bom';
+      else if (npsAvg >= 4.1) npsClass = 'mfr-chip-nps-regular';
+      else if (npsAvg >= 2.1) npsClass = 'mfr-chip-nps-ruim';
+      else npsClass = 'mfr-chip-nps-pessimo';
+    }
+
+    // 6. Monta string de stats e CTA conforme estado
+    const inicial = brand.trim().charAt(0).toUpperCase();
+    const isClaimed = !!(company && company.is_claimed);
+    const isRegistered = !!company;
+    const safeBrand = brand.replace(/'/g, "\\'");
+
+    let statsParts = [];
+    if (npsAvg !== null) statsParts.push('NPS <span class="' + npsClass + '">' + npsAvg.toFixed(1) + '</span>');
+    if (pctResolvidas !== null) statsParts.push(pctResolvidas + '% resolvidas');
+    const statsStr = statsParts.length > 0 ? statsParts.join(' · ') : 'sem dados ainda';
+
+    let ctaStr;
+    if (isRegistered) {
+      ctaStr = ' · <span style="color:var(--navy)">ver perfil →</span>';
+    } else {
+      ctaStr = ' · <span class="mfr-chip-cta-reivindicar">É da ' + brand + '? Reivindicar →</span>';
+    }
+
+    // 7. Tooltip e onclick conforme estado
+    const tooltipVerified = isClaimed ? 'Conta verificada — administrada pela ' + brand : '';
+    const onClickAction = isRegistered
+      ? 'openCompanyProfile(\'' + safeBrand + '\')'
+      : 'openRegisterCompanyFromProfile(\'' + safeBrand + '\')';
+
+    // 8. Monta HTML final
+    const verifiedBadge = isClaimed
+      ? '<span class="mfr-chip-verified" title="' + tooltipVerified + '">✓</span>'
+      : '';
+
+    container.innerHTML =
+      '<a class="mfr-chip" onclick="' + onClickAction + '">' +
+        '<div class="mfr-chip-avatar">' + inicial + verifiedBadge + '</div>' +
+        '<div class="mfr-chip-text">' +
+          '<span class="mfr-chip-name">' + brand + '</span>' +
+          '<span class="mfr-chip-stats">' + statsStr + ctaStr + '</span>' +
+        '</div>' +
+      '</a>';
+  } catch (e) {
+    console.error('Erro ao carregar chip da montadora:', e);
+    // Fallback: volta ao label simples se algo quebrar
+    container.innerHTML = '<div class="profile-brand-label">' + brand + '</div>';
   }
 }
 
@@ -4135,7 +4246,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + '<div class="profile-hero">'
     + '<div class="profile-left">'
     + '<span class="profile-emoji">' + vehicleIcon(v.emoji, v.name) + '</span>'
-    + '<div class="profile-brand-label">' + v.brand + '</div>'
+    + '<div class="mfr-chip-wrap" id="mfr-chip-' + (v.brand||'').replace(/[^a-zA-Z0-9]/g,'_') + '"><div class="mfr-chip-skeleton"></div></div>'
     + '<div class="profile-name">' + v.name + '</div>'
     + ((v.version || v.year) ? ('<div class="profile-sub">' + [v.version, v.year].filter(x => x && x !== '—').join(' · ') + '</div>') : '')
     + '<div class="profile-rating">'
@@ -4261,6 +4372,12 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
   }
 
   loadFipeBrandsInto('cmp-brand', 'carros');
+
+  // Chip da montadora: skeleton-first, dados populam em ~500ms
+  if (v.brand) {
+    const mfrChipId = 'mfr-chip-' + v.brand.replace(/[^a-zA-Z0-9]/g,'_');
+    renderManufacturerChip(v.brand, mfrChipId);
+  }
 
   // Skeleton → fill: carrega voto atual do usuário e atualiza só o bloco de estrelas
   if (fipeCodeForVote) {
