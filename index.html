@@ -2195,6 +2195,22 @@ async function sbLoadComplaints(filters = {}) {
   return (data || []).map(mapComplaint);
 }
 
+// Busca textual em múltiplos campos da reclamação (título, descrição, marca, modelo, empresa).
+// Usada pela busca livre do header. Diferente de sbLoadComplaints, que usa filtros exatos.
+async function sbSearchComplaints(query) {
+  if (!query || !query.trim()) return [];
+  // Escapa vírgulas e parênteses que quebrariam a sintaxe do .or() do PostgREST
+  const safe = query.trim().replace(/[,()]/g, ' ');
+  const q = `%${safe}%`;
+  const { data, error } = await sb.from('complaints')
+    .select('*')
+    .or(`title.ilike.${q},description.ilike.${q},vehicle_brand.ilike.${q},vehicle_model.ilike.${q},company_name.ilike.${q}`)
+    .order('created_at', { ascending: false })
+    .limit(20);
+  if (error) { console.error('sbSearchComplaints:', error); return []; }
+  return (data || []).map(mapComplaint);
+}
+
 // Variante paginada usada pela página "Todas as reclamações"
 // Retorna { items, totalCount } — totalCount usa head:true (rápido, sem trafegar rows)
 async function sbLoadAllComplaints(filters = {}, sort = 'recent', offset = 0, limit = 20) {
@@ -5578,10 +5594,10 @@ async function doFreeSearch() {
     return t.includes(valLower) || words.some(w => t.includes(w));
   });
 
-  // 2. Reclamações reais do Supabase
+  // 2. Reclamações reais do Supabase (busca textual em vários campos)
   let complaintResults = [];
   try {
-    complaintResults = await sbLoadComplaints({ brand: val });
+    complaintResults = await sbSearchComplaints(val);
   } catch(e) { complaintResults = []; }
 
   // 3. FIPE
