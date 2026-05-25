@@ -4209,20 +4209,20 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     // Coluna direita
     + '<div>'
 
-    // Card Distribuição de notas
-    + '<div class="profile-card">'
-    + '<div class="pc-title"><span class="dot"></span>Distribuição de notas</div>'
-    + '<div class="dist-bars">' + distBars + '</div>'
-    + (distTotal === 0 ? '<div style="font-size:12px;color:var(--muted);margin-top:8px;text-align:center">Baseado em ' + totalComplaints + ' ' + (totalComplaints === 1 ? 'relato' : 'relatos') + ' — avalie após registrar sua reclamação</div>' : '')
-    + '</div>'
-
-    // Card de avaliação (D89 — abaixo de Distribuição de notas pra agrupar "ver notas da comunidade" + "dar minha nota")
+    // Card de avaliação (D89 — primeiro card da coluna: agir antes de comparar)
     + (voteStarsHtml
       ? '<div class="profile-card vote-card">'
         + '<div class="pc-title"><span class="pc-emoji">📝</span> Avalie esse veículo</div>'
         + voteStarsHtml
         + '</div>'
       : '')
+
+    // Card Distribuição de notas
+    + '<div class="profile-card">'
+    + '<div class="pc-title"><span class="dot"></span>Distribuição de notas</div>'
+    + '<div class="dist-bars">' + distBars + '</div>'
+    + (distTotal === 0 ? '<div style="font-size:12px;color:var(--muted);margin-top:8px;text-align:center">Baseado em ' + totalComplaints + ' ' + (totalComplaints === 1 ? 'relato' : 'relatos') + ' — avalie após registrar sua reclamação</div>' : '')
+    + '</div>'
 
     // Card FIPE comparativo
     + '<div class="profile-card">'
