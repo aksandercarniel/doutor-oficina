@@ -381,13 +381,6 @@ header{
 .sfipe-select:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(13,31,60,.07);background:var(--white)}
 .sfipe-select:disabled{opacity:.55;cursor:not-allowed;background-color:var(--bg)}
 .sfipe-select option{background:var(--white);color:var(--text)}
-.sb-fipe-result{
-  margin-top:14px;display:none;
-  background:var(--green-light);border:1px solid rgba(0,168,120,.2);
-  border-radius:10px;padding:12px 20px;
-  align-items:center;gap:28px;flex-wrap:wrap;
-}
-.sb-fipe-result.show{display:flex}
 
 /* Mobile: linha 1 = título à esquerda + ícones à direita.
    Linha 2 = selects empilhados (só aparece quando .is-open).
@@ -1243,7 +1236,6 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
       <option value="motos">motos</option>
       <option value="caminhoes">caminhoes</option>
     </select>
-    <div class="sb-fipe-result" id="sb-fipe-result"></div>
   </div>
 </div>
 
@@ -6661,17 +6653,12 @@ function _sbEls() {
     tSel: document.getElementById('sb-type'),
     bSel: document.getElementById('sb-brand'),
     mSel: document.getElementById('sb-model'),
-    ySel: document.getElementById('sb-year'),
-    result: document.getElementById('sb-fipe-result')
+    ySel: document.getElementById('sb-year')
   };
 }
 function _sbResetSelect(sel, placeholder, disable=true) {
   sel.innerHTML = `<option value="">${placeholder}</option>`;
   sel.disabled = disable;
-}
-function _sbHideResult() {
-  const r = document.getElementById('sb-fipe-result');
-  if (r) r.classList.remove('show');
 }
 
 // Trigger 1: Usuário escolheu um tipo (clique nos ícones de carro/moto/caminhão)
@@ -6716,7 +6703,6 @@ function sbOnTypeChange() {
   _sbResetSelect(ySel, 'Selecione a marca', true);
   if (mSel) delete mSel._fullModels;
   if (ySel) delete ySel._anoMap;
-  _sbHideResult();
   sbLoadBrands();
 }
 
@@ -6746,7 +6732,6 @@ async function sbOnBrandChange() {
   const { tSel, bSel, mSel, ySel } = _sbEls();
   const type = tSel.value;
   const brand = bSel.value;
-  _sbHideResult();
 
   if (!brand) {
     _sbResetSelect(mSel, 'Selecione a marca', true);
@@ -6816,7 +6801,6 @@ async function sbOnModelChange() {
   const type = tSel.value;
   const brand = bSel.value;
   const model = mSel.value;
-  _sbHideResult();
 
   if (!model) return;
 
@@ -6861,7 +6845,6 @@ async function sbOnYearChange() {
   const brand = bSel.value;
   const model = mSel.value;
   const year = ySel.value;
-  _sbHideResult();
 
   if (!year) {
     // Voltou pro placeholder: restaura lista completa de modelos se tiver
@@ -6910,7 +6893,6 @@ function sbResetSearchBar(opts) {
   _sbResetSelect(ySel, 'Selecione a marca', true);
   delete mSel._fullModels;
   delete ySel._anoMap;
-  _sbHideResult();
   const row = document.getElementById('sb-row');
   if (row) row.classList.remove('is-open');
   // Reset completo: também desmarca o tipo (usado em navegação geral, não pós-busca)
@@ -6961,10 +6943,6 @@ async function doFipeSearch() {
   }
 
   // Se não encontrou no mock, busca preço FIPE e cria perfil dinâmico
-  const res = document.getElementById('sb-fipe-result');
-  res.classList.remove('show');
-  res.innerHTML = '';
-
   try {
     // Pega código do ano com combustível
     let fipeData = null;
@@ -7042,7 +7020,7 @@ async function doFipeSearch() {
     }, 60000);
 
   } catch(e) {
-    res.innerHTML = '<span style="color:var(--red)">Erro ao buscar. Tente novamente.</span>';
+    console.error('doFipeSearch erro:', e);
   }
 }
 
