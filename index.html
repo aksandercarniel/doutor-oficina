@@ -1461,7 +1461,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
   </div>
   <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
     <button class="qf-btn active" onclick="companyFilterComplaints(this,'open')">🔴 Não respondidas</button>
-    <button class="qf-btn" onclick="companyFilterComplaints(this,'progress')">🟡 Em análise</button>
+    <button class="qf-btn" onclick="companyFilterComplaints(this,'progress')">🔵 Respondida</button>
     <button class="qf-btn" onclick="companyFilterComplaints(this,'resolved')">🟢 Respondidas</button>
     <button class="qf-btn" onclick="companyFilterComplaints(this,'all')">Todas</button>
     <button class="qf-btn" id="btn-brand-mentions" onclick="companyFilterComplaints(this,'brand')" style="border-color:var(--orange);color:var(--orange)">⚠️ Menções à marca</button>
@@ -1543,7 +1543,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
     <select class="filter-select" id="all-filter-status" onchange="applyAllFilters()">
       <option value="">Todos os status</option>
       <option value="s-open">Não respondidas</option>
-      <option value="s-progress">Em análise</option>
+      <option value="s-progress">Respondida</option>
       <option value="s-resolved">Resolvidos</option>
     </select>
     <select class="filter-select" id="all-filter-brand" onchange="applyAllFilters()">
@@ -2413,7 +2413,7 @@ async function sbToggleVote(complaintId) {
 // ══ MAPEAMENTO ══
 function mapComplaint(c) {
   const statusMap = { open: 's-open', in_progress: 's-progress', resolved: 's-resolved' };
-  const statusLabel = { open: 'Não respondida', in_progress: 'Em análise', resolved: 'Resolvido' };
+  const statusLabel = { open: 'Não respondida', in_progress: 'Respondida', resolved: 'Resolvido' };
   const typeEmoji = { carro: '🚗', moto: '🏍️', caminhao: '🚚' };
   const date = new Date(c.created_at);
   const diff = Math.floor((Date.now() - date) / 86400000);
@@ -5974,7 +5974,7 @@ function renderSearchList(tab) {
   if (tab === 'all' || tab === 'complaints') {
     if (tab === 'all' && complaints.length) html += `<div style="font-family:var(--font);font-weight:900;font-size:12px;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;padding:4px 0 10px;border-bottom:1px solid var(--border)">📋 Reclamações</div>`;    complaints.slice(0,10).forEach(c => {
       html += `<div onclick="openComplaintDetail('${c.id}')" style="padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.querySelector('.sr-title').style.textDecoration='underline'" onmouseout="this.querySelector('.sr-title').style.textDecoration='none'">
-        <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${c.brand||''} ${c.model||''} · <span style="background:${c.status==='s-resolved'?'#e8f5e9':c.status==='s-progress'?'#fff8e1':'#fef2f2'};color:${c.status==='s-resolved'?'#16a34a':c.status==='s-progress'?'#f59e0b':'#dc2626'};padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700">${c.status==='s-resolved'?'Resolvido':c.status==='s-progress'?'Em análise':'Não respondida'}</span></div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${c.brand||''} ${c.model||''} · <span style="background:${c.status==='s-resolved'?'#e8f5e9':c.status==='s-progress'?'#eff6ff':'#fef2f2'};color:${c.status==='s-resolved'?'#16a34a':c.status==='s-progress'?'#2563eb':'#dc2626'};padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700">${c.status==='s-resolved'?'Resolvido':c.status==='s-progress'?'Respondida':'Não respondida'}</span></div>
         <div class="sr-title" style="font-family:var(--font);font-weight:700;font-size:15px;color:var(--navy);margin-bottom:4px">${c.title||'Reclamação'}</div>
         <div style="font-size:13px;color:var(--text2);line-height:1.5">${(c.description||c.text||'').slice(0,120)}${(c.description||c.text||'').length>120?'…':''}</div>
       </div>`;
@@ -6344,14 +6344,14 @@ async function openComplaintDetail(complaintId) {
     const { data: complaint } = await sb.from('complaints').select('*').eq('id', complaintId).single();
     if (!complaint) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Reclamação não encontrada.</div>'; return; }
     const { data: messages } = await sb.from('resolutions').select('*').eq('complaint_id', complaintId).order('created_at', { ascending: true });
-    const statusMap = { open:'🔴 Não respondida', in_progress:'🟡 Em análise', resolved:'🟢 Resolvido' };
+    const statusMap = { open:'🔴 Não respondida', in_progress:'🔵 Respondida', resolved:'🟢 Resolvido' };
     const typeEmoji = { carro:'🚗', moto:'🏍️', caminhao:'🚚' };
     const isAuthor = currentUser?.id === complaint.user_id;
     const isCompany = currentUser?.role === 'company';
     const date = new Date(complaint.created_at).toLocaleDateString('pt-BR');
 
-    const statusBg  = { open:'#fef2f2', in_progress:'#fffbeb', resolved:'#f0fdf4' };
-    const statusCol = { open:'#dc2626', in_progress:'#d97706', resolved:'#16a34a' };
+    const statusBg  = { open:'#fef2f2', in_progress:'#eff6ff', resolved:'#f0fdf4' };
+    const statusCol = { open:'#dc2626', in_progress:'#2563eb', resolved:'#16a34a' };
     const st = complaint.status || 'open';
     const isResolved = complaint.status === 'resolved';
 
@@ -6569,10 +6569,12 @@ async function openCompanyProfile(companyName) {
         <!-- Coluna direita: bloco unificado NPS + métricas -->
         <div style="display:flex;flex-direction:column;gap:16px">
           <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:20px">
-            <div style="font-size:13px;color:var(--muted);font-weight:600;margin-bottom:10px">Nota NPS</div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
+              <span style="font-size:13px;color:var(--muted);font-weight:600">Nota NPS</span>
+              <span style="font-size:12px;color:var(--muted)${npsAvg===null?';font-style:italic':''}">${npsAvg===null?'Seja o 1º a avaliar →':(npsScores.length===1?'1 avaliação':npsScores.length+' avaliações')}</span>
+            </div>
             ${renderNpsBar(npsAvg, true)}
-            <div style="font-size:12px;color:var(--muted);margin-top:8px${npsAvg===null?';font-style:italic':''}">${npsAvg===null?'Seja o 1º a avaliar →':(npsScores.length===1?'1 avaliação':npsScores.length+' avaliações')}</div>
-            <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:14px;display:flex;flex-direction:column;gap:12px">
+            <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:14px;display:flex;flex-direction:column;gap:8px">
               <div style="display:flex;justify-content:space-between;align-items:center">
                 <span style="font-size:13px;color:var(--muted);font-weight:600">Reclamações</span>
                 <span style="font-family:var(--font);font-weight:900;font-size:18px;color:var(--navy)">${total}</span>
@@ -6580,10 +6582,6 @@ async function openCompanyProfile(companyName) {
               <div style="display:flex;justify-content:space-between;align-items:center">
                 <span style="font-size:13px;color:var(--muted);font-weight:600">Respondidas</span>
                 <span style="font-family:var(--font);font-weight:900;font-size:18px;color:var(--green)">${pct}%</span>
-              </div>
-              <div style="display:flex;justify-content:space-between;align-items:center">
-                <span style="font-size:13px;color:var(--muted);font-weight:600">Em aberto</span>
-                <span style="font-family:var(--font);font-weight:900;font-size:18px;color:var(--red)">${total-resolved}</span>
               </div>
             </div>
           </div>
@@ -6595,9 +6593,9 @@ async function openCompanyProfile(companyName) {
     if (list.length === 0) {
       html += `<div style="text-align:center;padding:40px;color:var(--muted)">Nenhuma reclamação encontrada para esta empresa.</div>`;
     } else {
-      const statusMap = { open:'🔴 Não respondida', in_progress:'🟡 Em análise', resolved:'🟢 Resolvido' };
-      const statusBg  = { open:'#fef2f2', in_progress:'#fffbeb', resolved:'#f0fdf4' };
-      const statusCol = { open:'#dc2626', in_progress:'#d97706', resolved:'#16a34a' };
+      const statusMap = { open:'🔴 Não respondida', in_progress:'🔵 Respondida', resolved:'🟢 Resolvido' };
+      const statusBg  = { open:'#fef2f2', in_progress:'#eff6ff', resolved:'#f0fdf4' };
+      const statusCol = { open:'#dc2626', in_progress:'#2563eb', resolved:'#16a34a' };
       html += list.map(c => {
         const date = c.created_at ? new Date(c.created_at).toLocaleDateString('pt-BR') : '';
         const desc = (c.description||'').slice(0,140) + ((c.description||'').length > 140 ? '…' : '');
@@ -6751,9 +6749,9 @@ function renderResolutionPage() {
   const { complaint, messages, nps } = currentResolution;
   const el = document.getElementById('resolution-content');
   const isClient = currentUser?.id === complaint.user_id;
-  const statusMap  = { open:'🔴 Não respondida', in_progress:'🟡 Em análise', resolved:'🟢 Resolvido' };
-  const statusBg   = { open:'#fef2f2', in_progress:'#fffbeb', resolved:'#f0fdf4' };
-  const statusCol  = { open:'#dc2626', in_progress:'#d97706', resolved:'#16a34a' };
+  const statusMap  = { open:'🔴 Não respondida', in_progress:'🔵 Respondida', resolved:'🟢 Resolvido' };
+  const statusBg   = { open:'#fef2f2', in_progress:'#eff6ff', resolved:'#f0fdf4' };
+  const statusCol  = { open:'#dc2626', in_progress:'#2563eb', resolved:'#16a34a' };
   const st = complaint.status || 'open';
 
   const msgHtml = messages.length === 0
@@ -7070,7 +7068,7 @@ async function loadCompanyComplaints(status='open') {
             <div style="font-size:12px;color:var(--muted);margin-bottom:4px">${c.vehicle_brand||''} ${c.vehicle_model||''} ${c.vehicle_year||''}</div>
             <div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy)">${c.title}</div>
           </div>
-          <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${c.status==='resolved'?'#e8f5e9':c.status==='in_progress'?'#fff8e1':'#fef2f2'};color:${c.status==='resolved'?'#16a34a':c.status==='in_progress'?'#f59e0b':'#dc2626'}">${c.status==='resolved'?'Resolvido':c.status==='in_progress'?'Em análise':'Não respondida'}</span>
+          <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${c.status==='resolved'?'#e8f5e9':c.status==='in_progress'?'#eff6ff':'#fef2f2'};color:${c.status==='resolved'?'#16a34a':c.status==='in_progress'?'#2563eb':'#dc2626'}">${c.status==='resolved'?'Resolvido':c.status==='in_progress'?'Respondida':'Não respondida'}</span>
         </div>
         <div style="font-size:13px;color:var(--text2);line-height:1.5">${(c.description||'').slice(0,120)}…</div>
         <div style="font-size:12px;color:var(--muted);margin-top:8px;display:flex;justify-content:space-between">
@@ -7355,7 +7353,7 @@ async function renderProfile() {
             ${c.vehicle_version ? `<div style="font-size:12px;color:var(--muted);font-style:italic;margin-top:2px">${c.vehicle_version}</div>` : ''}
             <div style="font-family:var(--font);font-weight:800;font-size:14px;color:var(--text);margin-top:8px">${c.title || 'Reclamação'}</div>
           </div>
-          <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${c.status === 'resolved' ? '#e8f5e9' : c.status === 'progress' ? '#fff8e1' : '#fef2f2'};color:${c.status === 'resolved' ? '#16a34a' : c.status === 'progress' ? '#f59e0b' : '#dc2626'}">${c.status === 'resolved' ? 'Resolvido' : c.status === 'in_progress' ? 'Em análise' : 'Não respondida'}</span>
+          <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${c.status === 'resolved' ? '#e8f5e9' : c.status === 'progress' ? '#eff6ff' : '#fef2f2'};color:${c.status === 'resolved' ? '#16a34a' : c.status === 'progress' ? '#2563eb' : '#dc2626'}">${c.status === 'resolved' ? 'Resolvido' : c.status === 'in_progress' ? 'Respondida' : 'Não respondida'}</span>
         </div>
         ${c.company_name ? `<div style="font-size:12px;color:var(--muted)">🏢 <span style="cursor:pointer;color:var(--navy);font-weight:600;text-decoration:underline" onclick="event.stopPropagation();openCompanyProfile('${c.company_name}')">${c.company_name}</span></div>` : ''}
         <div style="font-size:12px;color:var(--muted);margin-top:6px;display:flex;justify-content:space-between">
