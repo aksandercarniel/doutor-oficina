@@ -574,6 +574,16 @@ header{
 }
 
 /* ── RANKING ── */
+/* Reduz o respiro vertical entre o bloco Veículos e o Reclamações recentes.
+   Padrão da .section é 40px em cima/baixo (= 80px de espaço entre blocos),
+   que estava deixando um buraco vertical. 16px de cada lado dá 32px total,
+   suficiente pra separar visualmente sem isolar. Mobile já é mais apertado. */
+#ranking-section{padding-bottom:16px}
+#complaints-section{padding-top:16px}
+@media(max-width:700px){
+  #ranking-section{padding-bottom:12px}
+  #complaints-section{padding-top:12px}
+}
 /* Fundo dinâmico do bloco conforme aba ativa. Aplicado no .section-inner
    (que é centralizado com max-width:1280px) pra virar "caixa contida" em
    vez de faixa edge-to-edge. border-radius dá cara de caixa; padding
@@ -1611,7 +1621,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
   <!-- VEÍCULOS EM DESTAQUE — removido: substituído pelo Ranking com abas Melhores/Piores e cards cheios -->
 
   <!-- RECLAMAÇÕES RECENTES -->
-  <section class="section section-alt">
+  <section class="section section-alt" id="complaints-section">
     <div class="section-inner">
       <div class="section-header">
         <h2 class="section-title">Reclamações <span class="accent">recentes</span></h2>
