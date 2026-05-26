@@ -1975,9 +1975,9 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
         <div class="user-real-name" id="profile-name-big">Usuário</div>
         <div class="user-email" id="profile-email-big">email@email.com</div>
         <div class="user-stats">
-          <div class="ustat"><div class="ustat-n" id="profile-count">0</div><div class="ustat-l">Reclamações</div></div>
-          <div class="ustat"><div class="ustat-n" id="profile-votes-total">0</div><div class="ustat-l">Votos recebidos</div></div>
-          <div class="ustat"><div class="ustat-n" id="profile-resolved">0</div><div class="ustat-l">Respondidas</div></div>
+          <div class="ustat"><div class="ustat-n" id="profile-count">0</div><div class="ustat-l" id="profile-count-label">Reclamações</div></div>
+          <div class="ustat"><div class="ustat-n" id="profile-votes-total">0</div><div class="ustat-l" id="profile-votes-label">Votos recebidos</div></div>
+          <div class="ustat"><div class="ustat-n" id="profile-resolved">0</div><div class="ustat-l" id="profile-resolved-label">Respondidas</div></div>
         </div>
       </div>
     </div>
@@ -7365,9 +7365,18 @@ async function renderProfile() {
     const countEl = document.getElementById('profile-count');
     const resolvedEl = document.getElementById('profile-resolved');
     const votesEl = document.getElementById('profile-votes-total');
-    if (countEl) countEl.textContent = list.length;
-    if (resolvedEl) resolvedEl.textContent = list.filter(c => c.status && c.status !== 'open').length;
-    if (votesEl) votesEl.textContent = list.reduce((sum, c) => sum + (c.votes_count || 0), 0);
+    const countLbl = document.getElementById('profile-count-label');
+    const resolvedLbl = document.getElementById('profile-resolved-label');
+    const votesLbl = document.getElementById('profile-votes-label');
+    const totalCount = list.length;
+    const respondidasCount = list.filter(c => c.status && c.status !== 'open').length;
+    const votosTotal = list.reduce((sum, c) => sum + (c.votes_count || 0), 0);
+    if (countEl) countEl.textContent = totalCount;
+    if (resolvedEl) resolvedEl.textContent = respondidasCount;
+    if (votesEl) votesEl.textContent = votosTotal;
+    if (countLbl) countLbl.textContent = totalCount === 1 ? 'Reclamação' : 'Reclamações';
+    if (resolvedLbl) resolvedLbl.textContent = respondidasCount === 1 ? 'Respondida' : 'Respondidas';
+    if (votesLbl) votesLbl.textContent = votosTotal === 1 ? 'Voto recebido' : 'Votos recebidos';
 
     // Renderiza lista de reclamações
     const listEl = document.getElementById('my-complaints-list');
