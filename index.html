@@ -9473,7 +9473,7 @@ function renderComplaintsList(list) {
       <div class="cra-sub">${sub}</div>
       <div class="cra-text">${c.text}</div>
       <div class="cra-footer">
-        <span class="cra-foot-item" style="display:inline-flex;align-items:center;gap:4px">${statusFace(c.status,14)}${c.statusLabel}</span>
+        <span style="font-size:11px;font-weight:700;padding:3px 12px 3px 4px;border-radius:20px;background:${c.status==='resolved'?'#f0fdf4':c.status==='in_progress'?'#eff6ff':'#fef2f2'};color:${c.status==='resolved'?'#16a34a':c.status==='in_progress'?'#2563eb':'#dc2626'};display:inline-flex;align-items:center;gap:4px">${statusFace(c.status,16)}${c.statusLabel}</span>
         <span class="cra-foot-sep">·</span>
         <span class="cra-foot-item">⏱ ${c.date}</span>
         ${locHtml}
@@ -9569,7 +9569,7 @@ function buildComplaintCardHtml(c, i) {
       <div class="cra-sub">${sub}</div>
       <div class="cra-text">${c.text}</div>
       <div class="cra-footer">
-        <span class="cra-foot-item" style="display:inline-flex;align-items:center;gap:4px">${statusFace(c.status,14)}${c.statusLabel}</span>
+        <span style="font-size:11px;font-weight:700;padding:3px 12px 3px 4px;border-radius:20px;background:${c.status==='resolved'?'#f0fdf4':c.status==='in_progress'?'#eff6ff':'#fef2f2'};color:${c.status==='resolved'?'#16a34a':c.status==='in_progress'?'#2563eb':'#dc2626'};display:inline-flex;align-items:center;gap:4px">${statusFace(c.status,16)}${c.statusLabel}</span>
         <span class="cra-foot-sep">·</span>
         <span class="cra-foot-item">⏱ ${c.date}</span>
         ${locHtml}
