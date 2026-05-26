@@ -561,10 +561,6 @@ header{
 }
 .cra-foot-item{display:flex;align-items:center;gap:5px}
 .cra-foot-sep{color:var(--border2)}
-.cra-status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
-.cra-status-dot.s-open{background:var(--orange)}
-.cra-status-dot.s-progress{background:var(--blue)}
-.cra-status-dot.s-resolved{background:var(--green)}
 .cra-vote{margin-left:auto}
 @media(max-width:560px){
   .complaint-card-ra{padding:14px 16px;grid-column-gap:12px}
@@ -9461,7 +9457,7 @@ function renderComplaintsList(list) {
       <div class="cra-sub">${sub}</div>
       <div class="cra-text">${c.text}</div>
       <div class="cra-footer">
-        <span class="cra-foot-item"><span class="cra-status-dot ${c.status}"></span>${c.statusLabel}</span>
+        <span class="cra-foot-item" style="display:inline-flex;align-items:center;gap:4px">${statusFace(c.status,14)}${c.statusLabel}</span>
         <span class="cra-foot-sep">·</span>
         <span class="cra-foot-item">⏱ ${c.date}</span>
         ${locHtml}
@@ -9557,7 +9553,7 @@ function buildComplaintCardHtml(c, i) {
       <div class="cra-sub">${sub}</div>
       <div class="cra-text">${c.text}</div>
       <div class="cra-footer">
-        <span class="cra-foot-item"><span class="cra-status-dot ${c.status}"></span>${c.statusLabel}</span>
+        <span class="cra-foot-item" style="display:inline-flex;align-items:center;gap:4px">${statusFace(c.status,14)}${c.statusLabel}</span>
         <span class="cra-foot-sep">·</span>
         <span class="cra-foot-item">⏱ ${c.date}</span>
         ${locHtml}
