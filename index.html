@@ -7080,7 +7080,7 @@ function openNPSModal(complaintId, companyName) {
   modal.innerHTML = `
     <div class="modal" style="max-width:520px">
       <div class="modal-header">
-        <h2 class="modal-title">Marcar como <span class="accent">resolvido</span></h2>
+        <h2 class="modal-title">Avaliar <span class="accent">atendimento</span></h2>
         <button class="modal-close" onclick="closeNPSModal()" aria-label="Cancelar">✕</button>
       </div>
       <div class="modal-body">
@@ -7093,8 +7093,7 @@ function openNPSModal(complaintId, companyName) {
           <span>Definitivamente não</span><span>Definitivamente sim</span>
         </div>
         <textarea id="nps-comment" placeholder="Comentário opcional…" style="width:100%;min-height:70px;border:1.5px solid var(--border2);border-radius:10px;padding:12px;font-family:var(--font-body);font-size:13px;resize:none;outline:none;box-sizing:border-box;margin-bottom:16px"></textarea>
-        <button onclick="submitNPSModal('${complaintId}','${(companyName||'').replace(/'/g,"\\'")}',true)" id="nps-submit-btn" disabled style="width:100%;background:var(--red);color:#fff;border:none;border-radius:10px;padding:12px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px;opacity:.5;margin-bottom:10px">Enviar avaliação e concluir</button>
-        <button onclick="submitNPSModal('${complaintId}','${(companyName||'').replace(/'/g,"\\'")}',false)" style="width:100%;background:none;border:none;color:var(--muted);cursor:pointer;font-family:var(--font-body);font-size:12px;text-decoration:underline;padding:4px">Marcar resolvido sem avaliar</button>
+        <button onclick="submitNPSModal('${complaintId}','${(companyName||'').replace(/'/g,"\\'")}')" id="nps-submit-btn" disabled style="width:100%;background:var(--navy);color:#fff;border:none;border-radius:10px;padding:12px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px;opacity:.5">Enviar avaliação</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
@@ -7106,23 +7105,24 @@ function closeNPSModal() {
   npsScore = null;
 }
 
-async function submitNPSModal(complaintId, companyName, withNPS) {
-  // Se for enviar avaliação, valida que tem score
-  if (withNPS && npsScore === null) return;
-  const comment = withNPS ? (document.getElementById('nps-comment')?.value.trim() || null) : null;
-  const scoreToSend = withNPS ? npsScore : null;
+async function submitNPSModal(complaintId, companyName) {
+  // Sem score: noop (botão já fica desabilitado, mas defesa extra)
+  if (npsScore === null) return;
+  const comment = document.getElementById('nps-comment')?.value.trim() || null;
+  const scoreToSend = npsScore;
+  // Decisão de desfecho pela nota (spec encerramento): NPS >= 7 → resolved; <= 6 → unresolved
+  const finalStatus = scoreToSend >= 7 ? 'resolved' : 'unresolved';
   try {
-    // UPDATE status
-    await sb.from('complaints').update({ status:'resolved' }).eq('id', complaintId);
-    // INSERT NPS (só se tiver score)
-    if (withNPS) {
-      await sb.from('nps_ratings').insert([{ complaint_id:complaintId, user_id:currentUser.id, score:scoreToSend, comment:comment, company_name:normalizeCompanyName(companyName) }]);
-    }
+    // UPDATE status com o desfecho calculado
+    const { error: stErr } = await sb.from('complaints').update({ status:finalStatus }).eq('id', complaintId);
+    if (stErr) { alert('Erro ao atualizar status: ' + stErr.message); return; }
+    // INSERT NPS
+    await sb.from('nps_ratings').insert([{ complaint_id:complaintId, user_id:currentUser.id, score:scoreToSend, comment:comment, company_name:normalizeCompanyName(companyName) }]);
     closeNPSModal();
     // Atualiza estado local se estamos na página resolution
     if (currentResolution && currentResolution.complaint?.id === complaintId) {
-      currentResolution.complaint.status = 'resolved';
-      if (withNPS) currentResolution.nps = { score:scoreToSend, comment };
+      currentResolution.complaint.status = finalStatus;
+      currentResolution.nps = { score:scoreToSend, comment };
       await renderResolutionPage();
     } else {
       // Vindo da página complaint, navega pra resolution pra ver o resultado
