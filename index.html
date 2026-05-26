@@ -8986,6 +8986,19 @@ function statusFace(status, size) {
     parts = '<circle cx="14" cy="16" r="1.8" fill="#fff"/>'
           + '<circle cx="26" cy="16" r="1.8" fill="#fff"/>'
           + '<line x1="13" y1="25" x2="27" y2="25" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>';
+  } else if (status === 'replied' || status === 's-replied') {
+    // amber: cliente respondeu, aguardando empresa - boca neutra (mesma do in_progress, só muda cor)
+    bg = '#f59e0b';
+    parts = '<circle cx="14" cy="16" r="1.8" fill="#fff"/>'
+          + '<circle cx="26" cy="16" r="1.8" fill="#fff"/>'
+          + '<line x1="13" y1="25" x2="27" y2="25" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>';
+  } else if (status === 'unresolved' || status === 's-unresolved') {
+    // coral: cliente avaliou mal (NPS <=6) - boca em X (reclamação silenciada, empresa não ouviu)
+    bg = '#ea580c';
+    parts = '<circle cx="14" cy="16" r="1.8" fill="#fff"/>'
+          + '<circle cx="26" cy="16" r="1.8" fill="#fff"/>'
+          + '<line x1="16" y1="23" x2="24" y2="29" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>'
+          + '<line x1="24" y1="23" x2="16" y2="29" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>';
   } else {
     // open / s-open / fallback: triste (só boca pra baixo, sem sobrancelhas)
     bg = '#dc2626';
