@@ -5974,7 +5974,7 @@ function renderSearchList(tab) {
   if (tab === 'all' || tab === 'complaints') {
     if (tab === 'all' && complaints.length) html += `<div style="font-family:var(--font);font-weight:900;font-size:12px;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;padding:4px 0 10px;border-bottom:1px solid var(--border)">📋 Reclamações</div>`;    complaints.slice(0,10).forEach(c => {
       html += `<div onclick="openComplaintDetail('${c.id}')" style="padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.querySelector('.sr-title').style.textDecoration='underline'" onmouseout="this.querySelector('.sr-title').style.textDecoration='none'">
-        <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${c.brand||''} ${c.model||''} · <span style="background:${c.status==='s-resolved'?'#e8f5e9':c.status==='s-progress'?'#eff6ff':'#fef2f2'};color:${c.status==='s-resolved'?'#16a34a':c.status==='s-progress'?'#2563eb':'#dc2626'};padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700">${c.status==='s-resolved'?'Resolvido':c.status==='s-progress'?'Respondida':'Não respondida'}</span></div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${c.brand||''} ${c.model||''} · <span style="background:${c.status==='s-resolved'?'#e8f5e9':c.status==='s-progress'?'#eff6ff':'#fef2f2'};color:${c.status==='s-resolved'?'#16a34a':c.status==='s-progress'?'#2563eb':'#dc2626'};padding:1px 6px 1px 3px;border-radius:10px;font-size:10px;font-weight:700;display:inline-flex;align-items:center;gap:3px">${statusFace(c.status,14)}${c.status==='s-resolved'?'Resolvido':c.status==='s-progress'?'Respondida':'Não respondida'}</span></div>
         <div class="sr-title" style="font-family:var(--font);font-weight:700;font-size:15px;color:var(--navy);margin-bottom:4px">${c.title||'Reclamação'}</div>
         <div style="font-size:13px;color:var(--text2);line-height:1.5">${(c.description||c.text||'').slice(0,120)}${(c.description||c.text||'').length>120?'…':''}</div>
       </div>`;
@@ -6344,7 +6344,7 @@ async function openComplaintDetail(complaintId) {
     const { data: complaint } = await sb.from('complaints').select('*').eq('id', complaintId).single();
     if (!complaint) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Reclamação não encontrada.</div>'; return; }
     const { data: messages } = await sb.from('resolutions').select('*').eq('complaint_id', complaintId).order('created_at', { ascending: true });
-    const statusMap = { open:'🔴 Não respondida', in_progress:'🔵 Respondida', resolved:'🟢 Resolvido' };
+    const statusMap = { open: statusFace('open',16)+'<span style="vertical-align:middle;margin-left:4px">Não respondida</span>', in_progress: statusFace('in_progress',16)+'<span style="vertical-align:middle;margin-left:4px">Respondida</span>', resolved: statusFace('resolved',16)+'<span style="vertical-align:middle;margin-left:4px">Resolvido</span>' };
     const typeEmoji = { carro:'🚗', moto:'🏍️', caminhao:'🚚' };
     const isAuthor = currentUser?.id === complaint.user_id;
     const isCompany = currentUser?.role === 'company';
@@ -6593,7 +6593,7 @@ async function openCompanyProfile(companyName) {
     if (list.length === 0) {
       html += `<div style="text-align:center;padding:40px;color:var(--muted)">Nenhuma reclamação encontrada para esta empresa.</div>`;
     } else {
-      const statusMap = { open:'🔴 Não respondida', in_progress:'🔵 Respondida', resolved:'🟢 Resolvido' };
+      const statusMap = { open: statusFace('open',16)+'<span style="vertical-align:middle;margin-left:4px">Não respondida</span>', in_progress: statusFace('in_progress',16)+'<span style="vertical-align:middle;margin-left:4px">Respondida</span>', resolved: statusFace('resolved',16)+'<span style="vertical-align:middle;margin-left:4px">Resolvido</span>' };
       const statusBg  = { open:'#fef2f2', in_progress:'#eff6ff', resolved:'#f0fdf4' };
       const statusCol = { open:'#dc2626', in_progress:'#2563eb', resolved:'#16a34a' };
       html += list.map(c => {
@@ -6749,7 +6749,7 @@ function renderResolutionPage() {
   const { complaint, messages, nps } = currentResolution;
   const el = document.getElementById('resolution-content');
   const isClient = currentUser?.id === complaint.user_id;
-  const statusMap  = { open:'🔴 Não respondida', in_progress:'🔵 Respondida', resolved:'🟢 Resolvido' };
+  const statusMap  = { open: statusFace('open',16)+'<span style="vertical-align:middle;margin-left:4px">Não respondida</span>', in_progress: statusFace('in_progress',16)+'<span style="vertical-align:middle;margin-left:4px">Respondida</span>', resolved: statusFace('resolved',16)+'<span style="vertical-align:middle;margin-left:4px">Resolvido</span>' };
   const statusBg   = { open:'#fef2f2', in_progress:'#eff6ff', resolved:'#f0fdf4' };
   const statusCol  = { open:'#dc2626', in_progress:'#2563eb', resolved:'#16a34a' };
   const st = complaint.status || 'open';
@@ -7068,7 +7068,7 @@ async function loadCompanyComplaints(status='open') {
             <div style="font-size:12px;color:var(--muted);margin-bottom:4px">${c.vehicle_brand||''} ${c.vehicle_model||''} ${c.vehicle_year||''}</div>
             <div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy)">${c.title}</div>
           </div>
-          <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${c.status==='resolved'?'#e8f5e9':c.status==='in_progress'?'#eff6ff':'#fef2f2'};color:${c.status==='resolved'?'#16a34a':c.status==='in_progress'?'#2563eb':'#dc2626'}">${c.status==='resolved'?'Resolvido':c.status==='in_progress'?'Respondida':'Não respondida'}</span>
+          <span style="font-size:11px;font-weight:700;padding:3px 10px 3px 4px;border-radius:20px;background:${c.status==='resolved'?'#e8f5e9':c.status==='in_progress'?'#eff6ff':'#fef2f2'};color:${c.status==='resolved'?'#16a34a':c.status==='in_progress'?'#2563eb':'#dc2626'};display:inline-flex;align-items:center;gap:4px">${statusFace(c.status,16)}${c.status==='resolved'?'Resolvido':c.status==='in_progress'?'Respondida':'Não respondida'}</span>
         </div>
         <div style="font-size:13px;color:var(--text2);line-height:1.5">${(c.description||'').slice(0,120)}…</div>
         <div style="font-size:12px;color:var(--muted);margin-top:8px;display:flex;justify-content:space-between">
@@ -7353,7 +7353,7 @@ async function renderProfile() {
             ${c.vehicle_version ? `<div style="font-size:12px;color:var(--muted);font-style:italic;margin-top:2px">${c.vehicle_version}</div>` : ''}
             <div style="font-family:var(--font);font-weight:800;font-size:14px;color:var(--text);margin-top:8px">${c.title || 'Reclamação'}</div>
           </div>
-          <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${c.status === 'resolved' ? '#e8f5e9' : c.status === 'progress' ? '#eff6ff' : '#fef2f2'};color:${c.status === 'resolved' ? '#16a34a' : c.status === 'progress' ? '#2563eb' : '#dc2626'}">${c.status === 'resolved' ? 'Resolvido' : c.status === 'in_progress' ? 'Respondida' : 'Não respondida'}</span>
+          <span style="font-size:11px;font-weight:700;padding:3px 10px 3px 4px;border-radius:20px;background:${c.status === 'resolved' ? '#e8f5e9' : c.status === 'progress' ? '#eff6ff' : '#fef2f2'};color:${c.status === 'resolved' ? '#16a34a' : c.status === 'progress' ? '#2563eb' : '#dc2626'};display:inline-flex;align-items:center;gap:4px">${statusFace(c.status,16)}${c.status === 'resolved' ? 'Resolvido' : c.status === 'in_progress' ? 'Respondida' : 'Não respondida'}</span>
         </div>
         ${c.company_name ? `<div style="font-size:12px;color:var(--muted)">🏢 <span style="cursor:pointer;color:var(--navy);font-weight:600;text-decoration:underline" onclick="event.stopPropagation();openCompanyProfile('${c.company_name}')">${c.company_name}</span></div>` : ''}
         <div style="font-size:12px;color:var(--muted);margin-top:6px;display:flex;justify-content:space-between">
@@ -8957,6 +8957,36 @@ function renderDoxcoreVelocimetro(rating, size){
 // Gera o SVG inline de uma carinha BRANCA (n = 1..5).
 // O fundo colorido vem do .face-btn no CSS (D89 — quadrado colorido fixo).
 // Param 'active' mantido por compatibilidade mas não afeta o desenho (cor é sempre branca).
+// Retorna SVG inline da carinha colorida correspondente ao status da reclamação.
+// Usado nos badges de status: vermelho/irritada (open), azul/neutra (in_progress), verde/feliz (resolved).
+function statusFace(status, size) {
+  size = size || 20;
+  let bg, parts;
+  if (status === 'resolved' || status === 's-resolved') {
+    bg = '#16a34a';
+    parts = '<circle cx="14" cy="16" r="1.8" fill="#fff"/>'
+          + '<circle cx="26" cy="16" r="1.8" fill="#fff"/>'
+          + '<path d="M 13 23 Q 20 29 27 23" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
+  } else if (status === 'in_progress' || status === 's-progress' || status === 'progress') {
+    bg = '#2563eb';
+    parts = '<circle cx="14" cy="16" r="1.8" fill="#fff"/>'
+          + '<circle cx="26" cy="16" r="1.8" fill="#fff"/>'
+          + '<line x1="13" y1="25" x2="27" y2="25" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>';
+  } else {
+    // open / s-open / fallback: irritada (com sobrancelhas inclinadas pra dentro)
+    bg = '#dc2626';
+    parts = '<path d="M 10 12 L 17 14" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>'
+          + '<path d="M 30 12 L 23 14" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>'
+          + '<circle cx="14" cy="17" r="1.8" fill="#fff"/>'
+          + '<circle cx="26" cy="17" r="1.8" fill="#fff"/>'
+          + '<path d="M 13 28 Q 20 22 27 28" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
+  }
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 40 40" style="flex-shrink:0;vertical-align:middle">'
+    + '<circle cx="20" cy="20" r="18" fill="' + bg + '"/>'
+    + parts
+    + '</svg>';
+}
+
 function faceSvg(n, active) {
   let mouth;
   if (n === 1)      mouth = '<path d="M 13 27 Q 20 20 27 27" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
