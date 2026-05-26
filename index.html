@@ -643,6 +643,18 @@ header{
 
 /* ── HOW IT WORKS ── */
 .how-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+
+/* ── PERFIL DE EMPRESA: grid de 2 colunas (identidade + NPS/reclamações) ── */
+.company-profile-grid{
+  display:grid;
+  grid-template-columns:minmax(0,2fr) minmax(0,1fr);
+  gap:24px;
+  align-items:start;
+  margin-bottom:24px;
+}
+@media (max-width:720px){
+  .company-profile-grid{grid-template-columns:1fr}
+}
 .how-card{
   background:var(--white);border:1.5px solid var(--border);border-radius:14px;
   padding:28px 22px;text-align:center;transition:border-color .2s,box-shadow .2s;
@@ -6571,7 +6583,7 @@ async function openCompanyProfile(companyName) {
     let html = `
       <button onclick="goBack()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body);margin-bottom:20px;display:flex;align-items:center;gap:6px">← Voltar</button>
 
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;align-items:start;margin-bottom:24px">
+      <div class="company-profile-grid">
 
         <!-- Coluna esquerda: identidade -->
         <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:28px">
