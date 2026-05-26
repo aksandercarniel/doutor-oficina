@@ -6489,6 +6489,40 @@ function renderNpsBar(score, compact) {
     + '</div>';
 }
 
+// Renderiza o card completo de NPS pro perfil de empresa: nota grande + pílula + barra fina.
+// score pode ser null (estado vazio com "—" e barra desbotada). votes é a contagem de avaliações.
+function renderNpsCard(score, votes) {
+  const hasScore = score != null && !isNaN(score);
+  const s = hasScore ? Math.max(0, Math.min(10, parseFloat(score))) : 0;
+  let cat = 'detrator', catLabel = 'Detrator', color = '#dc2626', borderDark = '#6b0d0d', bgPill = '#fde4e4';
+  if (hasScore) {
+    if (s >= 9) { cat = 'promotor'; catLabel = 'Promotor'; color = '#16a34a'; borderDark = '#064e1f'; bgPill = '#dcfce7'; }
+    else if (s >= 7) { cat = 'neutro'; catLabel = 'Neutro'; color = '#d97706'; borderDark = '#6b3203'; bgPill = '#fef3c7'; }
+    else { cat = 'detrator'; catLabel = 'Detrator'; color = '#dc2626'; borderDark = '#6b0d0d'; bgPill = '#fde4e4'; }
+  }
+  // Posição do marker na barra fina (% direta, margin-left -10px = metade da largura 20px)
+  const leftPct = hasScore ? (s / 10) * 100 : 0;
+  return ''
+    + '<div style="font-size:13px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;text-align:center">Nota NPS</div>'
+    + '<div style="font-size:52px;font-weight:900;color:' + (hasScore ? color : '#cbd5e1') + ';font-family:var(--font);line-height:1;text-align:center">' + (hasScore ? s.toFixed(1) : '—') + '</div>'
+    + '<div style="display:block;width:fit-content;margin:10px auto 0;background:' + (hasScore ? bgPill : '#f3f4f6') + ';color:' + (hasScore ? color : 'var(--muted)') + ';font-size:12px;font-weight:700;padding:4px 16px;border-radius:20px">' + (hasScore ? catLabel : 'Sem avaliações') + '</div>'
+    + '<div style="margin-top:18px;padding:0 12px">'
+    +   '<div style="position:relative;height:14px">'
+    +     '<div style="position:absolute;inset:0;display:flex;border-radius:6px;overflow:hidden;box-shadow:0 0 0 1px rgba(0,0,0,.08);opacity:' + (hasScore ? '1' : '0.35') + '">'
+    +       '<div style="flex:7;background:#dc2626"></div>'
+    +       '<div style="flex:2;background:#d97706"></div>'
+    +       '<div style="flex:1;background:#16a34a"></div>'
+    +     '</div>'
+    +     (hasScore
+      ? '<div style="position:absolute;top:-3px;bottom:-3px;left:' + leftPct + '%;margin-left:-10px;width:20px;background:' + color + ';border:2px solid ' + borderDark + ';border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,.18)"></div>'
+      : '')
+    +   '</div>'
+    + '</div>'
+    + '<div style="font-size:12px;color:var(--muted);margin-top:14px;text-align:center' + (hasScore ? '' : ';font-style:italic') + '">'
+    + (hasScore ? (votes === 1 ? '1 avaliação' : votes + ' avaliações') : 'Seja o 1º a avaliar →')
+    + '</div>';
+}
+
 async function openCompanyProfile(companyName) {
   showPage('company-profile', {name: encodeURIComponent(companyName)});
   const el = document.getElementById('company-profile-content');
@@ -6561,13 +6595,7 @@ async function openCompanyProfile(companyName) {
         <!-- Coluna direita: nota + stats -->
         <div style="display:flex;flex-direction:column;gap:16px">
           <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:24px">
-            ${npsAvg !== null ? `
-            <div style="font-size:13px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:18px;text-align:center">Nota NPS</div>
-            ${renderNpsBar(npsAvg, false)}
-            <div style="font-size:12px;color:var(--muted);margin-top:14px;text-align:center">${npsScores.length===1?'1 avaliação':npsScores.length+' avaliações'}</div>
-            ` : `
-            <div style="font-size:13px;color:var(--muted);font-style:italic;padding:8px 0;text-align:center">Sem avaliações ainda</div>
-            `}
+            ${renderNpsCard(npsAvg, npsScores.length)}
           </div>
           <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:20px">
             <div style="display:flex;flex-direction:column;gap:12px">
