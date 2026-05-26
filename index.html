@@ -2171,19 +2171,6 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
             <div class="form-hint">Usado apenas para acompanhar sua reclamação</div>
           </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">Estado</label>
-          <select class="form-select" id="sel-state">
-            <option value="">Selecione…</option>
-            <option>SP</option><option>RJ</option><option>MG</option><option>RS</option>
-            <option>PR</option><option>SC</option><option>BA</option><option>GO</option>
-            <option>PE</option><option>CE</option><option>AM</option><option>PA</option>
-            <option>ES</option><option>MT</option><option>MS</option><option>RN</option>
-            <option>PB</option><option>AL</option><option>SE</option><option>PI</option>
-            <option>MA</option><option>RO</option><option>AC</option><option>TO</option>
-            <option>AP</option><option>RR</option><option>DF</option>
-          </select>
-        </div>
         <div class="confirm-summary" id="confirm-summary"></div>
         <div class="form-actions">
           <button class="btn-back" onclick="goStep(1)">← Voltar</button>
@@ -2345,6 +2332,8 @@ async function sbGetSession() {
       email: data.session.user.email,
       role: profile?.role || 'client',
       phone: profile?.phone || null,
+      city: profile?.city || null,
+      state: profile?.state || null,
       company_name: profile?.company_name || null
     };
     updateNavAuth();
@@ -2466,6 +2455,8 @@ async function doLogin() {
       email: data.user.email,
       role: profile?.role || 'client',
       phone: profile?.phone || null,
+      city: profile?.city || null,
+      state: profile?.state || null,
       company_name: profile?.company_name || null
     };
     loginSuccess(currentUser);
@@ -3290,7 +3281,7 @@ async function submitComplaint() {
     title:     document.getElementById('inp-title').value || 'Reclamação',
     description: document.getElementById('inp-desc').value || '',
     rating:    selectedRating || 3,
-    state:     document.getElementById('sel-state').value || null,
+    state:     currentUser?.state || null,
     km:        document.getElementById('inp-km').value || null,
     status:    'open',
     wants_mediation: wantsMediation,
@@ -3299,7 +3290,7 @@ async function submitComplaint() {
     company_email:   document.getElementById('comp-email').value.trim() || null,
     company_phone:   document.getElementById('comp-phone').value.trim() || null,
     company_address: document.getElementById('comp-address').value.trim() || null,
-    city:            document.getElementById('comp-city')?.value.trim() || null,
+    city:            currentUser?.city || null,
     client_whatsapp: wantsMediation ? document.getElementById('med-whatsapp').value.trim() : null,
   };
 
