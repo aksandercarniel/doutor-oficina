@@ -336,6 +336,11 @@ header{
 .qf-btn-status-replied{background:var(--yellow-light);border-color:#f0d896;color:var(--yellow)}
 .qf-btn-status-resolved{background:var(--green-light);border-color:#b8e6d3;color:var(--green)}
 .qf-btn-status-unresolved{background:var(--orange-light);border-color:#fed7aa;color:var(--orange)}
+/* Mobile: nos 5 botões de status, esconde texto e mantém só a carinha. Todas e Menções à marca seguem com texto. */
+@media(max-width:640px){
+  .qf-btn[class*="qf-btn-status-"] .qf-btn-label{display:none}
+  .qf-btn[class*="qf-btn-status-"]{padding:5px 8px}
+}
 .trending-tag{background:var(--red-light);border:1px solid var(--red-light2);color:var(--red);font-family:var(--font);font-weight:700;font-size:12px;padding:4px 12px;border-radius:20px;cursor:pointer;transition:all .15s}
 .trending-tag:hover{background:var(--red);color:#fff}
 
@@ -1463,11 +1468,11 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
     <button onclick="goBack()" style="background:none;border:1.5px solid var(--border2);border-radius:8px;padding:8px 16px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;color:var(--navy)">← Voltar</button>
   </div>
   <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
-    <button class="qf-btn qf-btn-status-open" onclick="companyFilterComplaints(this,'open')"><span class="face-slot" data-status="open"></span> Não respondidas</button>
-    <button class="qf-btn qf-btn-status-progress" onclick="companyFilterComplaints(this,'progress')"><span class="face-slot" data-status="progress"></span> Respondidas</button>
-    <button class="qf-btn qf-btn-status-replied" onclick="companyFilterComplaints(this,'replied')"><span class="face-slot" data-status="replied"></span> Em réplica</button>
-    <button class="qf-btn qf-btn-status-resolved" onclick="companyFilterComplaints(this,'resolved')"><span class="face-slot" data-status="resolved"></span> Resolvidas</button>
-    <button class="qf-btn qf-btn-status-unresolved" onclick="companyFilterComplaints(this,'unresolved')"><span class="face-slot" data-status="unresolved"></span> Não resolvidas</button>
+    <button class="qf-btn qf-btn-status-open" onclick="companyFilterComplaints(this,'open')"><span class="face-slot" data-status="open"></span> <span class="qf-btn-label">Não respondidas</span></button>
+    <button class="qf-btn qf-btn-status-progress" onclick="companyFilterComplaints(this,'progress')"><span class="face-slot" data-status="progress"></span> <span class="qf-btn-label">Respondidas</span></button>
+    <button class="qf-btn qf-btn-status-replied" onclick="companyFilterComplaints(this,'replied')"><span class="face-slot" data-status="replied"></span> <span class="qf-btn-label">Em réplica</span></button>
+    <button class="qf-btn qf-btn-status-resolved" onclick="companyFilterComplaints(this,'resolved')"><span class="face-slot" data-status="resolved"></span> <span class="qf-btn-label">Resolvidas</span></button>
+    <button class="qf-btn qf-btn-status-unresolved" onclick="companyFilterComplaints(this,'unresolved')"><span class="face-slot" data-status="unresolved"></span> <span class="qf-btn-label">Não resolvidas</span></button>
     <button class="qf-btn active" onclick="companyFilterComplaints(this,'all')">Todas</button>
     <button class="qf-btn" id="btn-brand-mentions" onclick="companyFilterComplaints(this,'brand')" style="border-color:var(--orange);color:var(--orange)">⚠️ Menções à marca</button>
   </div>
