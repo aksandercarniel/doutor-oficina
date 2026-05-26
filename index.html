@@ -7366,7 +7366,7 @@ async function renderProfile() {
     const resolvedEl = document.getElementById('profile-resolved');
     const votesEl = document.getElementById('profile-votes-total');
     if (countEl) countEl.textContent = list.length;
-    if (resolvedEl) resolvedEl.textContent = list.filter(c => c.status === 'resolved').length;
+    if (resolvedEl) resolvedEl.textContent = list.filter(c => c.status && c.status !== 'open').length;
     if (votesEl) votesEl.textContent = list.reduce((sum, c) => sum + (c.votes_count || 0), 0);
 
     // Renderiza lista de reclamações
