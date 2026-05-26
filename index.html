@@ -6933,10 +6933,23 @@ async function sendResolutionMessage(complaintId) {
       author_id:currentUser.id, author_name:currentUser.name, message:msg
     }]).select().single();
     currentResolution.messages.push(data);
-    // Se empresa respondeu e status ainda é 'open', muda para 'in_progress'
-    if (authorType === 'company' && currentResolution.complaint.status === 'open') {
-      await sb.from('complaints').update({ status:'in_progress' }).eq('id', complaintId);
-      currentResolution.complaint.status = 'in_progress';
+    // Transições de status conforme spec de encerramento (Reclame Aqui):
+    // - empresa responde reclamação 'open' → 'in_progress'
+    // - cliente responde após empresa ('in_progress') → 'replied' (réplica)
+    // - empresa responde réplica ('replied') → 'in_progress'
+    const curStatus = currentResolution.complaint.status;
+    let newStatus = null;
+    if (authorType === 'company' && curStatus === 'open') newStatus = 'in_progress';
+    else if (authorType === 'client'  && curStatus === 'in_progress') newStatus = 'replied';
+    else if (authorType === 'company' && curStatus === 'replied') newStatus = 'in_progress';
+    if (newStatus) {
+      const { error: stErr } = await sb.from('complaints').update({ status:newStatus }).eq('id', complaintId);
+      if (stErr) {
+        console.error('Falha ao atualizar status:', stErr);
+        alert('Mensagem enviada, mas houve erro ao atualizar o status. Recarregue a página.');
+      } else {
+        currentResolution.complaint.status = newStatus;
+      }
     }
     renderResolutionPage();
   } catch(e) { alert('Erro ao enviar mensagem.'); }
