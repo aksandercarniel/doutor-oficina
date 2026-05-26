@@ -1790,6 +1790,22 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
           <div class="auth-group"><label class="auth-label">E-mail *</label><input type="email" class="auth-input" id="reg-email" placeholder="seu@email.com"/></div>
           <div class="auth-group"><label class="auth-label">CPF *</label><input type="text" class="auth-input" id="reg-cpf" placeholder="000.000.000-00" maxlength="14" oninput="maskCPF(this)"/></div>
           <div class="auth-group"><label class="auth-label">Telefone / WhatsApp *</label><input type="text" class="auth-input" id="reg-phone" placeholder="(11) 99999-9999" maxlength="15" oninput="maskPhone(this)"/></div>
+          <div class="auth-group">
+            <label class="auth-label">Cidade / UF *</label>
+            <div style="display:grid;grid-template-columns:1fr 90px;gap:8px">
+              <input type="text" class="auth-input" id="reg-city" placeholder="Sua cidade"/>
+              <select class="auth-input" id="reg-state" style="padding:12px 8px">
+                <option value="">UF</option>
+                <option>SP</option><option>RJ</option><option>MG</option><option>RS</option>
+                <option>PR</option><option>SC</option><option>BA</option><option>GO</option>
+                <option>PE</option><option>CE</option><option>AM</option><option>PA</option>
+                <option>ES</option><option>MT</option><option>MS</option><option>RN</option>
+                <option>PB</option><option>AL</option><option>SE</option><option>PI</option>
+                <option>MA</option><option>RO</option><option>AC</option><option>TO</option>
+                <option>AP</option><option>RR</option><option>DF</option>
+              </select>
+            </div>
+          </div>
           <div class="auth-group"><label class="auth-label">Senha *</label><div class="password-wrap"><input type="password" class="auth-input" id="reg-pass" placeholder="Mínimo 6 caracteres" onkeydown="if(event.key==='Enter')doRegister()"/><button type="button" class="eye-btn" onclick="togglePassword('reg-pass',this)" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
           <div style="font-size:11px;color:var(--muted);margin-top:-8px;margin-bottom:12px">🔒 CPF usado apenas para verificação de identidade (LGPD)</div>
           <button class="auth-btn" onclick="doRegister()">Criar conta →</button>
@@ -2500,7 +2516,9 @@ async function doRegister() {
   const errEl = document.getElementById('register-error');
   errEl.classList.remove('show');
   const phone = document.getElementById('reg-phone').value.trim();
-  if (!name || !email || !cpf || !phone || pass.length < 6) {
+  const city  = document.getElementById('reg-city').value.trim();
+  const state = document.getElementById('reg-state').value;
+  if (!name || !email || !cpf || !phone || !city || !state || pass.length < 6) {
     errEl.textContent = 'Preencha todos os campos (senha mín. 6 caracteres).';
     errEl.classList.add('show'); return;
   }
@@ -2513,7 +2531,16 @@ async function doRegister() {
     if (existing) { emailExistsError(existing, errEl); return; }
     const cpfHash = btoa(cpf.replace(/[^\d]/g, ''));
     const data = await sbSignUp(name, email, pass, cpfHash, phone);
-    currentUser = { id: data?.user?.id, name, email, phone };
+    const uid = data?.user?.id;
+    // Grava phone + city + state no profiles (trigger cria a linha, mas não popula esses campos)
+    if (uid) {
+      try {
+        await sb.from('profiles').update({ phone, city, state }).eq('id', uid);
+      } catch (e) {
+        console.warn('Falha ao gravar phone/city/state no profiles:', e);
+      }
+    }
+    currentUser = { id: uid, name, email, phone, city, state };
     showPostRegisterForm();
   } catch(e) {
     errEl.textContent = e.message?.includes('already registered') ? 'E-mail já cadastrado. Faça login.' : e.message || 'Erro ao criar conta.';
