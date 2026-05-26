@@ -6047,11 +6047,12 @@ async function showSearchResults(val, fipeResults, complaintResults, mockResults
       .ilike('company_name', `%${val}%`)
       .not('company_name', 'is', null)
       .limit(20);
-    // 3. Dedupe (case-insensitive): registered tem prioridade
-    const seen = new Set((registered||[]).map(c => (c.name||'').toLowerCase()));
+    // 3. Dedupe normalizado (case-insensitive + sem pontuação + sem espaços extras): registered tem prioridade
+    const normalizeName = s => (s||'').toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+    const seen = new Set((registered||[]).map(c => normalizeName(c.name)));
     const citedUnique = [];
     (cited||[]).forEach(c => {
-      const key = (c.company_name||'').toLowerCase();
+      const key = normalizeName(c.company_name);
       if (key && !seen.has(key)) {
         seen.add(key);
         citedUnique.push({
