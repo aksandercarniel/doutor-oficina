@@ -6755,13 +6755,13 @@ async function showResolution(complaintId) {
     const { data: messages } = await sb.from('resolutions').select('*').eq('complaint_id', complaintId).order('created_at', { ascending: true });
     const { data: npsData } = await sb.from('nps_ratings').select('*').eq('complaint_id', complaintId).maybeSingle();
     currentResolution = { complaint, messages: messages || [], nps: npsData };
-    renderResolutionPage();
+    await renderResolutionPage();
   } catch(e) {
     el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)">Erro ao carregar. Tente novamente.</div>';
   }
 }
 
-function renderResolutionPage() {
+async function renderResolutionPage() {
   const { complaint, messages, nps } = currentResolution;
   const el = document.getElementById('resolution-content');
   const isClient = currentUser?.id === complaint.user_id;
@@ -6769,6 +6769,73 @@ function renderResolutionPage() {
   const statusBg   = { open:'#fef2f2', in_progress:'#eff6ff', replied:'#fef3c7', resolved:'#f0fdf4', unresolved:'#fff7ed' };
   const statusCol  = { open:'#dc2626', in_progress:'#2563eb', replied:'#d97706', resolved:'#16a34a', unresolved:'#ea580c' };
   const st = complaint.status || 'open';
+
+  // F4: decide o que mostrar na área de ação (form/botões/mensagens) baseado em status + papel + canEvaluate
+  let formHtml = '';
+  const isFinal = st === 'resolved' || st === 'unresolved';
+  if (!isFinal) {
+    if (isClient) {
+      // Cliente: variantes por status
+      const podeAvaliar = await canEvaluate(complaint, currentUser);
+      const textareaHtml = `<textarea id="resolution-msg-input" placeholder="Descreva o andamento ou replique a resposta da empresa…" style="width:100%;min-height:100px;border:1.5px solid var(--border2);border-radius:10px;padding:12px;font-family:var(--font-body);font-size:14px;resize:vertical;outline:none;box-sizing:border-box;transition:border-color .2s" onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='var(--border2)'"></textarea>`;
+      if (st === 'open' && !podeAvaliar) {
+        // Aguardando primeira resposta da empresa, prazo ainda não venceu
+        const daysSince = Math.floor((Date.now() - new Date(complaint.created_at).getTime()) / 86400000);
+        formHtml = `
+          <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px;text-align:center;color:var(--muted);font-size:13px">
+            ⏳ Aguardando resposta da empresa (há ${daysSince === 0 ? 'menos de 1 dia' : daysSince === 1 ? '1 dia' : daysSince + ' dias'})
+          </div>`;
+      } else if (st === 'open' && podeAvaliar) {
+        // Prazo venceu sem resposta — pode avaliar mesmo assim
+        formHtml = `
+          <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px">
+            <div style="background:#fef3c7;color:#92400e;border:1px solid #fbbf24;border-radius:10px;padding:12px;font-size:13px;margin-bottom:12px">
+              ⚠️ A empresa ainda não respondeu. Você pode avaliar o atendimento agora — sua avaliação ficará pública.
+            </div>
+            <button onclick="markResolved('${complaint.id}')" style="width:100%;background:var(--navy);color:#fff;border:none;border-radius:8px;padding:12px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px">Avaliar atendimento</button>
+          </div>`;
+      } else if (st === 'in_progress') {
+        // Empresa respondeu — cliente escolhe: avaliar ou replicar
+        formHtml = `
+          <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px">
+            <div style="font-family:var(--font);font-weight:700;font-size:13px;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">✍️ Sua réplica (opcional)</div>
+            ${textareaHtml}
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;flex-wrap:wrap;gap:10px">
+              <button onclick="markResolved('${complaint.id}')" style="background:var(--navy);color:#fff;border:none;border-radius:8px;padding:10px 16px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">Avaliar atendimento</button>
+              <button onclick="sendResolutionMessage('${complaint.id}')" style="background:var(--white);color:var(--navy);border:1.5px solid var(--navy);border-radius:8px;padding:10px 16px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">Não estou satisfeito — responder</button>
+            </div>
+          </div>`;
+      } else if (st === 'replied') {
+        // Cliente já replicou — aguarda nova resposta da empresa
+        formHtml = `
+          <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px;text-align:center;color:var(--muted);font-size:13px">
+            ⏳ Aguardando nova resposta da empresa
+          </div>`;
+      }
+    } else {
+      // Empresa: mantém o form de resposta como antes (sem o botão verde "marcar resolvido")
+      formHtml = `
+        <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px">
+          <div style="font-family:var(--font);font-weight:700;font-size:13px;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">🏢 Resposta da empresa</div>
+          <textarea id="resolution-msg-input" placeholder="Responda a reclamação do cliente…"
+            style="width:100%;min-height:100px;border:1.5px solid var(--border2);border-radius:10px;padding:12px;font-family:var(--font-body);font-size:14px;resize:vertical;outline:none;box-sizing:border-box;transition:border-color .2s"
+            onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='var(--border2)'"></textarea>
+          <div style="display:flex;justify-content:flex-end;margin-top:12px">
+            <button onclick="sendResolutionMessage('${complaint.id}')" style="background:var(--navy);color:#fff;border:none;border-radius:8px;padding:10px 24px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px">Enviar →</button>
+          </div>
+        </div>`;
+    }
+  } else if (nps) {
+    // Já avaliada: mostra a nota
+    const finalLabel = st === 'resolved' ? 'Resolvida' : 'Não resolvida';
+    const finalColor = st === 'resolved' ? '#16a34a' : '#ea580c';
+    const finalBg = st === 'resolved' ? '#f0fdf4' : '#fff7ed';
+    formHtml = `
+      <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px;background:${finalBg};border-radius:10px;padding:16px;margin-top:12px">
+        <div style="font-family:var(--font);font-weight:800;font-size:13px;color:${finalColor};margin-bottom:6px">Avaliação do cliente: ${finalLabel} · ${nps.score}/10</div>
+        ${nps.comment ? `<div style="font-size:14px;color:var(--text2);line-height:1.6">${nps.comment}</div>` : ''}
+      </div>`;
+  }
 
   const msgHtml = messages.length === 0
     ? `<div style="text-align:center;padding:32px;color:var(--muted);background:var(--bg);border-radius:12px;font-size:14px">Aguardando resposta da empresa…</div>`
@@ -6804,17 +6871,7 @@ function renderResolutionPage() {
           <div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy);margin-bottom:16px">💬 Diálogo</div>
           ${msgHtml}
 
-          ${complaint.status !== 'resolved' ? `
-          <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px">
-            <div style="font-family:var(--font);font-weight:700;font-size:13px;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">${isClient?'✍️ Sua réplica':'🏢 Resposta da empresa'}</div>
-            <textarea id="resolution-msg-input" placeholder="${isClient?'Descreva o andamento ou replique a resposta da empresa…':'Responda a reclamação do cliente…'}"
-              style="width:100%;min-height:100px;border:1.5px solid var(--border2);border-radius:10px;padding:12px;font-family:var(--font-body);font-size:14px;resize:vertical;outline:none;box-sizing:border-box;transition:border-color .2s"
-              onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='var(--border2)'"></textarea>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;flex-wrap:wrap;gap:10px">
-              ${isClient?`<button onclick="markResolved('${complaint.id}')" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:10px 16px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">✅ Marcar como resolvido</button>`:'<div></div>'}
-              <button onclick="sendResolutionMessage('${complaint.id}')" style="background:var(--navy);color:#fff;border:none;border-radius:8px;padding:10px 24px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px">Enviar →</button>
-            </div>
-          </div>` : ''}
+          ${formHtml}
         </div>
       </div>
 
@@ -6920,7 +6977,7 @@ async function submitNPS(complaintId, companyName) {
     await sb.from('nps_ratings').insert([{ complaint_id:complaintId, user_id:currentUser.id, score:npsScore, comment:comment||null, company_name:normalizeCompanyName(companyName) }]);
     currentResolution.nps = { score:npsScore, comment };
     currentResolution.complaint.status = 'resolved';
-    renderResolutionPage();
+    await renderResolutionPage();
   } catch(e) { alert('Erro ao enviar avaliação.'); }
 }
 
@@ -6993,7 +7050,7 @@ async function sendResolutionMessage(complaintId) {
         currentResolution.complaint.status = newStatus;
       }
     }
-    renderResolutionPage();
+    await renderResolutionPage();
   } catch(e) { alert('Erro ao enviar mensagem.'); }
 }
 
@@ -7066,7 +7123,7 @@ async function submitNPSModal(complaintId, companyName, withNPS) {
     if (currentResolution && currentResolution.complaint?.id === complaintId) {
       currentResolution.complaint.status = 'resolved';
       if (withNPS) currentResolution.nps = { score:scoreToSend, comment };
-      renderResolutionPage();
+      await renderResolutionPage();
     } else {
       // Vindo da página complaint, navega pra resolution pra ver o resultado
       showResolution(complaintId);
