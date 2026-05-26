@@ -574,11 +574,19 @@ header{
 }
 
 /* ── RANKING ── */
-/* Fundo dinâmico do bloco conforme aba ativa. Sobrescreve o section-alt
-   (que é branco) sem mexer nas outras seções. Transição suave evita pisco. */
-#ranking-section{transition:background-color .25s ease}
-#ranking-section.mode-best{background:var(--green-light)}
-#ranking-section.mode-worst{background:var(--red-light)}
+/* Fundo dinâmico do bloco conforme aba ativa. Aplicado no .section-inner
+   (que é centralizado com max-width:1280px) pra virar "caixa contida" em
+   vez de faixa edge-to-edge. border-radius dá cara de caixa; padding
+   garante respiro entre conteúdo e borda colorida. */
+#ranking-section .section-inner{
+  border-radius:18px;padding:24px 28px;
+  transition:background-color .25s ease;
+}
+#ranking-section.mode-best .section-inner{background:var(--green-light)}
+#ranking-section.mode-worst .section-inner{background:var(--red-light)}
+@media(max-width:700px){
+  #ranking-section .section-inner{padding:18px 16px;border-radius:14px}
+}
 .rank-title-group{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 /* Cor 'navy' do "Veículos" — escopada pra não afetar outras seções */
 #ranking-section .section-title .accent{color:var(--navy)}
