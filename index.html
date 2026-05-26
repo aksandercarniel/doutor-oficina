@@ -8972,7 +8972,7 @@ function renderDoxcoreVelocimetro(rating, size){
 // O fundo colorido vem do .face-btn no CSS (D89 — quadrado colorido fixo).
 // Param 'active' mantido por compatibilidade mas não afeta o desenho (cor é sempre branca).
 // Retorna SVG inline da carinha colorida correspondente ao status da reclamação.
-// Usado nos badges de status: vermelho/irritada (open), azul/neutra (in_progress), verde/feliz (resolved).
+// Usado nos badges de status: vermelho/triste (open), azul/neutra (in_progress), verde/feliz (resolved).
 function statusFace(status, size) {
   size = size || 20;
   let bg, parts;
@@ -8987,12 +8987,10 @@ function statusFace(status, size) {
           + '<circle cx="26" cy="16" r="1.8" fill="#fff"/>'
           + '<line x1="13" y1="25" x2="27" y2="25" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>';
   } else {
-    // open / s-open / fallback: irritada (com sobrancelhas inclinadas pra dentro)
+    // open / s-open / fallback: triste (só boca pra baixo, sem sobrancelhas)
     bg = '#dc2626';
-    parts = '<path d="M 10 12 L 17 14" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>'
-          + '<path d="M 30 12 L 23 14" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>'
-          + '<circle cx="14" cy="17" r="1.8" fill="#fff"/>'
-          + '<circle cx="26" cy="17" r="1.8" fill="#fff"/>'
+    parts = '<circle cx="14" cy="16" r="1.8" fill="#fff"/>'
+          + '<circle cx="26" cy="16" r="1.8" fill="#fff"/>'
           + '<path d="M 13 28 Q 20 22 27 28" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
   }
   return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 40 40" style="flex-shrink:0;vertical-align:middle">'
