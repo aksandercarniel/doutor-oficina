@@ -3269,7 +3269,7 @@ async function submitComplaint() {
     km:        document.getElementById('inp-km').value || null,
     status:    'open',
     wants_mediation: wantsMediation,
-    company_name:    document.getElementById('comp-name').value.trim() || null,
+    company_name:    normalizeCompanyName(document.getElementById('comp-name').value),
     company_cnpj:    document.getElementById('comp-cnpj').value.trim() || null,
     company_email:   document.getElementById('comp-email').value.trim() || null,
     company_phone:   document.getElementById('comp-phone').value.trim() || null,
@@ -6447,6 +6447,17 @@ async function openComplaintDetail(complaintId) {
 const typeLabel = { montadora:'🏭 Montadora', oficina:'🔧 Oficina', revenda:'🚗 Revenda', outro:'📋 Outro' };
 
 // Renderiza a barra NPS unificada.
+// Normaliza nome de empresa antes de salvar no banco.
+// Conservador: preserva maiúsculas, barras (S/A), hífens, &, e abreviações tipo "S.A."
+// Remove apenas: espaços nas pontas, espaços duplos internos, ponto final SE
+// a palavra anterior tem 3+ letras (LTDA., INC. → LTDA, INC; mas S.A. fica intacto).
+function normalizeCompanyName(name) {
+  if (!name) return null;
+  let n = String(name).trim().replace(/\s+/g, ' ');
+  n = n.replace(/(\b[A-Za-zÀ-ÿ]{3,})\.$/, '$1');
+  return n || null;
+}
+
 // score: 0-10 (decimal). compact: true pra cards menores (home), false pra perfil de empresa.
 // Helper: classifica a nota em zona NPS (detrator/neutro/promotor)
 function _npsCategory(s) {
@@ -6909,7 +6920,7 @@ async function submitNPS(complaintId, companyName) {
   if (npsScore === null) return;
   const comment = document.getElementById('nps-comment')?.value.trim();
   try {
-    await sb.from('nps_ratings').insert([{ complaint_id:complaintId, user_id:currentUser.id, score:npsScore, comment:comment||null, company_name:companyName||null }]);
+    await sb.from('nps_ratings').insert([{ complaint_id:complaintId, user_id:currentUser.id, score:npsScore, comment:comment||null, company_name:normalizeCompanyName(companyName) }]);
     currentResolution.nps = { score:npsScore, comment };
     currentResolution.complaint.status = 'resolved';
     renderResolutionPage();
@@ -6998,7 +7009,7 @@ async function submitNPSModal(complaintId, companyName, withNPS) {
     await sb.from('complaints').update({ status:'resolved' }).eq('id', complaintId);
     // INSERT NPS (só se tiver score)
     if (withNPS) {
-      await sb.from('nps_ratings').insert([{ complaint_id:complaintId, user_id:currentUser.id, score:scoreToSend, comment:comment, company_name:companyName||null }]);
+      await sb.from('nps_ratings').insert([{ complaint_id:complaintId, user_id:currentUser.id, score:scoreToSend, comment:comment, company_name:normalizeCompanyName(companyName) }]);
     }
     closeNPSModal();
     // Atualiza estado local se estamos na página resolution
