@@ -2459,7 +2459,7 @@ async function doLogin() {
       state: profile?.state || null,
       company_name: profile?.company_name || null
     };
-    loginSuccess(currentUser);
+    loginSuccess(currentUser, {redirect: true});
   } catch(e) {
     console.error('Login error:', e);
     const msg = e.message || '';
@@ -2633,12 +2633,12 @@ function showPostRegisterForm() {
     document.getElementById('register-form-user').style.display = 'none';
     document.getElementById('register-form-lawyer').style.display = 'block';
   } else {
-    loginSuccess(currentUser);
+    loginSuccess(currentUser, {redirect: true});
   }
 }
 
-function skipCompanyRegister() { loginSuccess(currentUser); }
-function skipLawyerRegister() { loginSuccess(currentUser); }
+function skipCompanyRegister() { loginSuccess(currentUser, {redirect: true}); }
+function skipLawyerRegister() { loginSuccess(currentUser, {redirect: true}); }
 
 async function doRegisterCompanyOnly() {
   const name    = document.getElementById('reg-company-name').value.trim();
@@ -2690,7 +2690,7 @@ async function doRegisterCompanyOnly() {
     if (insertErr) throw new Error(insertErr.message || JSON.stringify(insertErr));
     closeModal();
     alert('✅ Solicitação enviada!\nSua empresa será analisada e você receberá uma resposta em breve.');
-    loginSuccess(currentUser);
+    loginSuccess(currentUser, {redirect: true});
   } catch(e) {
     console.error('Erro cadastro empresa:', e);
     errEl.textContent = 'Erro: ' + (e.message || 'Falha ao cadastrar empresa.');
@@ -2728,7 +2728,7 @@ async function doRegisterLawyerOnly() {
     currentUser.id = uid;
     closeModal();
     alert('✅ Inscrição enviada!\nEntraremos em contato em breve.');
-    loginSuccess(currentUser);
+    loginSuccess(currentUser, {redirect: true});
   } catch(e) {
     console.error('Erro doRegisterLawyerOnly:', e);
     errEl.textContent = e.message || 'Erro ao enviar inscrição.';
@@ -8661,7 +8661,7 @@ function avatarColorFromName(name) {
   return '#1e6feb';
 }
 
-function loginSuccess(user) {
+function loginSuccess(user, opts) {
   currentUser = user;
   closeAuth();
   updateNavAuth();
@@ -8672,6 +8672,14 @@ function loginSuccess(user) {
     const ctx = pendingVehicleContext;
     pendingVehicleContext = null;
     openModal(ctx);
+    return;
+  }
+  // Redireciona por role só quando solicitado explicitamente (login/registro interativo)
+  // Restore de sessão e skips de fluxo NÃO passam redirect:true (preservam página atual)
+  if (opts && opts.redirect) {
+    if (user.role === 'company') showPage('company');
+    else if (user.role === 'lawyer') showPage('lawyer-panel');
+    else showPage('profile');
   }
 }
 
