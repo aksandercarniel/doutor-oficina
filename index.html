@@ -574,9 +574,11 @@ header{
 }
 
 /* ── RANKING ── */
-/* Agrupa título + abas lado-a-lado no section-header.
-   align-items:center alinha verticalmente as duas alturas (h2 e botões).
-   No mobile vira coluna pra evitar aperto. */
+/* Fundo dinâmico do bloco conforme aba ativa. Sobrescreve o section-alt
+   (que é branco) sem mexer nas outras seções. Transição suave evita pisco. */
+#ranking-section{transition:background-color .25s ease}
+#ranking-section.mode-best{background:var(--green-light)}
+#ranking-section.mode-worst{background:var(--red-light)}
 .rank-title-group{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 /* Cor 'navy' do "Veículos" — escopada pra não afetar outras seções */
 #ranking-section .section-title .accent{color:var(--navy)}
@@ -1577,7 +1579,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
   </section>
 
   <!-- RANKING -->
-  <section class="section section-alt" id="ranking-section">
+  <section class="section section-alt mode-best" id="ranking-section">
     <div class="section-inner">
       <div class="section-header">
         <div class="rank-title-group">
@@ -3277,6 +3279,12 @@ function setRankingMode(mode){
   const tabWorst = document.getElementById('rank-tab-worst');
   if (tabBest) tabBest.classList.toggle('active', mode === 'best');
   if (tabWorst) tabWorst.classList.toggle('active', mode === 'worst');
+  // Atualiza fundo dinâmico do bloco (verde-claro pra melhores, vermelho-claro pra piores)
+  const section = document.getElementById('ranking-section');
+  if (section) {
+    section.classList.toggle('mode-best', mode === 'best');
+    section.classList.toggle('mode-worst', mode === 'worst');
+  }
   // Atualiza o link "Ranking completo →" pra refletir a aba ativa
   const seeAll = document.getElementById('ranking-see-all');
   if (seeAll) {
