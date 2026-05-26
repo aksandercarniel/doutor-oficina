@@ -2413,8 +2413,8 @@ async function sbToggleVote(complaintId) {
 
 // ══ MAPEAMENTO ══
 function mapComplaint(c) {
-  const statusMap = { open: 's-open', in_progress: 's-progress', resolved: 's-resolved' };
-  const statusLabel = { open: 'Não respondida', in_progress: 'Respondida', resolved: 'Resolvido' };
+  const statusMap = { open: 's-open', in_progress: 's-progress', replied: 's-replied', resolved: 's-resolved', unresolved: 's-unresolved' };
+  const statusLabel = { open: 'Não respondida', in_progress: 'Respondida', replied: 'Em réplica', resolved: 'Resolvido', unresolved: 'Não resolvida' };
   const typeEmoji = { carro: '🚗', moto: '🏍️', caminhao: '🚚' };
   const date = new Date(c.created_at);
   const diff = Math.floor((Date.now() - date) / 86400000);
@@ -5987,8 +5987,10 @@ function renderSearchList(tab) {
   // Reclamações
   if (tab === 'all' || tab === 'complaints') {
     if (tab === 'all' && complaints.length) html += `<div style="font-family:var(--font);font-weight:900;font-size:12px;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;padding:4px 0 10px;border-bottom:1px solid var(--border)">📋 Reclamações</div>`;    complaints.slice(0,10).forEach(c => {
+      const sBg = {'s-open':'#fef2f2','s-progress':'#eff6ff','s-replied':'#fef3c7','s-resolved':'#e8f5e9','s-unresolved':'#fff7ed'}[c.status]||'#fef2f2';
+      const sCol = {'s-open':'#dc2626','s-progress':'#2563eb','s-replied':'#d97706','s-resolved':'#16a34a','s-unresolved':'#ea580c'}[c.status]||'#dc2626';
       html += `<div onclick="openComplaintDetail('${c.id}')" style="padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.querySelector('.sr-title').style.textDecoration='underline'" onmouseout="this.querySelector('.sr-title').style.textDecoration='none'">
-        <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${c.brand||''} ${c.model||''} · <span style="background:${c.status==='s-resolved'?'#e8f5e9':c.status==='s-progress'?'#eff6ff':'#fef2f2'};color:${c.status==='s-resolved'?'#16a34a':c.status==='s-progress'?'#2563eb':'#dc2626'};padding:1px 6px 1px 3px;border-radius:10px;font-size:10px;font-weight:700;display:inline-flex;align-items:center;gap:3px">${statusFace(c.status,14)}${c.status==='s-resolved'?'Resolvido':c.status==='s-progress'?'Respondida':'Não respondida'}</span></div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${c.brand||''} ${c.model||''} · <span style="background:${sBg};color:${sCol};padding:1px 6px 1px 3px;border-radius:10px;font-size:10px;font-weight:700;display:inline-flex;align-items:center;gap:3px">${statusFace(c.status,14)}${c.statusLabel||'Não respondida'}</span></div>
         <div class="sr-title" style="font-family:var(--font);font-weight:700;font-size:15px;color:var(--navy);margin-bottom:4px">${c.title||'Reclamação'}</div>
         <div style="font-size:13px;color:var(--text2);line-height:1.5">${(c.description||c.text||'').slice(0,120)}${(c.description||c.text||'').length>120?'…':''}</div>
       </div>`;
@@ -6358,14 +6360,14 @@ async function openComplaintDetail(complaintId) {
     const { data: complaint } = await sb.from('complaints').select('*').eq('id', complaintId).single();
     if (!complaint) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Reclamação não encontrada.</div>'; return; }
     const { data: messages } = await sb.from('resolutions').select('*').eq('complaint_id', complaintId).order('created_at', { ascending: true });
-    const statusMap = { open: statusFace('open',16)+'<span style="vertical-align:middle;margin-left:4px">Não respondida</span>', in_progress: statusFace('in_progress',16)+'<span style="vertical-align:middle;margin-left:4px">Respondida</span>', resolved: statusFace('resolved',16)+'<span style="vertical-align:middle;margin-left:4px">Resolvido</span>' };
+    const statusMap = { open: statusFace('open',16)+'<span style="vertical-align:middle;margin-left:4px">Não respondida</span>', in_progress: statusFace('in_progress',16)+'<span style="vertical-align:middle;margin-left:4px">Respondida</span>', replied: statusFace('replied',16)+'<span style="vertical-align:middle;margin-left:4px">Em réplica</span>', resolved: statusFace('resolved',16)+'<span style="vertical-align:middle;margin-left:4px">Resolvido</span>', unresolved: statusFace('unresolved',16)+'<span style="vertical-align:middle;margin-left:4px">Não resolvida</span>' };
     const typeEmoji = { carro:'🚗', moto:'🏍️', caminhao:'🚚' };
     const isAuthor = currentUser?.id === complaint.user_id;
     const isCompany = currentUser?.role === 'company';
     const date = new Date(complaint.created_at).toLocaleDateString('pt-BR');
 
-    const statusBg  = { open:'#fef2f2', in_progress:'#eff6ff', resolved:'#f0fdf4' };
-    const statusCol = { open:'#dc2626', in_progress:'#2563eb', resolved:'#16a34a' };
+    const statusBg  = { open:'#fef2f2', in_progress:'#eff6ff', replied:'#fef3c7', resolved:'#f0fdf4', unresolved:'#fff7ed' };
+    const statusCol = { open:'#dc2626', in_progress:'#2563eb', replied:'#d97706', resolved:'#16a34a', unresolved:'#ea580c' };
     const st = complaint.status || 'open';
     const isResolved = complaint.status === 'resolved';
 
@@ -6607,9 +6609,9 @@ async function openCompanyProfile(companyName) {
     if (list.length === 0) {
       html += `<div style="text-align:center;padding:40px;color:var(--muted)">Nenhuma reclamação encontrada para esta empresa.</div>`;
     } else {
-      const statusMap = { open: statusFace('open',16)+'<span style="vertical-align:middle;margin-left:4px">Não respondida</span>', in_progress: statusFace('in_progress',16)+'<span style="vertical-align:middle;margin-left:4px">Respondida</span>', resolved: statusFace('resolved',16)+'<span style="vertical-align:middle;margin-left:4px">Resolvido</span>' };
-      const statusBg  = { open:'#fef2f2', in_progress:'#eff6ff', resolved:'#f0fdf4' };
-      const statusCol = { open:'#dc2626', in_progress:'#2563eb', resolved:'#16a34a' };
+      const statusMap = { open: statusFace('open',16)+'<span style="vertical-align:middle;margin-left:4px">Não respondida</span>', in_progress: statusFace('in_progress',16)+'<span style="vertical-align:middle;margin-left:4px">Respondida</span>', replied: statusFace('replied',16)+'<span style="vertical-align:middle;margin-left:4px">Em réplica</span>', resolved: statusFace('resolved',16)+'<span style="vertical-align:middle;margin-left:4px">Resolvido</span>', unresolved: statusFace('unresolved',16)+'<span style="vertical-align:middle;margin-left:4px">Não resolvida</span>' };
+      const statusBg  = { open:'#fef2f2', in_progress:'#eff6ff', replied:'#fef3c7', resolved:'#f0fdf4', unresolved:'#fff7ed' };
+      const statusCol = { open:'#dc2626', in_progress:'#2563eb', replied:'#d97706', resolved:'#16a34a', unresolved:'#ea580c' };
       html += list.map(c => {
         const date = c.created_at ? new Date(c.created_at).toLocaleDateString('pt-BR') : '';
         const desc = (c.description||'').slice(0,140) + ((c.description||'').length > 140 ? '…' : '');
@@ -6763,9 +6765,9 @@ function renderResolutionPage() {
   const { complaint, messages, nps } = currentResolution;
   const el = document.getElementById('resolution-content');
   const isClient = currentUser?.id === complaint.user_id;
-  const statusMap  = { open: statusFace('open',16)+'<span style="vertical-align:middle;margin-left:4px">Não respondida</span>', in_progress: statusFace('in_progress',16)+'<span style="vertical-align:middle;margin-left:4px">Respondida</span>', resolved: statusFace('resolved',16)+'<span style="vertical-align:middle;margin-left:4px">Resolvido</span>' };
-  const statusBg   = { open:'#fef2f2', in_progress:'#eff6ff', resolved:'#f0fdf4' };
-  const statusCol  = { open:'#dc2626', in_progress:'#2563eb', resolved:'#16a34a' };
+  const statusMap  = { open: statusFace('open',16)+'<span style="vertical-align:middle;margin-left:4px">Não respondida</span>', in_progress: statusFace('in_progress',16)+'<span style="vertical-align:middle;margin-left:4px">Respondida</span>', replied: statusFace('replied',16)+'<span style="vertical-align:middle;margin-left:4px">Em réplica</span>', resolved: statusFace('resolved',16)+'<span style="vertical-align:middle;margin-left:4px">Resolvido</span>', unresolved: statusFace('unresolved',16)+'<span style="vertical-align:middle;margin-left:4px">Não resolvida</span>' };
+  const statusBg   = { open:'#fef2f2', in_progress:'#eff6ff', replied:'#fef3c7', resolved:'#f0fdf4', unresolved:'#fff7ed' };
+  const statusCol  = { open:'#dc2626', in_progress:'#2563eb', replied:'#d97706', resolved:'#16a34a', unresolved:'#ea580c' };
   const st = complaint.status || 'open';
 
   const msgHtml = messages.length === 0
@@ -7087,6 +7089,9 @@ async function loadCompanyComplaints(status='open') {
     }
 
     const isBrand = status === 'brand';
+    const sBgMap = {open:'#fef2f2',in_progress:'#eff6ff',replied:'#fef3c7',resolved:'#e8f5e9',unresolved:'#fff7ed'};
+    const sColMap = {open:'#dc2626',in_progress:'#2563eb',replied:'#d97706',resolved:'#16a34a',unresolved:'#ea580c'};
+    const sLbl = {open:'Não respondida',in_progress:'Respondida',replied:'Em réplica',resolved:'Resolvido',unresolved:'Não resolvida'};
     list.innerHTML = data.map(c => `
       <div style="background:var(--white);border:1.5px solid ${isBrand ? 'var(--orange)' : 'var(--border)'};border-radius:16px;padding:20px;cursor:pointer" onclick="showResolution('${c.id}')">
         ${isBrand ? `<div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:8px;display:flex;align-items:center;gap:6px">⚠️ Reclamação não vinculada à sua empresa — cliente não informou o nome</div>` : ''}
@@ -7095,7 +7100,7 @@ async function loadCompanyComplaints(status='open') {
             <div style="font-size:12px;color:var(--muted);margin-bottom:4px">${c.vehicle_brand||''} ${c.vehicle_model||''} ${c.vehicle_year||''}</div>
             <div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy)">${c.title}</div>
           </div>
-          <span style="font-size:11px;font-weight:700;padding:3px 10px 3px 4px;border-radius:20px;background:${c.status==='resolved'?'#e8f5e9':c.status==='in_progress'?'#eff6ff':'#fef2f2'};color:${c.status==='resolved'?'#16a34a':c.status==='in_progress'?'#2563eb':'#dc2626'};display:inline-flex;align-items:center;gap:4px">${statusFace(c.status,16)}${c.status==='resolved'?'Resolvido':c.status==='in_progress'?'Respondida':'Não respondida'}</span>
+          <span style="font-size:11px;font-weight:700;padding:3px 10px 3px 4px;border-radius:20px;background:${sBgMap[c.status]||'#fef2f2'};color:${sColMap[c.status]||'#dc2626'};display:inline-flex;align-items:center;gap:4px">${statusFace(c.status,16)}${sLbl[c.status]||'Não respondida'}</span>
         </div>
         <div style="font-size:13px;color:var(--text2);line-height:1.5">${(c.description||'').slice(0,120)}…</div>
         <div style="font-size:12px;color:var(--muted);margin-top:8px;display:flex;justify-content:space-between">
@@ -7380,7 +7385,7 @@ async function renderProfile() {
             ${c.vehicle_version ? `<div style="font-size:12px;color:var(--muted);font-style:italic;margin-top:2px">${c.vehicle_version}</div>` : ''}
             <div style="font-family:var(--font);font-weight:800;font-size:14px;color:var(--text);margin-top:8px">${c.title || 'Reclamação'}</div>
           </div>
-          <span style="font-size:11px;font-weight:700;padding:3px 10px 3px 4px;border-radius:20px;background:${c.status === 'resolved' ? '#e8f5e9' : c.status === 'progress' ? '#eff6ff' : '#fef2f2'};color:${c.status === 'resolved' ? '#16a34a' : c.status === 'progress' ? '#2563eb' : '#dc2626'};display:inline-flex;align-items:center;gap:4px">${statusFace(c.status,16)}${c.status === 'resolved' ? 'Resolvido' : c.status === 'in_progress' ? 'Respondida' : 'Não respondida'}</span>
+          <span style="font-size:11px;font-weight:700;padding:3px 10px 3px 4px;border-radius:20px;background:${({open:'#fef2f2',in_progress:'#eff6ff',replied:'#fef3c7',resolved:'#e8f5e9',unresolved:'#fff7ed'}[c.status]||'#fef2f2')};color:${({open:'#dc2626',in_progress:'#2563eb',replied:'#d97706',resolved:'#16a34a',unresolved:'#ea580c'}[c.status]||'#dc2626')};display:inline-flex;align-items:center;gap:4px">${statusFace(c.status,16)}${({open:'Não respondida',in_progress:'Respondida',replied:'Em réplica',resolved:'Resolvido',unresolved:'Não resolvida'}[c.status]||'Não respondida')}</span>
         </div>
         ${c.company_name ? `<div style="font-size:12px;color:var(--muted)">🏢 <span style="cursor:pointer;color:var(--navy);font-weight:600;text-decoration:underline" onclick="event.stopPropagation();openCompanyProfile('${c.company_name}')">${c.company_name}</span></div>` : ''}
         <div style="font-size:12px;color:var(--muted);margin-top:6px;display:flex;justify-content:space-between">
@@ -9499,7 +9504,7 @@ function renderComplaintsList(list) {
       <div class="cra-sub">${sub}</div>
       <div class="cra-text">${c.text}</div>
       <div class="cra-footer">
-        <span style="font-size:11px;font-weight:700;padding:3px 12px 3px 4px;border-radius:20px;background:${c.status==='s-resolved'?'#f0fdf4':c.status==='s-progress'?'#eff6ff':'#fef2f2'};color:${c.status==='s-resolved'?'#16a34a':c.status==='s-progress'?'#2563eb':'#dc2626'};display:inline-flex;align-items:center;gap:4px">${statusFace(c.status,16)}${c.statusLabel}</span>
+        <span style="font-size:11px;font-weight:700;padding:3px 12px 3px 4px;border-radius:20px;background:${({'s-open':'#fef2f2','s-progress':'#eff6ff','s-replied':'#fef3c7','s-resolved':'#f0fdf4','s-unresolved':'#fff7ed'}[c.status]||'#fef2f2')};color:${({'s-open':'#dc2626','s-progress':'#2563eb','s-replied':'#d97706','s-resolved':'#16a34a','s-unresolved':'#ea580c'}[c.status]||'#dc2626')};display:inline-flex;align-items:center;gap:4px">${statusFace(c.status,16)}${c.statusLabel}</span>
         <span class="cra-foot-sep">·</span>
         <span class="cra-foot-item">⏱ ${c.date}</span>
         ${locHtml}
@@ -9595,7 +9600,7 @@ function buildComplaintCardHtml(c, i) {
       <div class="cra-sub">${sub}</div>
       <div class="cra-text">${c.text}</div>
       <div class="cra-footer">
-        <span style="font-size:11px;font-weight:700;padding:3px 12px 3px 4px;border-radius:20px;background:${c.status==='s-resolved'?'#f0fdf4':c.status==='s-progress'?'#eff6ff':'#fef2f2'};color:${c.status==='s-resolved'?'#16a34a':c.status==='s-progress'?'#2563eb':'#dc2626'};display:inline-flex;align-items:center;gap:4px">${statusFace(c.status,16)}${c.statusLabel}</span>
+        <span style="font-size:11px;font-weight:700;padding:3px 12px 3px 4px;border-radius:20px;background:${({'s-open':'#fef2f2','s-progress':'#eff6ff','s-replied':'#fef3c7','s-resolved':'#f0fdf4','s-unresolved':'#fff7ed'}[c.status]||'#fef2f2')};color:${({'s-open':'#dc2626','s-progress':'#2563eb','s-replied':'#d97706','s-resolved':'#16a34a','s-unresolved':'#ea580c'}[c.status]||'#dc2626')};display:inline-flex;align-items:center;gap:4px">${statusFace(c.status,16)}${c.statusLabel}</span>
         <span class="cra-foot-sep">·</span>
         <span class="cra-foot-item">⏱ ${c.date}</span>
         ${locHtml}
