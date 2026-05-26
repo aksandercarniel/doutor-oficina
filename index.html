@@ -1154,14 +1154,16 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .nps-btn:hover{background:var(--bg2)}
 
 /* ── NPS CAPSULE: barra preenchida com nota opcional dentro ── */
-.nps-capsule{position:relative;height:48px;border-radius:10px;background:#f3f4f6;overflow:hidden}
-.nps-capsule-fill{position:absolute;left:0;top:0;height:100%;border-radius:10px;display:flex;align-items:center;justify-content:flex-end;padding-right:16px;box-sizing:border-box;animation:nps-cap-grow .9s cubic-bezier(.34,1.36,.64,1) both .15s;transform-origin:left center}
+/* Versão grande (perfil empresa): 60% de largura, altura proporcional (aspect-ratio 20:1) */
+.nps-capsule{position:relative;aspect-ratio:20/1;border-radius:6px;background:#f3f4f6;overflow:hidden;width:60%;margin:0 auto}
+.nps-capsule-fill{position:absolute;left:0;top:0;height:100%;border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:16px;box-sizing:border-box;animation:nps-cap-grow .9s cubic-bezier(.34,1.36,.64,1) both .15s;transform-origin:left center}
 .nps-capsule-fill-promotor{background:#16a34a}
 .nps-capsule-fill-neutro{background:#d97706}
 .nps-capsule-fill-detrator{background:#dc2626}
 .nps-capsule-num{font-size:26px;font-weight:900;color:#fff;font-family:var(--font);line-height:1}
 .nps-capsule-empty{opacity:.45}
-.nps-capsule-compact{height:42px;border-radius:9px}
+/* Versão compacta (cards na home): largura cheia, altura fixa, sem aspect-ratio */
+.nps-capsule-compact{aspect-ratio:auto;height:42px;border-radius:9px;width:100%}
 .nps-capsule-compact .nps-capsule-fill{border-radius:9px;padding-right:12px}
 .nps-capsule-compact .nps-capsule-num{font-size:20px}
 @keyframes nps-cap-grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
