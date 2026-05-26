@@ -574,8 +574,56 @@ header{
 }
 
 /* ── RANKING ── */
+/* Reduz o respiro vertical entre os blocos contíguos da home.
+   Padrão da .section é 40px em cima/baixo (= 80px de espaço entre blocos),
+   que estava deixando um buraco vertical. 16px de cada lado dá 32px total,
+   suficiente pra separar visualmente sem isolar. Mobile já é mais apertado. */
+#ranking-section{padding-bottom:16px}
+#complaints-section{padding-top:16px;padding-bottom:16px}
+#marcas-section{padding-top:16px}
+@media(max-width:700px){
+  #ranking-section{padding-bottom:12px}
+  #complaints-section{padding-top:12px;padding-bottom:12px}
+  #marcas-section{padding-top:12px}
+}
+/* Fundo dinâmico do bloco conforme aba ativa. Aplicado no .section-inner
+   (que é centralizado com max-width:1280px) pra virar "caixa contida" em
+   vez de faixa edge-to-edge. border-radius dá cara de caixa; padding
+   garante respiro entre conteúdo e borda colorida. */
+#ranking-section .section-inner,
+#marcas-section .section-inner{
+  border-radius:18px;padding:24px 28px;
+  transition:background-color .25s ease;
+}
+#ranking-section.mode-best .section-inner,
+#marcas-section.mode-best .section-inner{background:var(--green-light)}
+#ranking-section.mode-worst .section-inner,
+#marcas-section.mode-worst .section-inner{background:var(--red-light)}
+@media(max-width:700px){
+  #ranking-section .section-inner,
+  #marcas-section .section-inner{padding:18px 16px;border-radius:14px}
+}
+.rank-title-group{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+/* Cor 'navy' dos títulos dos blocos com abas — escopada */
+#ranking-section .section-title .accent,
+#marcas-section .section-title .accent{color:var(--navy)}
+.rank-tabs{display:inline-flex;gap:0;border:1.5px solid var(--border);border-radius:10px;padding:3px;background:var(--white)}
+.rank-tab{
+  font-family:var(--font);font-weight:700;font-size:13px;color:var(--muted);
+  padding:7px 16px;border:none;background:transparent;border-radius:7px;cursor:pointer;
+  transition:background .15s,color .15s;
+}
+.rank-tab:hover{color:var(--navy)}
+/* Aba ativa muda de cor conforme o modo. Reaproveita --green/--red do projeto
+   (mais escuros que --green-light/--red-light usados no fundo do bloco),
+   criando harmonia visual: bloco claro + aba escura do mesmo tom semântico. */
+.rank-tab.active{background:var(--navy);color:var(--white)}
+#ranking-section.mode-best .rank-tab.active,
+#marcas-section.mode-best .rank-tab.active{background:var(--green)}
+#ranking-section.mode-worst .rank-tab.active,
+#marcas-section.mode-worst .rank-tab.active{background:var(--red)}
 .ranking-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-@media(max-width:700px){.ranking-grid{grid-template-columns:1fr}}
+@media(max-width:700px){.ranking-grid{grid-template-columns:1fr}.rank-tabs{width:100%;display:flex}.rank-tab{flex:1;text-align:center}}
 .rank-item{
   background:var(--white);border:1.5px solid var(--border);border-radius:12px;
   padding:14px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;
@@ -1006,17 +1054,6 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .mfr-chip-nps-pessimo{color:#dc2626;font-weight:700}
 .mfr-chip-skeleton{background:linear-gradient(90deg,#f3f4f6 0%,#e5e7eb 50%,#f3f4f6 100%);background-size:200% 100%;animation:mfr-shimmer 1.2s infinite;border-radius:8px;height:32px;width:180px;display:inline-block}
 @keyframes mfr-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-
-/* Header responsivo do perfil de empresa */
-.company-header-grid{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:start;margin-bottom:24px}
-.company-header-name{font-family:var(--font);font-weight:900;font-size:28px;color:var(--navy);margin:0 0 10px;line-height:1.2;word-break:break-word}
-.company-header-right{display:flex;flex-direction:column;gap:16px;min-width:220px}
-@media(max-width:640px){
-  .company-header-grid{grid-template-columns:1fr;gap:16px}
-  .company-header-name{font-size:20px;line-height:1.25}
-  .company-header-right{min-width:0}
-  .company-header-left{padding:20px !important}
-}
 .profile-name{grid-column:2;font-family:var(--font);font-weight:900;font-size:38px;line-height:1;color:var(--navy);margin-bottom:5px}
 .profile-sub{grid-column:2;color:var(--muted);font-size:14px;margin-bottom:14px;font-family:var(--font-body)}
 .profile-rating,.profile-tags{grid-column:1/-1}
@@ -1027,8 +1064,6 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .profile-rating:has(.doxcore-velocimetro-wrap) > .doxcore-velocimetro-wrap{grid-column:1;grid-row:span 2;align-self:center}
 .profile-rating:has(.doxcore-velocimetro-wrap) > .doxcore-text,
 .profile-rating:has(.doxcore-velocimetro-wrap) > .doxcore-composition{grid-column:2;padding-left:0;flex-basis:auto;max-width:100%}
-.profile-rating:has(.doxcore-velocimetro-wrap) > .community-voice-wrap{grid-column:2;max-width:100%}
-.profile-rating:has(.doxcore-velocimetro-wrap) > .community-voice-wrap > .community-voice{margin-left:0}
 .doxcore-velocimetro-wrap{display:inline-block;line-height:0}
 @media(max-width:600px){
   .profile-rating:has(.doxcore-velocimetro-wrap){grid-template-columns:1fr}
@@ -1036,7 +1071,6 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
   .profile-rating:has(.doxcore-velocimetro-wrap) > .doxcore-velocimetro-wrap,
   .profile-rating:has(.doxcore-velocimetro-wrap) > .doxcore-text,
   .profile-rating:has(.doxcore-velocimetro-wrap) > .doxcore-composition{grid-column:1}
-  .profile-rating:has(.doxcore-velocimetro-wrap) > .community-voice-wrap{grid-column:1}
   .profile-rating:has(.doxcore-velocimetro-wrap) > .doxcore-velocimetro-wrap{grid-row:auto;justify-self:center}
 }
 .doxcore-badge{display:inline-flex;align-items:center;background:var(--blue-light);color:var(--navy);font-family:var(--font);font-size:12px;font-weight:800;letter-spacing:0.3px;padding:3px 10px;border-radius:20px}
@@ -1046,17 +1080,6 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .doxcore-composition .cta{color:var(--navy);font-weight:700;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 .doxcore-composition .cta:hover{color:var(--red)}
 @media(max-width:600px){.doxcore-text,.doxcore-composition{padding-left:0}}
-/* Veredito Híbrido — bloco "Voz da comunidade" */
-.community-voice-wrap{flex-basis:100%}
-.community-voice{background:var(--bg-soft,#f6f7f9);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin:6px 0 10px;margin-left:46px}
-.community-voice .cv-title{font-family:var(--font);font-weight:700;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px}
-.community-voice .cv-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
-.community-voice .cv-item{display:flex;align-items:flex-start;gap:8px;font-size:13.5px;line-height:1.4;font-family:var(--font-body);color:var(--text2)}
-.community-voice .cv-icon{flex-shrink:0;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;font-size:11px;font-weight:700;color:#fff;line-height:1}
-.community-voice .cv-good .cv-icon{background:#16a34a}
-.community-voice .cv-bad .cv-icon{background:#dc2626}
-.community-voice .cv-text{flex:1}
-@media(max-width:600px){.community-voice{margin-left:0}}
 .vote-stars-block{flex-basis:100%;display:flex;flex-direction:column;gap:6px;margin-top:4px}
 .vote-stars-label{color:var(--muted);font-size:12px;font-weight:500;line-height:1.4}
 .btn-raiox-full-wrap{text-align:center;margin-top:8px}
@@ -1573,7 +1596,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
       <h1><span class="accent">Reclame aqui</span><br class="br-mobile"> <span class="dim-navy">do seu veículo</span></h1>
       <p>Resolva seu problema e ajude outros motoristas a comprarem com segurança.</p>
       <p class="hero-stats" id="hero-stats">
-        Catálogo com <strong>5.000+ modelos</strong>. <span style="white-space:nowrap">Raio-X</span> de confiabilidade em <strong id="hero-raiox-count">dezenas de</strong> veículos.
+        Catálogo com <strong>5.000+ modelos</strong>. <strong>Doxcore</strong> em <strong id="hero-raiox-count">dezenas de</strong> veículos.
       </p>
       <div class="hero-ctas">
         <button class="btn-primary" onclick="requireAuth()">
@@ -1581,42 +1604,57 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
           Fazer reclamação
         </button>
       </div>
-      <a href="#" class="hero-link" onclick="document.getElementById('ranking-section').scrollIntoView({behavior:'smooth'});return false;">
-        Ver ranking de confiabilidade →
+      <a href="#" class="hero-link" onclick="event.preventDefault();showPage('complaints');return false;">
+        Ver reclamações →
       </a>
     </div>
   </section>
 
   <!-- RANKING -->
-  <section class="section section-alt" id="ranking-section">
+  <section class="section section-alt mode-best" id="ranking-section">
     <div class="section-inner">
       <div class="section-header">
-        <h2 class="section-title">🏆 Ranking de <span class="accent">confiabilidade</span></h2>
-        <a href="#" class="see-all" onclick="event.preventDefault();showPage('vehicles',{sort:'best_rating'});return false;">Ranking completo →</a>
+        <div class="rank-title-group">
+          <h2 class="section-title"><span class="accent">Veículos</span></h2>
+          <div class="rank-tabs" role="tablist">
+            <button class="rank-tab active" role="tab" id="rank-tab-best" onclick="setRankingMode('best')">Melhores</button>
+            <button class="rank-tab" role="tab" id="rank-tab-worst" onclick="setRankingMode('worst')">Piores</button>
+          </div>
+        </div>
+        <a href="#" class="see-all" id="ranking-see-all" onclick="event.preventDefault();showPage('vehicles',{sort:'best_rating'});return false;">Ranking completo →</a>
       </div>
-      <div class="ranking-grid" id="ranking-grid"></div>
+      <div class="vehicles-grid" id="ranking-grid"></div>
     </div>
   </section>
 
-  <!-- VEÍCULOS EM DESTAQUE -->
-  <section class="section">
-    <div class="section-inner">
-      <div class="section-header">
-        <h2 class="section-title">Veículos mais <span class="accent">avaliados</span></h2>
-        <a href="#" class="see-all" onclick="event.preventDefault();showPage('vehicles');return false;">Ver todos →</a>
-      </div>
-      <div class="vehicles-grid" id="vehicles-grid"></div>
-    </div>
-  </section>
+  <!-- VEÍCULOS EM DESTAQUE — removido: substituído pelo Ranking com abas Melhores/Piores e cards cheios -->
 
   <!-- RECLAMAÇÕES RECENTES -->
-  <section class="section section-alt">
+  <section class="section section-alt" id="complaints-section">
     <div class="section-inner">
       <div class="section-header">
         <h2 class="section-title">Reclamações <span class="accent">recentes</span></h2>
         <a href="#" class="see-all" onclick="event.preventDefault();showPage('complaints');return false;">Ver todas →</a>
       </div>
       <div class="complaints-list" id="complaints-list"></div>
+    </div>
+  </section>
+
+  <!-- MARCAS (Empresas) — esconde quando não há dados suficientes
+       Aparece automaticamente quando alguma marca atinge 5+ votos NPS -->
+  <section class="section section-alt mode-best" id="marcas-section" style="display:none">
+    <div class="section-inner">
+      <div class="section-header">
+        <div class="rank-title-group">
+          <h2 class="section-title"><span class="accent">Marcas</span></h2>
+          <div class="rank-tabs" role="tablist">
+            <button class="rank-tab active" role="tab" id="marcas-tab-best" onclick="setMarcasMode('best')">Melhores</button>
+            <button class="rank-tab" role="tab" id="marcas-tab-worst" onclick="setMarcasMode('worst')">Piores</button>
+          </div>
+        </div>
+        <a href="#" class="see-all" id="marcas-see-all" onclick="event.preventDefault();showPage('ranking-companies');return false;">Ranking completo →</a>
+      </div>
+      <div class="vehicles-grid" id="marcas-grid"></div>
     </div>
   </section>
 
@@ -3223,7 +3261,7 @@ async function submitComplaint() {
     // Reset
     wantsMediation = false;
     // Home mostra apenas 5 — "Ver todas →" leva à página completa
-    sbLoadComplaints().then(data => { if (data.length) renderComplaintsList(data.slice(0, 5)); });
+    sbLoadComplaints().then(data => { if (data.length) renderComplaintsList(data.slice(0, 3)); });
 
     if (saved?.id && complaint.wants_mediation) {
       // Fecha o modal e abre direto a escolha de advogado
@@ -3272,14 +3310,57 @@ const fipePrices={'1':'R$ 142.990','2':'R$ 61.490','3':'R$ 78.900','4':'R$ 18.59
 // ══ RENDER ══
 function starsHtml(r){let s='';for(let i=1;i<=5;i++)s+=i<=Math.round(r)?'★':'☆';return s}
 
-// Estado de expansão da seção "Veículos mais avaliados" — removido (agora "Ver todos" leva à página dedicada)
+// renderVehicles removida: o bloco 'Veículos mais avaliados' foi fundido
+// no Ranking (que agora usa cards via renderRanking, com abas Melhores/Piores).
 
-async function renderVehicles(){
-  const grid = document.getElementById('vehicles-grid');
+
+// Estado da aba ativa do ranking da home ('best' | 'worst')
+let _rankingMode = 'best';
+
+// Alterna entre Melhores/Piores no bloco de ranking da home.
+// Atualiza visual das abas, re-renderiza o grid, e ajusta o link "Ranking completo →"
+// pra levar pra ordenação correspondente na página de veículos.
+function setRankingMode(mode){
+  if (mode !== 'best' && mode !== 'worst') return;
+  if (mode === _rankingMode) return;
+  _rankingMode = mode;
+  // Atualiza estado visual das abas
+  const tabBest = document.getElementById('rank-tab-best');
+  const tabWorst = document.getElementById('rank-tab-worst');
+  if (tabBest) tabBest.classList.toggle('active', mode === 'best');
+  if (tabWorst) tabWorst.classList.toggle('active', mode === 'worst');
+  // Atualiza fundo dinâmico do bloco (verde-claro pra melhores, vermelho-claro pra piores)
+  const section = document.getElementById('ranking-section');
+  if (section) {
+    section.classList.toggle('mode-best', mode === 'best');
+    section.classList.toggle('mode-worst', mode === 'worst');
+  }
+  // Atualiza o link "Ranking completo →" pra refletir a aba ativa
+  const seeAll = document.getElementById('ranking-see-all');
+  if (seeAll) {
+    const sort = mode === 'best' ? 'best_rating' : 'worst_rating';
+    seeAll.setAttribute('onclick', `event.preventDefault();showPage('vehicles',{sort:'${sort}'});return false;`);
+  }
+  renderRanking();
+}
+
+// Token anti-race-condition: se o usuário trocar de aba antes do FIPE
+// terminar de carregar, requests em vôo escrevem em DOM antigo. O token
+// invalida updates de gerações anteriores.
+let _rankingRenderToken = 0;
+
+async function renderRanking(){
+  const grid = document.getElementById('ranking-grid');
   if (!grid) return;
+
+  // Nova geração: invalida qualquer FIPE em vôo da render anterior
+  _rankingRenderToken++;
+  const myToken = _rankingRenderToken;
+
   grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Carregando veículos…</div>';
 
-  // Busca todos os registros (summary + issues) e agrupa por marca+modelo
+  // Busca todos os registros (summary + issues) e agrupa por marca+modelo.
+  // Mesma fonte do bloco antigo "Veículos mais avaliados" (que foi removido).
   let allRows = [];
   try {
     const { data } = await sb.from('vehicle_known_issues')
@@ -3290,6 +3371,9 @@ async function renderVehicles(){
     allRows = data || [];
   } catch(e) { console.error('Erro ao buscar veículos:', e); }
 
+  // Geração obsoleta? Aborta sem tocar no DOM.
+  if (myToken !== _rankingRenderToken) return;
+
   // Agrupa por marca+modelo: cada grupo = 1 summary + N issues
   const groups = {};
   allRows.forEach(row => {
@@ -3299,9 +3383,19 @@ async function renderVehicles(){
     else groups[key].issues.push(row);
   });
 
-  const vehicles = Object.values(groups).filter(v => v.summary).slice(0, 4);
+  // Filtra grupos válidos e ordena por reliability_score conforme o modo da aba
+  const ascending = _rankingMode === 'worst';
+  const vehicles = Object.values(groups)
+    .filter(v => v.summary && v.summary.reliability_score != null)
+    .sort((a, b) => {
+      const sa = parseFloat(a.summary.reliability_score) || 0;
+      const sb_ = parseFloat(b.summary.reliability_score) || 0;
+      return ascending ? sa - sb_ : sb_ - sa;
+    })
+    .slice(0, 4);
+
   if (!vehicles.length) {
-    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Nenhum veículo encontrado no Raio-X.</div>';
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Sem dados de ranking ainda.</div>';
     return;
   }
 
@@ -3341,12 +3435,15 @@ async function renderVehicles(){
     </div>`;
   }).join('');
 
-  // Carrega preços FIPE em fila (não paralelo) para evitar rate limit
+  // Carrega preços FIPE em fila (não paralelo) para evitar rate limit.
+  // O myToken garante que se o usuário trocou de aba, os updates antigos morrem.
   (async () => {
-    // Pré-aquece cache de marcas
     try { await fipeFetch(FIPE_V2 + '/cars/brands'); } catch(e) {}
 
     for (let i = 0; i < vehicles.length; i++) {
+      // Geração obsoleta? Aborta a fila inteira.
+      if (myToken !== _rankingRenderToken) return;
+
       const v = vehicles[i];
       const safeKey = `${v.brand}-${v.model}`.replace(/[^a-zA-Z0-9-]/g, '_');
       const el = document.getElementById('fipe-card-' + safeKey);
@@ -3354,6 +3451,8 @@ async function renderVehicles(){
       const vObj = { brand: v.brand, name: v.model, emoji: typeEmoji(v.type) };
       try {
         const result = await loadFipePriceForVehicle(vObj);
+        // Re-checa token após o await: se trocou de aba durante o request, descarta
+        if (myToken !== _rankingRenderToken) return;
         if (result) {
           el.className = 'price-val';
           el.textContent = result.isRange
@@ -3364,6 +3463,7 @@ async function renderVehicles(){
           el.textContent = '—';
         }
       } catch(e) {
+        if (myToken !== _rankingRenderToken) return;
         el.className = 'price-val';
         el.textContent = '—';
       }
@@ -3372,47 +3472,126 @@ async function renderVehicles(){
   })();
 }
 
-async function renderRanking(){
-  const grid = document.getElementById('ranking-grid');
-  if (!grid) return;
-  grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--muted)">Carregando ranking…</div>';
+// ═════════════════════════════════════════════════════════════════
+// BLOCO MARCAS (home) — NPS de montadoras com 5+ votos
+// ═════════════════════════════════════════════════════════════════
+// Espelha a mecânica do bloco Veículos (abas Melhores/Piores, fundo
+// verde/vermelho-claro), mas usa NPS agregado por empresa.
+// COMPORTAMENTO CHAVE: a seção começa com display:none e SÓ é revelada
+// se houver dados suficientes (≥1 marca com ≥5 votos). Senão, fica
+// invisível pro usuário — sem espaço quebrado, sem CTA forçado.
+// Quando a comunidade votar o suficiente, o bloco aparece automaticamente.
+let _marcasMode = 'best';
 
-  // Mesma fonte do renderVehicles: vehicle_known_issues agrupado por marca+modelo,
-  // pegando o registro summary (is_summary=true) com reliability_score.
-  let allRows = [];
+function setMarcasMode(mode){
+  if (mode !== 'best' && mode !== 'worst') return;
+  if (mode === _marcasMode) return;
+  _marcasMode = mode;
+  // Atualiza estado visual das abas
+  const tabBest = document.getElementById('marcas-tab-best');
+  const tabWorst = document.getElementById('marcas-tab-worst');
+  if (tabBest) tabBest.classList.toggle('active', mode === 'best');
+  if (tabWorst) tabWorst.classList.toggle('active', mode === 'worst');
+  // Atualiza fundo dinâmico da caixa colorida
+  const section = document.getElementById('marcas-section');
+  if (section) {
+    section.classList.toggle('mode-best', mode === 'best');
+    section.classList.toggle('mode-worst', mode === 'worst');
+  }
+  renderMarcas();
+}
+
+// Cor + label semafóricos pra um NPS (escala 0-10). Mesma escala usada
+// na função loadCompanyRanking (página dedicada de empresas).
+function _npsBadge(score) {
+  const s = parseFloat(score) || 0;
+  if (s >= 8.1)      return { color:'#16a34a', bg:'#f0fdf4', label:'Ótimo' };
+  if (s >= 6.1)      return { color:'#2563eb', bg:'#eff6ff', label:'Bom' };
+  if (s >= 4.1)      return { color:'#d97706', bg:'#fffbeb', label:'Regular' };
+  if (s >= 2.1)      return { color:'#ea580c', bg:'#fff7ed', label:'Ruim' };
+  return                    { color:'#dc2626', bg:'#fef2f2', label:'Péssimo' };
+}
+
+// Carrega NPS agregado por montadora cadastrada (segment='carro', is_claimed=true)
+// com ≥5 votos. Retorna lista ordenada por nps desc (cabe inverter no render).
+async function _loadMarcasData() {
   try {
-    const { data } = await sb.from('vehicle_known_issues')
-      .select('vehicle_brand, vehicle_model, vehicle_type, is_summary, reliability_score')
-      .eq('is_summary', true)
-      .order('reliability_score', { ascending: false })
-      .limit(8);
-    allRows = data || [];
-  } catch(e) { console.error('Erro ao buscar ranking:', e); }
+    // 1. Lista montadoras de carro reivindicadas (chave: name)
+    const { data: companies } = await sb.from('companies')
+      .select('name, is_claimed')
+      .eq('segment', 'carro')
+      .eq('is_claimed', true);
+    if (!companies?.length) return [];
 
-  if (!allRows.length) {
-    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--muted)">Sem dados de ranking ainda.</div>';
+    // 2. Pra cada uma, agrega NPS (filtra por company_name)
+    const results = [];
+    for (const c of companies) {
+      const { data: votes } = await sb.from('nps_ratings')
+        .select('score')
+        .eq('company_name', c.name);
+      const valid = (votes || []).map(v => parseFloat(v.score)).filter(v => !isNaN(v));
+      if (valid.length < 5) continue; // Threshold acordado: 5 votos mínimo
+      const avg = valid.reduce((a, b) => a + b, 0) / valid.length;
+      results.push({
+        name: c.name,
+        is_claimed: c.is_claimed,
+        nps: avg,
+        votos: valid.length
+      });
+    }
+    return results.sort((a, b) => b.nps - a.nps);
+  } catch (e) {
+    console.error('Erro ao carregar Marcas:', e);
+    return [];
+  }
+}
+
+async function renderMarcas() {
+  const section = document.getElementById('marcas-section');
+  const grid = document.getElementById('marcas-grid');
+  if (!section || !grid) return;
+
+  const all = await _loadMarcasData();
+
+  // SE VAZIO: esconde a seção e não toca em mais nada.
+  // Decisão acordada: bloco só aparece quando há dados.
+  if (!all.length) {
+    section.style.display = 'none';
     return;
   }
 
-  const typeEmoji = (t) => t === 'moto' ? '🏍️' : t === 'caminhao' ? '🚚' : '🚗';
-  const medals = ['🥇','🥈','🥉'];
+  // Tem dados: revela a seção
+  section.style.display = '';
 
-  grid.innerHTML = allRows.map((r, i) => {
-    const pos = i + 1;
-    const pc = pos <= 3 ? `pos-${pos}` : 'pos-o';
-    const medal = pos <= 3 ? medals[pos-1] : pos;
-    const score = parseFloat(r.reliability_score) || 0;
-    const emoji = typeEmoji(r.vehicle_type);
-    const safeBrand = r.vehicle_brand.replace(/'/g, "\\'");
-    const safeModel = r.vehicle_model.replace(/'/g, "\\'");
-    return `<div class="rank-item" onclick="showVehicleProfileByBrandModel('${safeBrand}','${safeModel}')">
-      <span class="rank-pos ${pc}">${medal}</span>
-      <div class="rank-info"><div class="rank-name"><span class="rank-icon">${vehicleIcon(emoji, r.vehicle_model)}</span>${r.vehicle_model}</div><div class="rank-brand">${r.vehicle_brand}</div></div>
-      <div class="rank-velocimetro">${renderDoxcoreVelocimetro(score, 'compact')}</div>
-      <span class="rank-score">${score.toFixed(1)}</span>
+  // Ordena conforme a aba ativa e pega 4
+  const ascending = _marcasMode === 'worst';
+  const list = [...all].sort((a, b) => ascending ? a.nps - b.nps : b.nps - a.nps).slice(0, 4);
+
+  grid.innerHTML = list.map(c => {
+    const badge = _npsBadge(c.nps);
+    const initial = (c.name || '?')[0].toUpperCase();
+    const verified = c.is_claimed
+      ? '<span class="mfr-chip-verified" title="Conta verificada">✓</span>'
+      : '';
+    const safeName = c.name.replace(/'/g, "\\'");
+    return `
+    <div class="vehicle-card" onclick="openCompanyProfile('${safeName}')">
+      <div class="vc-top">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="vc-emoji" style="position:relative;display:inline-flex;width:40px;height:40px;border-radius:50%;background:var(--navy);color:#fff;font-family:var(--font);font-weight:700;font-size:16px;align-items:center;justify-content:center;flex-shrink:0">${initial}${verified}</span>
+          <div class="vc-name">${c.name}</div>
+        </div>
+      </div>
+      <div class="vc-brand">MONTADORA</div>
+      <div style="display:flex;align-items:baseline;gap:10px;margin:18px 0 6px">
+        <span style="font-family:var(--font);font-weight:900;font-size:42px;color:${badge.color};line-height:1">${c.nps.toFixed(1)}</span>
+        <span style="background:${badge.bg};color:${badge.color};font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px">${badge.label}</span>
+      </div>
+      <div class="vc-count">${c.votos} ${c.votos === 1 ? 'avaliação' : 'avaliações'}</div>
     </div>`;
   }).join('');
 }
+// ═════════════════════════════════════════════════════════════════
 
 // ══ VEHICLE PROFILE ══
 async function showVehicleProfile(id){
@@ -4328,7 +4507,6 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
           return '<span class="doxcore-text">' + html + '</span>';
         })()
       : '')
-    + '<div id="community-voice-wrap" class="community-voice-wrap"></div>'
     + '<span class="doxcore-composition">' + raioxComposition + '</span>'
     + '</div>'
     + '<div class="profile-tags">'
@@ -4453,27 +4631,6 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
       if (!block) return; // usuário pode ter navegado pra outra página
       block.outerHTML = renderVoteStars(fipeCodeForVote, currentVote);
     });
-  }
-
-  // -- Veredito Híbrido: popula bloco "Voz da comunidade" async (some se nada a dizer)
-  populateCommunityVoice(v, summary);
-}
-
-// Busca evidências da comunidade e injeta no placeholder #community-voice-wrap.
-// Função separada (não async dentro do render) pra não bloquear a renderização.
-async function populateCommunityVoice(v, summary) {
-  const wrap = document.getElementById('community-voice-wrap');
-  if (!wrap) return;
-  try {
-    const lines = await calculateCommunityVoice(v, summary);
-    if (!lines || !lines.length) {
-      wrap.remove(); // nada a dizer: remove o placeholder, mantém layout limpo
-      return;
-    }
-    wrap.innerHTML = renderCommunityVoice(lines);
-  } catch (e) {
-    // Em caso de erro, remove o wrap pra não deixar buraco visual
-    if (wrap && wrap.parentNode) wrap.remove();
   }
 }
 
@@ -5368,7 +5525,7 @@ async function applySearchWithFilter(query, filter) {
   };
   const results = await sbLoadComplaints(filters);
   // Home mostra apenas 5 — "Ver todas →" leva à página completa
-  renderComplaintsList(results.slice(0, 5));
+  renderComplaintsList(results.slice(0, 3));
   document.getElementById('complaints-list')?.scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
@@ -6313,12 +6470,12 @@ async function openCompanyProfile(companyName) {
     let html = `
       <button onclick="goBack()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body);margin-bottom:20px;display:flex;align-items:center;gap:6px">← Voltar</button>
 
-      <div class="company-header-grid">
+      <div style="display:grid;grid-template-columns:1fr auto;gap:24px;align-items:start;margin-bottom:24px;flex-wrap:wrap">
 
         <!-- Coluna esquerda: identidade -->
-        <div class="company-header-left" style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:28px">
+        <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:28px">
           <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">${typeLabel[tipo]||'📋 Outro'}</div>
-          <h2 class="company-header-name">${companyName}${verifiedBadge}</h2>
+          <h2 style="font-family:var(--font);font-weight:900;font-size:28px;color:var(--navy);margin:0 0 10px;line-height:1.2">${companyName}${verifiedBadge}</h2>
           <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px">
             ${company?.cnpj ? `<div style="font-size:13px;color:var(--muted)">📋 CNPJ: ${company.cnpj}</div>` : ''}
             ${company?.city||company?.state ? `<div style="font-size:13px;color:var(--muted)">📍 ${[company.city,company.state].filter(Boolean).join(' — ')}</div>` : ''}
@@ -6336,7 +6493,7 @@ async function openCompanyProfile(companyName) {
         </div>
 
         <!-- Coluna direita: nota + stats -->
-        <div class="company-header-right">
+        <div style="display:flex;flex-direction:column;gap:16px;min-width:220px">
           <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:24px;text-align:center">
             ${npsAvg !== null ? `
             <div style="font-size:13px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Nota NPS</div>
@@ -8529,159 +8686,6 @@ const DIMENSION_LABELS = {
   pilotagem: 'Pilotagem', cabine: 'Cabine', torque: 'Torque'
 };
 
-// ============================================================
-// VEREDITO HÍBRIDO — bloco "Voz da comunidade" (decisão 25/05 sessão Veredito)
-// ============================================================
-// Filosofia: o veredito direto é o `verdict` curado (segue como hoje).
-// A voz da comunidade aparece em BLOCO PARALELO abaixo, com evidências
-// quantitativas — nunca misturada no texto curado (regra de ouro #9).
-//
-// Cada linha de evidência só aparece quando:
-//   1) atinge o threshold mínimo de volume, E
-//   2) o sinal é forte (bom ou ruim — morno não aparece, evita poluir).
-//
-// Hoje, com pouquíssimo dado orgânico, o bloco quase nunca renderiza.
-// É infraestrutura DORMENTE: passa a acordar sozinha quando os dados
-// começarem a chegar.
-
-const COMMUNITY_VOICE_THRESHOLDS = {
-  minVotesDoxcore:   5,    // ≥5 votos pra Doxcore médio e dimensões entrarem
-  minVotesNps:       5,    // ≥5 votos NPS pra entrar
-  minComplaints:    10,    // ≥10 reclamações na marca pra % resolvidas entrar
-  doxcoreGood:     4.0,    // ≥ confirma a recomendação
-  doxcoreBad:      2.5,    // ≤ contradiz
-  dimensionGood:   4.5,    // ≥ destaque positivo
-  dimensionBad:    2.5,    // ≤ destaque negativo
-  resolvedGood:     70,    // % ≥ marca resolve bem
-  resolvedBad:      40,    // % ≤ marca resolve mal
-  npsGood:         8.0,    // NPS ≥ pós-venda excelente
-  npsBad:          6.0     // NPS ≤ pós-venda fraco
-};
-
-// Calcula as linhas de evidência da comunidade.
-// Função async porque busca seus próprios dados agregados.
-// Retorna sempre um array (vazio = bloco não renderiza).
-//
-// Params:
-//   v        — objeto veículo (precisa de v.brand; v.fipeCode opcional)
-//   summary  — registro de vehicle_known_issues (is_summary=true) ou null
-//
-// Cada linha: { tone: 'good'|'bad', text: string }
-async function calculateCommunityVoice(v, summary) {
-  const lines = [];
-  if (!v || !v.brand) return lines;
-
-  const T = COMMUNITY_VOICE_THRESHOLDS;
-
-  // ---------- 1) Doxcore médio + dimensões (do veículo) ----------
-  try {
-    let query = sb.from('vehicle_ratings').select('rating, scale, dimensions');
-    if (v.fipeCode) {
-      query = query.eq('fipe_code', v.fipeCode);
-    } else {
-      // Modelo-genérico: agrega todas as FIPEs do modelo
-      query = query.eq('vehicle_brand', v.brand).eq('vehicle_model', v.name);
-    }
-    const { data: ratings } = await query;
-    if (ratings && ratings.length >= T.minVotesDoxcore) {
-      // Média do Doxcore (normalizada pra 0-5)
-      const normed = ratings.map(r => normalizeRating(r.rating, r.scale)).filter(x => x != null);
-      if (normed.length >= T.minVotesDoxcore) {
-        const avg = normed.reduce((a, b) => a + b, 0) / normed.length;
-        if (avg >= T.doxcoreGood) {
-          lines.push({ tone: 'good', text: `Doxcore ${avg.toFixed(1)}/5 confirma a recomendação` });
-        } else if (avg <= T.doxcoreBad) {
-          lines.push({ tone: 'bad', text: `Doxcore ${avg.toFixed(1)}/5 contradiz — comunidade está crítica` });
-        }
-      }
-
-      // Agrega dimensões: { motor: [4,5,3], cambio: [2,1] ... }
-      const dimAgg = {};
-      ratings.forEach(r => {
-        if (r.dimensions && typeof r.dimensions === 'object') {
-          Object.entries(r.dimensions).forEach(([k, val]) => {
-            const n = Number(val);
-            if (!isNaN(n)) (dimAgg[k] = dimAgg[k] || []).push(n);
-          });
-        }
-      });
-      // Calcula média por dimensão (exige minVotesDoxcore na própria dimensão)
-      const dimAvgs = [];
-      Object.entries(dimAgg).forEach(([k, arr]) => {
-        if (arr.length >= T.minVotesDoxcore) {
-          dimAvgs.push({ key: k, avg: arr.reduce((a, b) => a + b, 0) / arr.length, n: arr.length });
-        }
-      });
-      if (dimAvgs.length) {
-        // Pior dimensão (se ≤ dimensionBad)
-        const worst = dimAvgs.slice().sort((a, b) => a.avg - b.avg)[0];
-        if (worst && worst.avg <= T.dimensionBad) {
-          const lbl = DIMENSION_LABELS[worst.key] || worst.key;
-          lines.push({ tone: 'bad', text: `${lbl} é o ponto mais criticado (${worst.avg.toFixed(1)}/5)` });
-        }
-        // Melhor dimensão (se ≥ dimensionGood)
-        const best = dimAvgs.slice().sort((a, b) => b.avg - a.avg)[0];
-        if (best && best.avg >= T.dimensionGood && (!worst || best.key !== worst.key)) {
-          const lbl = DIMENSION_LABELS[best.key] || best.key;
-          lines.push({ tone: 'good', text: `${lbl} é o ponto forte segundo a comunidade (${best.avg.toFixed(1)}/5)` });
-        }
-      }
-    }
-  } catch (e) { /* Doxcore opcional */ }
-
-  // ---------- 2) % resolvidas da marca ----------
-  try {
-    const { data: brandComplaints } = await sb.from('complaints')
-      .select('status')
-      .ilike('brand', v.brand);
-    if (brandComplaints && brandComplaints.length >= T.minComplaints) {
-      const resolvedN = brandComplaints.filter(c => c.status === 's-resolved').length;
-      const pct = Math.round((resolvedN / brandComplaints.length) * 100);
-      if (pct >= T.resolvedGood) {
-        lines.push({ tone: 'good', text: `${v.brand} resolve ${pct}% das reclamações` });
-      } else if (pct <= T.resolvedBad) {
-        lines.push({ tone: 'bad', text: `${v.brand} resolve apenas ${pct}% das reclamações` });
-      }
-    }
-  } catch (e) { /* reclamações opcional */ }
-
-  // ---------- 3) NPS da marca ----------
-  try {
-    const { data: npsRows } = await sb.from('nps_ratings')
-      .select('score')
-      .ilike('brand', v.brand);
-    if (npsRows && npsRows.length >= T.minVotesNps) {
-      const scores = npsRows.map(r => Number(r.score)).filter(n => !isNaN(n));
-      if (scores.length >= T.minVotesNps) {
-        const npsAvg = scores.reduce((a, b) => a + b, 0) / scores.length;
-        if (npsAvg >= T.npsGood) {
-          lines.push({ tone: 'good', text: `NPS ${v.brand} ${npsAvg.toFixed(1)} — pós-venda excelente` });
-        } else if (npsAvg <= T.npsBad) {
-          lines.push({ tone: 'bad', text: `NPS ${v.brand} ${npsAvg.toFixed(1)} — pós-venda abaixo da média` });
-        }
-      }
-    }
-  } catch (e) { /* NPS opcional */ }
-
-  return lines;
-}
-
-// Renderiza o HTML do bloco "Voz da comunidade".
-// Recebe o array de linhas vindo de calculateCommunityVoice.
-// Retorna string vazia se não houver linhas (bloco some).
-function renderCommunityVoice(lines) {
-  if (!lines || !lines.length) return '';
-  const items = lines.map(l => {
-    const icon = l.tone === 'good' ? '✓' : '⚠';
-    const cls  = l.tone === 'good' ? 'cv-good' : 'cv-bad';
-    return `<li class="cv-item ${cls}"><span class="cv-icon">${icon}</span><span class="cv-text">${l.text}</span></li>`;
-  }).join('');
-  return `<div class="community-voice">
-    <div class="cv-title">Voz da comunidade</div>
-    <ul class="cv-list">${items}</ul>
-  </div>`;
-}
-
 // Cache em memória, válido por sessão. Invalidado manualmente após voto.
 let _scoreCache = { fipe: {}, model: {}, brand: {} };
 
@@ -9725,8 +9729,8 @@ async function updateHeroStats(){
   }catch(e){ /* silencia: mantém fallback "dezenas de" */ }
 }
 updateHeroStats();
-renderVehicles();
 renderRanking();
+renderMarcas();
 initCompare();
 initSearch();
 // Pré-seleciona "Carros" apenas no desktop: usuário cai direto na escolha de marca,
@@ -9782,7 +9786,7 @@ async function restoreFromHash() {
   try {
     const realComplaints = await sbLoadComplaints();
     // Home mostra apenas 5 — "Ver todas →" leva à página completa
-    renderComplaintsList(realComplaints.slice(0, 5));
+    renderComplaintsList(realComplaints.slice(0, 3));
   } catch(e) {
     renderComplaintsList([]);
   }
