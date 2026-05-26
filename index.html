@@ -1462,7 +1462,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
   <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
     <button class="qf-btn active" onclick="companyFilterComplaints(this,'open')">🔴 Não respondidas</button>
     <button class="qf-btn" onclick="companyFilterComplaints(this,'progress')">🟡 Em análise</button>
-    <button class="qf-btn" onclick="companyFilterComplaints(this,'resolved')">🟢 Resolvidas</button>
+    <button class="qf-btn" onclick="companyFilterComplaints(this,'resolved')">🟢 Respondidas</button>
     <button class="qf-btn" onclick="companyFilterComplaints(this,'all')">Todas</button>
     <button class="qf-btn" id="btn-brand-mentions" onclick="companyFilterComplaints(this,'brand')" style="border-color:var(--orange);color:var(--orange)">⚠️ Menções à marca</button>
   </div>
@@ -1965,7 +1965,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
         <div class="user-stats">
           <div class="ustat"><div class="ustat-n" id="profile-count">0</div><div class="ustat-l">Reclamações</div></div>
           <div class="ustat"><div class="ustat-n" id="profile-votes-total">0</div><div class="ustat-l">Votos recebidos</div></div>
-          <div class="ustat"><div class="ustat-n" id="profile-resolved">0</div><div class="ustat-l">Resolvidas</div></div>
+          <div class="ustat"><div class="ustat-n" id="profile-resolved">0</div><div class="ustat-l">Respondidas</div></div>
         </div>
       </div>
     </div>
@@ -4191,7 +4191,7 @@ async function renderManufacturerChip(brand, containerId, vehicleType, fipeBrand
 
     let statsParts = [];
     if (npsAvg !== null) statsParts.push('NPS <span class="' + npsClass + '">' + npsAvg.toFixed(1) + '</span>');
-    if (pctResolvidas !== null) statsParts.push(pctResolvidas + '% resolvidas');
+    if (pctResolvidas !== null) statsParts.push(pctResolvidas + '% respondidas');
     // Quando não há nenhum dado, deixa em branco — não polui o chip com "sem dados"
     const statsStr = statsParts.join(' · ');
 
@@ -4553,7 +4553,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + '<div class="info-card">'
     + '<div class="ic-label">📋 Relatos na plataforma</div>'
     + '<div class="ic-value ic-value-red">' + totalComplaints.toLocaleString('pt-BR') + '</div>'
-    + '<div class="ic-sub">' + (resolvedPct !== null ? resolvedPct + '% resolvidos' : 'Sem dados ainda') + '</div>'
+    + '<div class="ic-sub">' + (resolvedPct !== null ? resolvedPct + '% respondidas' : 'Sem dados ainda') + '</div>'
     + '</div>'
     + '<button class="btn-primary" style="width:100%;justify-content:center" onclick="requireAuthForCurrentVehicle()">🚨 Reclamar deste veículo</button>'
     + '</div>'
@@ -6489,31 +6489,12 @@ function renderNpsCapsule(score, opts) {
   return '<div class="' + cls + '">' + inner + '</div>';
 }
 
-// Versão compacta: usada nos cards de marca da home. Só a barra-cápsula com a nota dentro.
+// Versão compacta: usada nos cards de marca da home e no bloco unificado do perfil de empresa.
+// Só a barra-cápsula. Quando score==null retorna barra desbotada (estado vazio).
 function renderNpsBar(score, compact) {
   // compact é parâmetro legado — esta versão é sempre compacta.
-  if (score == null || isNaN(score)) return '';
-  return renderNpsCapsule(score, { compact: true, showNumInside: true });
-}
-
-// Versão grande: card completo do perfil de empresa.
-// Estrutura: label "Nota NPS" + número 52px + barra-cápsula (sem nota dentro) + "N avaliações".
-// score null = estado vazio com "—" e barra desbotada.
-function renderNpsCard(score, votes) {
   const hasScore = score != null && !isNaN(score);
-  const s = hasScore ? Math.max(0, Math.min(10, parseFloat(score))) : 0;
-  let color = '#cbd5e1';
-  if (hasScore) {
-    const cat = _npsCategory(s);
-    color = cat === 'promotor' ? '#16a34a' : cat === 'neutro' ? '#d97706' : '#dc2626';
-  }
-  return ''
-    + '<div style="font-size:13px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;text-align:center">Nota NPS</div>'
-    + '<div style="font-size:52px;font-weight:900;color:' + color + ';font-family:var(--font);line-height:1;text-align:center;margin-bottom:18px">' + (hasScore ? s.toFixed(1) : '—') + '</div>'
-    + renderNpsCapsule(score, { showNumInside: false, empty: !hasScore })
-    + '<div style="font-size:12px;color:var(--muted);margin-top:14px;text-align:center' + (hasScore ? '' : ';font-style:italic') + '">'
-    + (hasScore ? (votes === 1 ? '1 avaliação' : votes + ' avaliações') : 'Seja o 1º a avaliar →')
-    + '</div>';
+  return renderNpsCapsule(score, { compact: true, showNumInside: hasScore, empty: !hasScore });
 }
 
 async function openCompanyProfile(companyName) {
@@ -6585,19 +6566,19 @@ async function openCompanyProfile(companyName) {
           </div>` : ''}
         </div>
 
-        <!-- Coluna direita: nota + stats -->
+        <!-- Coluna direita: bloco unificado NPS + métricas -->
         <div style="display:flex;flex-direction:column;gap:16px">
-          <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:24px">
-            ${renderNpsCard(npsAvg, npsScores.length)}
-          </div>
           <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:20px">
-            <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="font-size:13px;color:var(--muted);font-weight:600;margin-bottom:10px">Nota NPS</div>
+            ${renderNpsBar(npsAvg, true)}
+            <div style="font-size:12px;color:var(--muted);margin-top:8px${npsAvg===null?';font-style:italic':''}">${npsAvg===null?'Seja o 1º a avaliar →':(npsScores.length===1?'1 avaliação':npsScores.length+' avaliações')}</div>
+            <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:14px;display:flex;flex-direction:column;gap:12px">
               <div style="display:flex;justify-content:space-between;align-items:center">
                 <span style="font-size:13px;color:var(--muted);font-weight:600">Reclamações</span>
                 <span style="font-family:var(--font);font-weight:900;font-size:18px;color:var(--navy)">${total}</span>
               </div>
               <div style="display:flex;justify-content:space-between;align-items:center">
-                <span style="font-size:13px;color:var(--muted);font-weight:600">Resolvidas</span>
+                <span style="font-size:13px;color:var(--muted);font-weight:600">Respondidas</span>
                 <span style="font-family:var(--font);font-weight:900;font-size:18px;color:var(--green)">${pct}%</span>
               </div>
               <div style="display:flex;justify-content:space-between;align-items:center">
@@ -7308,7 +7289,7 @@ async function renderProfile() {
           + '<span style="font-size:11px;font-weight:700;color:' + npsLabelColor + ';background:' + (npsAvg >= 8.1 ? '#f0fdf4' : npsAvg >= 6.1 ? '#eff6ff' : npsAvg >= 4.1 ? '#fffbeb' : npsAvg >= 2.1 ? '#fff7ed' : '#fef2f2') + ';padding:2px 8px;border-radius:20px;margin-left:6px">' + npsLabel + '</span>'
           : '';
         const totalRecl = stats ? stats.total + ' reclamação(ões)' : '';
-        const resolved = stats ? stats.resolved + ' resolvida(s)' : '';
+        const resolved = stats ? stats.resolved + ' respondida(s)' : '';
         const canClick = e.status === 'approved';
         return `<div onclick="${canClick ? "openCompanyProfile('" + e.name + "')" : ''}'" 
           style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:16px;cursor:${canClick ? 'pointer' : 'default'};transition:border-color .2s"
@@ -8617,7 +8598,7 @@ async function loadLawyerPanel() {
         </div>
         <div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px;text-align:center">
           <div style="font-family:var(--font);font-weight:900;font-size:32px;color:var(--green)">${finished.filter(m=>m.status==='resolved').length}</div>
-          <div style="font-size:12px;color:var(--muted);font-weight:600;margin-top:4px">Resolvidos</div>
+          <div style="font-size:12px;color:var(--muted);font-weight:600;margin-top:4px">Respondidas</div>
         </div>
       </div>
 
@@ -9718,7 +9699,7 @@ function renderAllVehiclesGrid() {
           <span class="vc-info-value red">${topProblem}</span>
         </div>
         <div class="vc-info-item">
-          <span class="vc-info-label">✅ Resolvidas</span>
+          <span class="vc-info-label">✅ Respondidas</span>
           <span class="vc-info-value green">${resolved}%</span>
         </div>
       </div>
