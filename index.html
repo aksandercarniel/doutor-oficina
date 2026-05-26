@@ -574,7 +574,13 @@ header{
 }
 
 /* ── RANKING ── */
-.rank-tabs{display:inline-flex;gap:0;margin-bottom:14px;border:1.5px solid var(--border);border-radius:10px;padding:3px;background:var(--white)}
+/* Agrupa título + abas lado-a-lado no section-header.
+   align-items:center alinha verticalmente as duas alturas (h2 e botões).
+   No mobile vira coluna pra evitar aperto. */
+.rank-title-group{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+/* Cor 'navy' do "Veículos" — escopada pra não afetar outras seções */
+#ranking-section .section-title .accent{color:var(--navy)}
+.rank-tabs{display:inline-flex;gap:0;border:1.5px solid var(--border);border-radius:10px;padding:3px;background:var(--white)}
 .rank-tab{
   font-family:var(--font);font-weight:700;font-size:13px;color:var(--muted);
   padding:7px 16px;border:none;background:transparent;border-radius:7px;cursor:pointer;
@@ -1574,12 +1580,14 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
   <section class="section section-alt" id="ranking-section">
     <div class="section-inner">
       <div class="section-header">
-        <h2 class="section-title">🚗 <span class="accent">Veículos</span></h2>
+        <div class="rank-title-group">
+          <h2 class="section-title">🚗 <span class="accent">Veículos</span></h2>
+          <div class="rank-tabs" role="tablist">
+            <button class="rank-tab active" role="tab" id="rank-tab-best" onclick="setRankingMode('best')">🏆 Melhores</button>
+            <button class="rank-tab" role="tab" id="rank-tab-worst" onclick="setRankingMode('worst')">⚠️ Piores</button>
+          </div>
+        </div>
         <a href="#" class="see-all" id="ranking-see-all" onclick="event.preventDefault();showPage('vehicles',{sort:'best_rating'});return false;">Ranking completo →</a>
-      </div>
-      <div class="rank-tabs" role="tablist">
-        <button class="rank-tab active" role="tab" id="rank-tab-best" onclick="setRankingMode('best')">🏆 Melhores</button>
-        <button class="rank-tab" role="tab" id="rank-tab-worst" onclick="setRankingMode('worst')">⚠️ Piores</button>
       </div>
       <div class="vehicles-grid" id="ranking-grid"></div>
     </div>
