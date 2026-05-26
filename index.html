@@ -1463,12 +1463,12 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
     <button onclick="goBack()" style="background:none;border:1.5px solid var(--border2);border-radius:8px;padding:8px 16px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;color:var(--navy)">← Voltar</button>
   </div>
   <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
-    <button class="qf-btn qf-btn-status-open active" onclick="companyFilterComplaints(this,'open')"><span class="face-slot" data-status="open"></span> Não respondidas</button>
+    <button class="qf-btn qf-btn-status-open" onclick="companyFilterComplaints(this,'open')"><span class="face-slot" data-status="open"></span> Não respondidas</button>
     <button class="qf-btn qf-btn-status-progress" onclick="companyFilterComplaints(this,'progress')"><span class="face-slot" data-status="progress"></span> Respondidas</button>
     <button class="qf-btn qf-btn-status-replied" onclick="companyFilterComplaints(this,'replied')"><span class="face-slot" data-status="replied"></span> Em réplica</button>
     <button class="qf-btn qf-btn-status-resolved" onclick="companyFilterComplaints(this,'resolved')"><span class="face-slot" data-status="resolved"></span> Resolvidas</button>
     <button class="qf-btn qf-btn-status-unresolved" onclick="companyFilterComplaints(this,'unresolved')"><span class="face-slot" data-status="unresolved"></span> Não resolvidas</button>
-    <button class="qf-btn" onclick="companyFilterComplaints(this,'all')">Todas</button>
+    <button class="qf-btn active" onclick="companyFilterComplaints(this,'all')">Todas</button>
     <button class="qf-btn" id="btn-brand-mentions" onclick="companyFilterComplaints(this,'brand')" style="border-color:var(--orange);color:var(--orange)">⚠️ Menções à marca</button>
   </div>
   <div id="company-complaints-list" style="display:flex;flex-direction:column;gap:14px">
@@ -5388,7 +5388,7 @@ function showPage(page, params={}){
   if(page==='profile') renderProfile();
   if(page==='compare') initCompare();
   if(page==='admin') loadAdminMediations('pending');
-  if(page==='company') loadCompanyComplaints('open');
+  if(page==='company') loadCompanyComplaints('all');
   if(page==='ranking-companies') loadCompanyRanking();
   if(page==='lawyer-panel') loadLawyerPanel();
   if(page==='complaints') loadAllComplaintsPage(params);
