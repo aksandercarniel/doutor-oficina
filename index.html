@@ -1032,12 +1032,12 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
   display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;
   box-shadow:var(--shadow);
 }
-.profile-left{flex:1;min-width:240px;display:grid;grid-template-columns:auto 1fr;grid-column-gap:18px;align-items:start}
-.profile-emoji{grid-column:1;grid-row:1/span 3;align-self:center;display:block;line-height:1}
-.profile-emoji .vehicle-icon-svg{display:block;width:64px;height:64px;color:var(--navy);stroke-width:1.25}
-.profile-brand-label{grid-column:2;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:1.2px;font-weight:700;margin-bottom:6px}
+.profile-left{flex:1;min-width:240px;display:block}
+.profile-emoji{display:inline-block;line-height:1;vertical-align:middle;margin-right:10px}
+.profile-emoji .vehicle-icon-svg{display:inline-block;width:32px;height:32px;color:var(--navy);stroke-width:1.5;vertical-align:middle}
+.profile-brand-label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:1.2px;font-weight:700;margin-bottom:6px}
 /* Chip da montadora — substitui o .profile-brand-label quando há dados de empresa */
-.mfr-chip-wrap{grid-column:2;margin-bottom:6px;min-height:32px}
+.mfr-chip-wrap{margin-bottom:6px;min-height:32px}
 .mfr-chip{display:inline-flex;align-items:center;gap:8px;background:#f9fafb;border:1px solid var(--border);border-radius:8px;padding:5px 10px 5px 7px;cursor:pointer;transition:border-color .2s,background .2s;text-decoration:none}
 .mfr-chip:hover{border-color:var(--navy);background:#fff}
 .mfr-chip-static{cursor:default}
@@ -1054,9 +1054,9 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .mfr-chip-nps-pessimo{color:#dc2626;font-weight:700}
 .mfr-chip-skeleton{background:linear-gradient(90deg,#f3f4f6 0%,#e5e7eb 50%,#f3f4f6 100%);background-size:200% 100%;animation:mfr-shimmer 1.2s infinite;border-radius:8px;height:32px;width:180px;display:inline-block}
 @keyframes mfr-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-.profile-name{grid-column:2;font-family:var(--font);font-weight:900;font-size:38px;line-height:1;color:var(--navy);margin-bottom:5px}
-.profile-sub{grid-column:2;color:var(--muted);font-size:14px;margin-bottom:14px;font-family:var(--font-body)}
-.profile-rating,.profile-tags{grid-column:1/-1}
+.profile-name{font-family:var(--font);font-weight:900;font-size:38px;line-height:1;color:var(--navy);margin-bottom:5px}
+.profile-sub{color:var(--muted);font-size:14px;margin-bottom:14px;font-family:var(--font-body)}
+.profile-rating,.profile-tags{}
 .profile-rating{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap}
 /* Quando tem velocímetro: badge no topo, depois grid 2 colunas (velocímetro à esquerda, textos à direita) */
 .profile-rating:has(.doxcore-velocimetro-wrap){display:grid;grid-template-columns:auto 1fr;column-gap:20px;row-gap:8px;align-items:start;margin-bottom:20px}
@@ -3774,9 +3774,8 @@ function renderVehicleProfileSkeleton(v) {
     <button class="back-btn" onclick="goBack()">← Voltar</button>
     <div class="profile-hero">
       <div class="profile-left">
-        <span class="profile-emoji">${vehicleIcon(v.emoji, v.name)}</span>
         <div class="mfr-chip-wrap" id="mfr-chip-skeleton-${(v.brand||'').replace(/[^a-zA-Z0-9]/g,'_')}"><div class="mfr-chip-skeleton"></div></div>
-        <div class="profile-name">${v.name || ''}</div>
+        <div class="profile-name"><span class="profile-emoji">${vehicleIcon(v.emoji, v.name)}</span>${v.name || ''}</div>
         ${(v.version || v.year) ? `<div class="profile-sub">${[v.version, v.year].filter(x => x && x !== '—').join(' · ')}</div>` : ''}
         <div class="profile-rating">
           <span class="doxcore-badge">Doxcore</span>
@@ -4488,9 +4487,8 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     // Hero
     + '<div class="profile-hero">'
     + '<div class="profile-left">'
-    + '<span class="profile-emoji">' + vehicleIcon(v.emoji, v.name) + '</span>'
     + '<div class="mfr-chip-wrap" id="mfr-chip-' + (v.brand||'').replace(/[^a-zA-Z0-9]/g,'_') + '"><div class="mfr-chip-skeleton"></div></div>'
-    + '<div class="profile-name">' + v.name + '</div>'
+    + '<div class="profile-name"><span class="profile-emoji">' + vehicleIcon(v.emoji, v.name) + '</span>' + v.name + '</div>'
     + ((v.version || v.year) ? ('<div class="profile-sub">' + [v.version, v.year].filter(x => x && x !== '—').join(' · ') + '</div>') : '')
     + '<div class="profile-rating">'
     + '<span class="doxcore-badge">Doxcore</span>'
