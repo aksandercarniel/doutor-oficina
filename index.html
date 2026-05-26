@@ -1457,8 +1457,10 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
   </div>
   <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
     <button class="qf-btn active" onclick="companyFilterComplaints(this,'open')">🔴 Não respondidas</button>
-    <button class="qf-btn" onclick="companyFilterComplaints(this,'progress')">🔵 Respondida</button>
-    <button class="qf-btn" onclick="companyFilterComplaints(this,'resolved')">🟢 Respondidas</button>
+    <button class="qf-btn" onclick="companyFilterComplaints(this,'progress')">🔵 Respondidas</button>
+    <button class="qf-btn" onclick="companyFilterComplaints(this,'replied')">🟡 Em réplica</button>
+    <button class="qf-btn" onclick="companyFilterComplaints(this,'resolved')">🟢 Resolvidas</button>
+    <button class="qf-btn" onclick="companyFilterComplaints(this,'unresolved')">🟠 Não resolvidas</button>
     <button class="qf-btn" onclick="companyFilterComplaints(this,'all')">Todas</button>
     <button class="qf-btn" id="btn-brand-mentions" onclick="companyFilterComplaints(this,'brand')" style="border-color:var(--orange);color:var(--orange)">⚠️ Menções à marca</button>
   </div>
@@ -1538,9 +1540,11 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
     <span class="filter-label">Filtrar:</span>
     <select class="filter-select" id="all-filter-status" onchange="applyAllFilters()">
       <option value="">Todos os status</option>
-      <option value="s-open">Não respondidas</option>
-      <option value="s-progress">Respondida</option>
-      <option value="s-resolved">Resolvidos</option>
+      <option value="s-open">🔴 Não respondidas</option>
+      <option value="s-progress">🔵 Respondidas</option>
+      <option value="s-replied">🟡 Em réplica</option>
+      <option value="s-resolved">🟢 Resolvidas</option>
+      <option value="s-unresolved">🟠 Não resolvidas</option>
     </select>
     <select class="filter-select" id="all-filter-brand" onchange="applyAllFilters()">
       <option value="">Todas as marcas</option>
@@ -2344,7 +2348,16 @@ async function sbGetSession() {
 
 async function sbLoadComplaints(filters = {}) {
   let query = sb.from('complaints').select('*').order('created_at', { ascending: false }).limit(20);
-  if (filters.status) query = query.eq('status', filters.status === 's-open' ? 'open' : filters.status === 's-progress' ? 'in_progress' : 'resolved');
+  if (filters.status) {
+    // Mapa s-X -> X. Mantém ternários encadeados (estilo do código) e fecha em 'open' como fallback seguro.
+    const m = filters.status === 's-open' ? 'open'
+            : filters.status === 's-progress' ? 'in_progress'
+            : filters.status === 's-replied' ? 'replied'
+            : filters.status === 's-resolved' ? 'resolved'
+            : filters.status === 's-unresolved' ? 'unresolved'
+            : 'open';
+    query = query.eq('status', m);
+  }
   if (filters.brand) query = query.eq('vehicle_brand', filters.brand);
   if (filters.state) query = query.eq('state', filters.state);
   const { data, error } = await query;
@@ -2373,7 +2386,16 @@ async function sbSearchComplaints(query) {
 async function sbLoadAllComplaints(filters = {}, sort = 'recent', offset = 0, limit = 20) {
   // Conta total respeitando filtros
   let countQ = sb.from('complaints').select('*', { count: 'exact', head: true });
-  if (filters.status) countQ = countQ.eq('status', filters.status === 's-open' ? 'open' : filters.status === 's-progress' ? 'in_progress' : 'resolved');
+  if (filters.status) {
+    // Mapa s-X -> X (vide sbLoadComplaints). Fallback 'open' por segurança.
+    const m = filters.status === 's-open' ? 'open'
+            : filters.status === 's-progress' ? 'in_progress'
+            : filters.status === 's-replied' ? 'replied'
+            : filters.status === 's-resolved' ? 'resolved'
+            : filters.status === 's-unresolved' ? 'unresolved'
+            : 'open';
+    countQ = countQ.eq('status', m);
+  }
   if (filters.brand)  countQ = countQ.eq('vehicle_brand', filters.brand);
   if (filters.state)  countQ = countQ.eq('state', filters.state);
   if (filters.model)  countQ = countQ.eq('vehicle_model', filters.model);
@@ -2382,7 +2404,16 @@ async function sbLoadAllComplaints(filters = {}, sort = 'recent', offset = 0, li
   let q = sb.from('complaints').select('*');
   if (sort === 'votes') q = q.order('votes_count', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false });
   else                  q = q.order('created_at', { ascending: false });
-  if (filters.status) q = q.eq('status', filters.status === 's-open' ? 'open' : filters.status === 's-progress' ? 'in_progress' : 'resolved');
+  if (filters.status) {
+    // Mapa s-X -> X (vide sbLoadComplaints). Fallback 'open' por segurança.
+    const m = filters.status === 's-open' ? 'open'
+            : filters.status === 's-progress' ? 'in_progress'
+            : filters.status === 's-replied' ? 'replied'
+            : filters.status === 's-resolved' ? 'resolved'
+            : filters.status === 's-unresolved' ? 'unresolved'
+            : 'open';
+    q = q.eq('status', m);
+  }
   if (filters.brand)  q = q.eq('vehicle_brand', filters.brand);
   if (filters.state)  q = q.eq('state', filters.state);
   if (filters.model)  q = q.eq('vehicle_model', filters.model);
@@ -3885,11 +3916,15 @@ async function sbLoadVehicleComplaintsFull(brand, model) {
 function calcVehicleStats(complaints) {
   const total = complaints.length;
   if (total === 0) return { total_complaints: 0, resolved_count: 0, avg_rating: null, stars_1: 0, stars_2: 0, stars_3: 0, stars_4: 0, stars_5: 0 };
-  const resolved = complaints.filter(c => c.status === 's-resolved').length;
+  // "resolved_count" aqui é histórico — o card que consome ela mostra "X% respondidas",
+  // então conta TODAS as reclamações onde a empresa já respondeu pelo menos 1 vez.
+  // complaints vem já mapeada via mapComplaint, então o status tem prefixo 's-'.
+  // Apenas 's-open' (nunca respondida) fica fora.
+  const responded = complaints.filter(c => c.status && c.status !== 's-open').length;
   // rating vem do campo votes como proxy — se tiver rating real melhor
   const stars = { stars_1: 0, stars_2: 0, stars_3: 0, stars_4: 0, stars_5: 0 };
   // tenta pegar rating do objeto original (antes do mapComplaint)
-  return { total_complaints: total, resolved_count: resolved, avg_rating: null, ...stars };
+  return { total_complaints: total, resolved_count: responded, avg_rating: null, ...stars };
 }
 
 // Busca raio-x curado no Supabase
@@ -4180,9 +4215,11 @@ async function renderManufacturerChip(brand, containerId, vehicleType, fipeBrand
     const npsScores = (npsRatings || []).map(n => n.score);
     const npsAvg = npsScores.length ? (npsScores.reduce((a,b)=>a+b,0)/npsScores.length) : null;
     const totalRel = (complaints || []).length;
-    // Atenção: openCompanyProfile usa 'resolved' (sem prefixo s-). Mesma lógica aqui.
-    const resolvedRel = (complaints || []).filter(c => c.status === 'resolved' || c.status === 's-resolved').length;
-    const pctResolvidas = totalRel > 0 ? Math.round((resolvedRel/totalRel)*100) : null;
+    // "Respondidas" = qualquer status onde a empresa já respondeu pelo menos 1 vez.
+    // complaints aqui vem cru de sb.from('complaints').select('status') na linha ~4176,
+    // SEM passar por mapComplaint — então status não tem prefixo 's-'.
+    const respondedRel = (complaints || []).filter(c => c.status && c.status !== 'open').length;
+    const pctResolvidas = totalRel > 0 ? Math.round((respondedRel/totalRel)*100) : null;
 
     // 5. Classe de cor do NPS (mesma lógica de openCompanyProfile)
     let npsClass = '';
@@ -4260,8 +4297,10 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
 
   // -- Calcula stats de reclamações reais
   const totalComplaints = stats?.total_complaints || complaints.length || 0;
-  const resolvedCount = stats?.resolved_count || complaints.filter(c => c.status === 's-resolved').length || 0;
-  const resolvedPct = totalComplaints > 0 ? Math.round((resolvedCount / totalComplaints) * 100) : null;
+  // "Respondidas" = todas as reclamações onde a empresa já respondeu pelo menos 1 vez.
+  // Status com prefixo 's-' (já passou por mapComplaint). Apenas 's-open' fica fora.
+  const respondedCount = stats?.resolved_count || complaints.filter(c => c.status && c.status !== 's-open').length || 0;
+  const resolvedPct = totalComplaints > 0 ? Math.round((respondedCount / totalComplaints) * 100) : null;
 
   // -- Nota: prioridade
   //    1. Se scoreData veio (página FIPE-exata) e tem score calculado, usa ele
@@ -6523,8 +6562,11 @@ async function openCompanyProfile(companyName) {
     const { data: npsRatings } = await sb.from('nps_ratings').select('score').eq('company_name', companyName);
     const list = complaints || [];
     const total = list.length;
-    const resolved = list.filter(c => c.status === 'resolved').length;
-    const pct = total ? Math.round(resolved/total*100) : 0;
+    // "Respondidas" agrupa todos os status onde a empresa já respondeu pelo menos 1 vez:
+    // in_progress (respondeu), replied (cliente respondeu de volta), resolved (encerrou positivo),
+    // unresolved (encerrou negativo). Apenas 'open' fica fora.
+    const responded = list.filter(c => c.status && c.status !== 'open').length;
+    const pct = total ? Math.round(responded/total*100) : 0;
     const avgRating = total ? (list.reduce((s,c) => s+(c.rating||0),0)/total).toFixed(1) : '—';
     // NPS
     const npsScores = (npsRatings || []).map(n => n.score);
@@ -6802,7 +6844,7 @@ async function renderResolutionPage() {
             ${textareaHtml}
             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;flex-wrap:wrap;gap:10px">
               <button onclick="markResolved('${complaint.id}')" style="background:var(--navy);color:#fff;border:none;border-radius:8px;padding:10px 16px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">Avaliar atendimento</button>
-              <button onclick="sendResolutionMessage('${complaint.id}')" style="background:var(--white);color:var(--navy);border:1.5px solid var(--navy);border-radius:8px;padding:10px 16px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">Não estou satisfeito — responder</button>
+              <button onclick="sendResolutionMessage('${complaint.id}')" style="background:var(--white);color:var(--navy);border:1.5px solid var(--navy);border-radius:8px;padding:10px 16px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">Enviar →</button>
             </div>
           </div>`;
       } else if (st === 'replied') {
@@ -7166,7 +7208,7 @@ async function loadCompanyComplaints(status='open') {
         .ilike('company_name', `%${cName}%`)
         .order('created_at', { ascending: false });
       if (status !== 'all') {
-        const statusMap = { open: 'open', progress: 'in_progress', resolved: 'resolved' };
+        const statusMap = { open: 'open', progress: 'in_progress', replied: 'replied', resolved: 'resolved', unresolved: 'unresolved' };
         const mappedStatus = statusMap[status];
         if (mappedStatus) q = q.eq('status', mappedStatus);
       }
@@ -7375,7 +7417,9 @@ async function renderProfile() {
           statsData.forEach(c => {
             if (!statsMap[c.company_name]) statsMap[c.company_name] = { total: 0, resolved: 0, npsScores: [] };
             statsMap[c.company_name].total++;
-            if (c.status === 'resolved') statsMap[c.company_name].resolved++;
+            // "Respondidas" = qualquer status onde empresa já respondeu pelo menos 1 vez.
+            // Apenas 'open' (nunca respondida) fica fora.
+            if (c.status && c.status !== 'open') statsMap[c.company_name].resolved++;
           });
         }
         // Busca NPS por empresa
