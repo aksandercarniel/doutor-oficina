@@ -6470,12 +6470,12 @@ async function openCompanyProfile(companyName) {
     let html = `
       <button onclick="goBack()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body);margin-bottom:20px;display:flex;align-items:center;gap:6px">← Voltar</button>
 
-      <div style="display:grid;grid-template-columns:1fr auto;gap:24px;align-items:start;margin-bottom:24px;flex-wrap:wrap">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;align-items:start;margin-bottom:24px">
 
         <!-- Coluna esquerda: identidade -->
         <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:28px">
           <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">${typeLabel[tipo]||'📋 Outro'}</div>
-          <h2 style="font-family:var(--font);font-weight:900;font-size:28px;color:var(--navy);margin:0 0 10px;line-height:1.2">${companyName}${verifiedBadge}</h2>
+          <h2 style="font-family:var(--font);font-weight:900;font-size:clamp(20px,5vw,28px);color:var(--navy);margin:0 0 10px;line-height:1.2;word-break:break-word">${companyName}${verifiedBadge}</h2>
           <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px">
             ${company?.cnpj ? `<div style="font-size:13px;color:var(--muted)">📋 CNPJ: ${company.cnpj}</div>` : ''}
             ${company?.city||company?.state ? `<div style="font-size:13px;color:var(--muted)">📍 ${[company.city,company.state].filter(Boolean).join(' — ')}</div>` : ''}
@@ -6493,7 +6493,7 @@ async function openCompanyProfile(companyName) {
         </div>
 
         <!-- Coluna direita: nota + stats -->
-        <div style="display:flex;flex-direction:column;gap:16px;min-width:220px">
+        <div style="display:flex;flex-direction:column;gap:16px">
           <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:24px;text-align:center">
             ${npsAvg !== null ? `
             <div style="font-size:13px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Nota NPS</div>
