@@ -6924,6 +6924,46 @@ async function submitNPS(complaintId, companyName) {
   } catch(e) { alert('Erro ao enviar avaliação.'); }
 }
 
+// ══════════════════════════════════════════
+// F3 — Lógica de encerramento (consumido pela F4: botões contextuais)
+// ══════════════════════════════════════════
+
+// Calcula taxa de resposta de uma empresa (proporção de reclamações que saíram de 'open').
+// Empresa nova ou sem reclamações: retorna 1 (≥50%, dá prazo longo de 30d).
+async function getCompanyResponseRate(companyName) {
+  if (!companyName) return 1;
+  try {
+    const { data, error } = await sb.from('complaints')
+      .select('status')
+      .eq('company_name', normalizeCompanyName(companyName));
+    if (error || !data || data.length === 0) return 1;
+    const responded = data.filter(c => c.status && c.status !== 'open').length;
+    return responded / data.length;
+  } catch(e) {
+    console.error('getCompanyResponseRate error:', e);
+    return 1; // erro → assume taxa alta (mais conservador, prazo longo)
+  }
+}
+
+// Decide se o cliente pode avaliar a reclamação AGORA.
+// - Não é dono → false
+// - Já avaliada (resolved/unresolved) → false
+// - Empresa respondeu (in_progress/replied) → true (pode avaliar a qualquer momento)
+// - Status open → depende do prazo:
+//     taxa de resposta < 50% → 3 dias
+//     taxa de resposta ≥ 50% → 30 dias
+async function canEvaluate(complaint, user) {
+  if (!complaint || !user) return false;
+  if (complaint.user_id !== user.id) return false;
+  if (complaint.status === 'resolved' || complaint.status === 'unresolved') return false;
+  if (complaint.status === 'in_progress' || complaint.status === 'replied') return true;
+  // status === 'open': checa prazo
+  const daysSinceCreated = (Date.now() - new Date(complaint.created_at).getTime()) / 86400000;
+  const rate = await getCompanyResponseRate(complaint.company_name);
+  const requiredDays = rate < 0.5 ? 3 : 30;
+  return daysSinceCreated >= requiredDays;
+}
+
 async function sendResolutionMessage(complaintId) {
   const input = document.getElementById('resolution-msg-input');
   const msg = input?.value.trim();
