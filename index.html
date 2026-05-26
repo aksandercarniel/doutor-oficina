@@ -597,7 +597,12 @@ header{
   transition:background .15s,color .15s;
 }
 .rank-tab:hover{color:var(--navy)}
+/* Aba ativa muda de cor conforme o modo. Reaproveita --green/--red do projeto
+   (mais escuros que --green-light/--red-light usados no fundo do bloco),
+   criando harmonia visual: bloco claro + aba escura do mesmo tom semântico. */
 .rank-tab.active{background:var(--navy);color:var(--white)}
+#ranking-section.mode-best .rank-tab.active{background:var(--green)}
+#ranking-section.mode-worst .rank-tab.active{background:var(--red)}
 .ranking-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media(max-width:700px){.ranking-grid{grid-template-columns:1fr}.rank-tabs{width:100%;display:flex}.rank-tab{flex:1;text-align:center}}
 .rank-item{
@@ -1591,10 +1596,10 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
     <div class="section-inner">
       <div class="section-header">
         <div class="rank-title-group">
-          <h2 class="section-title">🚗 <span class="accent">Veículos</span></h2>
+          <h2 class="section-title"><span class="accent">Veículos</span></h2>
           <div class="rank-tabs" role="tablist">
-            <button class="rank-tab active" role="tab" id="rank-tab-best" onclick="setRankingMode('best')">🏆 Melhores</button>
-            <button class="rank-tab" role="tab" id="rank-tab-worst" onclick="setRankingMode('worst')">⚠️ Piores</button>
+            <button class="rank-tab active" role="tab" id="rank-tab-best" onclick="setRankingMode('best')">Melhores</button>
+            <button class="rank-tab" role="tab" id="rank-tab-worst" onclick="setRankingMode('worst')">Piores</button>
           </div>
         </div>
         <a href="#" class="see-all" id="ranking-see-all" onclick="event.preventDefault();showPage('vehicles',{sort:'best_rating'});return false;">Ranking completo →</a>
