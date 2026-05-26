@@ -574,32 +574,39 @@ header{
 }
 
 /* ── RANKING ── */
-/* Reduz o respiro vertical entre o bloco Veículos e o Reclamações recentes.
+/* Reduz o respiro vertical entre os blocos contíguos da home.
    Padrão da .section é 40px em cima/baixo (= 80px de espaço entre blocos),
    que estava deixando um buraco vertical. 16px de cada lado dá 32px total,
    suficiente pra separar visualmente sem isolar. Mobile já é mais apertado. */
 #ranking-section{padding-bottom:16px}
-#complaints-section{padding-top:16px}
+#complaints-section{padding-top:16px;padding-bottom:16px}
+#marcas-section{padding-top:16px}
 @media(max-width:700px){
   #ranking-section{padding-bottom:12px}
-  #complaints-section{padding-top:12px}
+  #complaints-section{padding-top:12px;padding-bottom:12px}
+  #marcas-section{padding-top:12px}
 }
 /* Fundo dinâmico do bloco conforme aba ativa. Aplicado no .section-inner
    (que é centralizado com max-width:1280px) pra virar "caixa contida" em
    vez de faixa edge-to-edge. border-radius dá cara de caixa; padding
    garante respiro entre conteúdo e borda colorida. */
-#ranking-section .section-inner{
+#ranking-section .section-inner,
+#marcas-section .section-inner{
   border-radius:18px;padding:24px 28px;
   transition:background-color .25s ease;
 }
-#ranking-section.mode-best .section-inner{background:var(--green-light)}
-#ranking-section.mode-worst .section-inner{background:var(--red-light)}
+#ranking-section.mode-best .section-inner,
+#marcas-section.mode-best .section-inner{background:var(--green-light)}
+#ranking-section.mode-worst .section-inner,
+#marcas-section.mode-worst .section-inner{background:var(--red-light)}
 @media(max-width:700px){
-  #ranking-section .section-inner{padding:18px 16px;border-radius:14px}
+  #ranking-section .section-inner,
+  #marcas-section .section-inner{padding:18px 16px;border-radius:14px}
 }
 .rank-title-group{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-/* Cor 'navy' do "Veículos" — escopada pra não afetar outras seções */
-#ranking-section .section-title .accent{color:var(--navy)}
+/* Cor 'navy' dos títulos dos blocos com abas — escopada */
+#ranking-section .section-title .accent,
+#marcas-section .section-title .accent{color:var(--navy)}
 .rank-tabs{display:inline-flex;gap:0;border:1.5px solid var(--border);border-radius:10px;padding:3px;background:var(--white)}
 .rank-tab{
   font-family:var(--font);font-weight:700;font-size:13px;color:var(--muted);
@@ -611,8 +618,10 @@ header{
    (mais escuros que --green-light/--red-light usados no fundo do bloco),
    criando harmonia visual: bloco claro + aba escura do mesmo tom semântico. */
 .rank-tab.active{background:var(--navy);color:var(--white)}
-#ranking-section.mode-best .rank-tab.active{background:var(--green)}
-#ranking-section.mode-worst .rank-tab.active{background:var(--red)}
+#ranking-section.mode-best .rank-tab.active,
+#marcas-section.mode-best .rank-tab.active{background:var(--green)}
+#ranking-section.mode-worst .rank-tab.active,
+#marcas-section.mode-worst .rank-tab.active{background:var(--red)}
 .ranking-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media(max-width:700px){.ranking-grid{grid-template-columns:1fr}.rank-tabs{width:100%;display:flex}.rank-tab{flex:1;text-align:center}}
 .rank-item{
@@ -1628,6 +1637,24 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
         <a href="#" class="see-all" onclick="event.preventDefault();showPage('complaints');return false;">Ver todas →</a>
       </div>
       <div class="complaints-list" id="complaints-list"></div>
+    </div>
+  </section>
+
+  <!-- MARCAS (Empresas) — esconde quando não há dados suficientes
+       Aparece automaticamente quando alguma marca atinge 5+ votos NPS -->
+  <section class="section section-alt mode-best" id="marcas-section" style="display:none">
+    <div class="section-inner">
+      <div class="section-header">
+        <div class="rank-title-group">
+          <h2 class="section-title"><span class="accent">Marcas</span></h2>
+          <div class="rank-tabs" role="tablist">
+            <button class="rank-tab active" role="tab" id="marcas-tab-best" onclick="setMarcasMode('best')">Melhores</button>
+            <button class="rank-tab" role="tab" id="marcas-tab-worst" onclick="setMarcasMode('worst')">Piores</button>
+          </div>
+        </div>
+        <a href="#" class="see-all" id="marcas-see-all" onclick="event.preventDefault();showPage('ranking-companies');return false;">Ranking completo →</a>
+      </div>
+      <div class="vehicles-grid" id="marcas-grid"></div>
     </div>
   </section>
 
@@ -3444,6 +3471,127 @@ async function renderRanking(){
     }
   })();
 }
+
+// ═════════════════════════════════════════════════════════════════
+// BLOCO MARCAS (home) — NPS de montadoras com 5+ votos
+// ═════════════════════════════════════════════════════════════════
+// Espelha a mecânica do bloco Veículos (abas Melhores/Piores, fundo
+// verde/vermelho-claro), mas usa NPS agregado por empresa.
+// COMPORTAMENTO CHAVE: a seção começa com display:none e SÓ é revelada
+// se houver dados suficientes (≥1 marca com ≥5 votos). Senão, fica
+// invisível pro usuário — sem espaço quebrado, sem CTA forçado.
+// Quando a comunidade votar o suficiente, o bloco aparece automaticamente.
+let _marcasMode = 'best';
+
+function setMarcasMode(mode){
+  if (mode !== 'best' && mode !== 'worst') return;
+  if (mode === _marcasMode) return;
+  _marcasMode = mode;
+  // Atualiza estado visual das abas
+  const tabBest = document.getElementById('marcas-tab-best');
+  const tabWorst = document.getElementById('marcas-tab-worst');
+  if (tabBest) tabBest.classList.toggle('active', mode === 'best');
+  if (tabWorst) tabWorst.classList.toggle('active', mode === 'worst');
+  // Atualiza fundo dinâmico da caixa colorida
+  const section = document.getElementById('marcas-section');
+  if (section) {
+    section.classList.toggle('mode-best', mode === 'best');
+    section.classList.toggle('mode-worst', mode === 'worst');
+  }
+  renderMarcas();
+}
+
+// Cor + label semafóricos pra um NPS (escala 0-10). Mesma escala usada
+// na função loadCompanyRanking (página dedicada de empresas).
+function _npsBadge(score) {
+  const s = parseFloat(score) || 0;
+  if (s >= 8.1)      return { color:'#16a34a', bg:'#f0fdf4', label:'Ótimo' };
+  if (s >= 6.1)      return { color:'#2563eb', bg:'#eff6ff', label:'Bom' };
+  if (s >= 4.1)      return { color:'#d97706', bg:'#fffbeb', label:'Regular' };
+  if (s >= 2.1)      return { color:'#ea580c', bg:'#fff7ed', label:'Ruim' };
+  return                    { color:'#dc2626', bg:'#fef2f2', label:'Péssimo' };
+}
+
+// Carrega NPS agregado por montadora cadastrada (segment='carro', is_claimed=true)
+// com ≥5 votos. Retorna lista ordenada por nps desc (cabe inverter no render).
+async function _loadMarcasData() {
+  try {
+    // 1. Lista montadoras de carro reivindicadas (chave: name)
+    const { data: companies } = await sb.from('companies')
+      .select('name, is_claimed')
+      .eq('segment', 'carro')
+      .eq('is_claimed', true);
+    if (!companies?.length) return [];
+
+    // 2. Pra cada uma, agrega NPS (filtra por company_name)
+    const results = [];
+    for (const c of companies) {
+      const { data: votes } = await sb.from('nps_ratings')
+        .select('score')
+        .eq('company_name', c.name);
+      const valid = (votes || []).map(v => parseFloat(v.score)).filter(v => !isNaN(v));
+      if (valid.length < 5) continue; // Threshold acordado: 5 votos mínimo
+      const avg = valid.reduce((a, b) => a + b, 0) / valid.length;
+      results.push({
+        name: c.name,
+        is_claimed: c.is_claimed,
+        nps: avg,
+        votos: valid.length
+      });
+    }
+    return results.sort((a, b) => b.nps - a.nps);
+  } catch (e) {
+    console.error('Erro ao carregar Marcas:', e);
+    return [];
+  }
+}
+
+async function renderMarcas() {
+  const section = document.getElementById('marcas-section');
+  const grid = document.getElementById('marcas-grid');
+  if (!section || !grid) return;
+
+  const all = await _loadMarcasData();
+
+  // SE VAZIO: esconde a seção e não toca em mais nada.
+  // Decisão acordada: bloco só aparece quando há dados.
+  if (!all.length) {
+    section.style.display = 'none';
+    return;
+  }
+
+  // Tem dados: revela a seção
+  section.style.display = '';
+
+  // Ordena conforme a aba ativa e pega 4
+  const ascending = _marcasMode === 'worst';
+  const list = [...all].sort((a, b) => ascending ? a.nps - b.nps : b.nps - a.nps).slice(0, 4);
+
+  grid.innerHTML = list.map(c => {
+    const badge = _npsBadge(c.nps);
+    const initial = (c.name || '?')[0].toUpperCase();
+    const verified = c.is_claimed
+      ? '<span class="mfr-chip-verified" title="Conta verificada">✓</span>'
+      : '';
+    const safeName = c.name.replace(/'/g, "\\'");
+    return `
+    <div class="vehicle-card" onclick="openCompanyProfile('${safeName}')">
+      <div class="vc-top">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="vc-emoji" style="position:relative;display:inline-flex;width:40px;height:40px;border-radius:50%;background:var(--navy);color:#fff;font-family:var(--font);font-weight:700;font-size:16px;align-items:center;justify-content:center;flex-shrink:0">${initial}${verified}</span>
+          <div class="vc-name">${c.name}</div>
+        </div>
+      </div>
+      <div class="vc-brand">MONTADORA</div>
+      <div style="display:flex;align-items:baseline;gap:10px;margin:18px 0 6px">
+        <span style="font-family:var(--font);font-weight:900;font-size:42px;color:${badge.color};line-height:1">${c.nps.toFixed(1)}</span>
+        <span style="background:${badge.bg};color:${badge.color};font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px">${badge.label}</span>
+      </div>
+      <div class="vc-count">${c.votos} ${c.votos === 1 ? 'avaliação' : 'avaliações'}</div>
+    </div>`;
+  }).join('');
+}
+// ═════════════════════════════════════════════════════════════════
 
 // ══ VEHICLE PROFILE ══
 async function showVehicleProfile(id){
@@ -9582,6 +9730,7 @@ async function updateHeroStats(){
 }
 updateHeroStats();
 renderRanking();
+renderMarcas();
 initCompare();
 initSearch();
 // Pré-seleciona "Carros" apenas no desktop: usuário cai direto na escolha de marca,
