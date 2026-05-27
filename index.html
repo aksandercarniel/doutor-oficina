@@ -4275,15 +4275,6 @@ async function renderManufacturerChip(brand, containerId, vehicleType, fipeBrand
     // safeCompanyName pra abrir perfil (usa o nome jurídico exato do banco, que openCompanyProfile busca com eq)
     const safeCompanyName = (company?.name || brand).replace(/'/g, "\\'");
 
-    let statsParts = [];
-    if (npsAvg !== null) statsParts.push(renderNpsMiniPill(npsAvg));
-    if (pctResolvidas !== null) statsParts.push(pctResolvidas + '% respondidas');
-    // Quando não há nenhum dado, deixa em branco — não polui o chip com "sem dados"
-    const statsStr = statsParts.join(' · ');
-
-    // CTA "ver perfil" removido (27/05): chip mais limpo, clique no chip todo já abre o perfil
-    const ctaStr = '';
-
     // 7. Tooltip e onclick conforme estado
     const tooltipVerified = isClaimed ? 'Conta verificada — administrada pela ' + brand : '';
     // Sem onclick quando não está cadastrada — chip vira informativo
@@ -4297,12 +4288,23 @@ async function renderManufacturerChip(brand, containerId, vehicleType, fipeBrand
       ? '<span class="mfr-chip-verified" title="' + tooltipVerified + '">✓</span>'
       : '';
 
+    // Nota + carinha inline (só quando há NPS)
+    let npsInline = '';
+    if (npsAvg !== null) {
+      const cat = _npsCategory(npsAvg);
+      const numColor = cat === 'promotor' ? '#2a9d6a' : cat === 'neutro' ? '#b45309' : '#A32D2D';
+      const numTxt = npsAvg.toFixed(1).replace('.', ',');
+      npsInline = '<span style="display:inline-flex;align-items:center;gap:4px;margin-left:6px">'
+        + '<span style="font-weight:800;color:' + numColor + ';font-size:11px">' + numTxt + '</span>'
+        + _npsFace(cat, 13)
+        + '</span>';
+    }
+
     container.innerHTML =
       '<a class="' + chipClass + '"' + onClickAttr + '>' +
         '<div class="mfr-chip-avatar">' + inicial + verifiedBadge + '</div>' +
         '<div class="mfr-chip-text">' +
-          '<span class="mfr-chip-name">' + brand + '</span>' +
-          '<span class="mfr-chip-stats">' + statsStr + ctaStr + '</span>' +
+          '<span class="mfr-chip-name" style="display:inline-flex;align-items:center">' + brand + npsInline + '</span>' +
         '</div>' +
       '</a>';
   } catch (e) {
