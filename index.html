@@ -3615,8 +3615,9 @@ function _npsBadge(score) {
   return                    { color:'#dc2626', bg:'#fef2f2', label:'Péssimo' };
 }
 
-// Carrega NPS agregado por montadora cadastrada (segment='carro', is_claimed=true)
-// com ≥5 votos. Retorna lista ordenada por nps desc (cabe inverter no render).
+// Carrega NPS agregado por montadora cadastrada (segment='carro', is_claimed=true).
+// Calcula NPS clássico (-100 a +100) a partir dos votos individuais 0-10.
+// Retorna lista ordenada por nps desc (cabe inverter no render).
 async function _loadMarcasData() {
   try {
     // 1. Lista montadoras de carro reivindicadas (chave: name)
@@ -3633,12 +3634,11 @@ async function _loadMarcasData() {
         .select('score')
         .eq('company_name', c.name);
       const valid = (votes || []).map(v => parseFloat(v.score)).filter(v => !isNaN(v));
-      if (valid.length < 5) continue; // Threshold acordado: 5 votos mínimo
-      const avg = valid.reduce((a, b) => a + b, 0) / valid.length;
+      if (valid.length === 0) continue;
       results.push({
         name: c.name,
         is_claimed: c.is_claimed,
-        nps: avg,
+        nps: calculateClassicNps(valid),
         votos: valid.length
       });
     }
@@ -3671,7 +3671,6 @@ async function renderMarcas() {
   const list = [...all].sort((a, b) => ascending ? a.nps - b.nps : b.nps - a.nps).slice(0, 4);
 
   grid.innerHTML = list.map(c => {
-    const badge = _npsBadge(c.nps);
     const initial = (c.name || '?')[0].toUpperCase();
     const verified = c.is_claimed
       ? '<span class="mfr-chip-verified" title="Conta verificada">✓</span>'
@@ -3687,7 +3686,7 @@ async function renderMarcas() {
       </div>
       <div class="vc-brand">MONTADORA</div>
       <div style="margin:18px 0 6px">
-        ${renderNpsBar(c.nps, true)}
+        ${renderNpsPill(c.nps, { variant: 'inline-labeled' })}
       </div>
       <div class="vc-count">${c.votos} ${c.votos === 1 ? 'avaliação' : 'avaliações'}</div>
     </div>`;
