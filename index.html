@@ -6438,8 +6438,6 @@ async function openComplaintDetail(complaintId) {
               <span style="font-size:12px;color:var(--muted)">Publicado em ${date}</span>
             </div>
 
-            <h3 style="font-family:var(--font);font-weight:800;font-size:16px;color:var(--navy);margin:20px 0 16px">💬 Acompanhamento</h3>
-
             <!-- Primeira mensagem: a reclamação em si, sem fundo nem rótulo (já está claro pelo header da página) -->
             <div style="margin-bottom:20px;padding:0 4px">
               <div style="font-size:14px;color:var(--text2);line-height:1.6;white-space:pre-wrap">${complaint.description||''}</div>
@@ -6461,7 +6459,7 @@ async function openComplaintDetail(complaintId) {
                 const border = isFromAuthor ? '#bfdbfe'           : companyBorder;
                 const label  = isFromAuthor ? 'Consumidor' : (idx === firstCompanyIdx ? 'Resposta da empresa' : 'Empresa');
                 return `<div style="margin-bottom:12px;padding:16px;border-radius:12px;background:${bg};border:1px solid ${border}">
-                  <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px">${label} · ${new Date(m.created_at).toLocaleDateString('pt-BR')}</div>
+                  <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:6px">${label} · ${new Date(m.created_at).toLocaleDateString('pt-BR')}</div>
                   <div style="font-size:14px;color:var(--text2);line-height:1.6">${m.message}</div>
                 </div>`;
               }).join('');
