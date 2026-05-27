@@ -6993,7 +6993,26 @@ async function showResolution(complaintId) {
     if (!complaint) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Reclamação não encontrada.</div>'; return; }
     const { data: messages } = await sb.from('resolutions').select('*').eq('complaint_id', complaintId).order('created_at', { ascending: true });
     const { data: npsData } = await sb.from('nps_ratings').select('*').eq('complaint_id', complaintId).maybeSingle();
-    currentResolution = { complaint, messages: messages || [], nps: npsData };
+    // Dados extras (chip empresa estilo Montadora + Doxcore no card de detalhes)
+    let company = null, companyNpsAvg = null, doxcore = null;
+    if (complaint.company_name) {
+      const { data: c } = await sb.from('companies').select('*').eq('name', complaint.company_name).maybeSingle();
+      company = c;
+      const { data: npsAll } = await sb.from('nps_ratings').select('score').eq('company_name', complaint.company_name);
+      if (npsAll && npsAll.length > 0) {
+        companyNpsAvg = npsAll.reduce((s,n) => s + n.score, 0) / npsAll.length;
+      }
+    }
+    if (complaint.vehicle_brand && complaint.vehicle_model) {
+      const { data: vk } = await sb.from('vehicle_known_issues')
+        .select('reliability_score')
+        .eq('vehicle_brand', complaint.vehicle_brand)
+        .eq('vehicle_model', complaint.vehicle_model)
+        .eq('is_summary', true)
+        .maybeSingle();
+      if (vk?.reliability_score != null) doxcore = parseFloat(vk.reliability_score);
+    }
+    currentResolution = { complaint, messages: messages || [], nps: npsData, company, companyNpsAvg, doxcore };
     await renderResolutionPage();
   } catch(e) {
     el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)">Erro ao carregar. Tente novamente.</div>';
@@ -7001,9 +7020,11 @@ async function showResolution(complaintId) {
 }
 
 async function renderResolutionPage() {
-  const { complaint, messages, nps } = currentResolution;
+  const { complaint, messages, nps, company, companyNpsAvg, doxcore } = currentResolution;
   const el = document.getElementById('resolution-content');
   const isClient = currentUser?.id === complaint.user_id;
+  const hasNps = nps?.score != null && !isNaN(nps?.score);
+  const date = new Date(complaint.created_at).toLocaleDateString('pt-BR');
   const statusMap  = { open: statusFace('open',16)+'<span style="vertical-align:middle;margin-left:4px">Não respondida</span>', in_progress: statusFace('in_progress',16)+'<span style="vertical-align:middle;margin-left:4px">Respondida</span>', replied: statusFace('replied',16)+'<span style="vertical-align:middle;margin-left:4px">Em réplica</span>', resolved: statusFace('resolved',16)+'<span style="vertical-align:middle;margin-left:4px">Resolvido</span>', unresolved: statusFace('unresolved',16)+'<span style="vertical-align:middle;margin-left:4px">Não resolvida</span>' };
   const statusBg   = { open:'#fef2f2', in_progress:'#eff6ff', replied:'#fef3c7', resolved:'#f0fdf4', unresolved:'#fff7ed' };
   const statusCol  = { open:'#dc2626', in_progress:'#2563eb', replied:'#d97706', resolved:'#16a34a', unresolved:'#ea580c' };
@@ -7076,17 +7097,39 @@ async function renderResolutionPage() {
       </div>`;
   }
 
-  const msgHtml = messages.length === 0
-    ? `<div style="text-align:center;padding:32px;color:var(--muted);background:var(--bg);border-radius:12px;font-size:14px">Aguardando resposta da empresa…</div>`
-    : messages.map(m => `
-      <div style="background:var(--white);border:1.5px solid var(--border);border-left:4px solid ${m.author_type==='client'?'var(--red)':m.author_type==='company'?'var(--navy)':'var(--green)'};border-radius:12px;padding:16px;margin-bottom:12px">
-        <div style="font-family:var(--font);font-weight:800;font-size:12px;color:var(--muted);margin-bottom:6px;display:flex;align-items:center;gap:6px">
-          <span>${m.author_type==='client'?'👤':m.author_type==='company'?'🏢':'⚖️'}</span>
-          <span>${m.author_name||(m.author_type==='client'?'Cliente':m.author_type==='company'?'Empresa':'Mediador')}</span>
-          <span style="margin-left:auto">${new Date(m.created_at).toLocaleDateString('pt-BR')} às ${new Date(m.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span>
-        </div>
-        <div style="font-size:14px;color:var(--text2);line-height:1.7">${m.message}</div>
-      </div>`).join('');
+  // Acompanhamento — mesmo padrão da openComplaintDetail (sem card branco wrapper, sem título "Diálogo", sem emojis nos labels)
+  let msgHtml;
+  if (messages.length === 0) {
+    msgHtml = `<div style="text-align:center;padding:32px;color:var(--muted);background:var(--bg);border-radius:12px;font-size:14px">Aguardando resposta da empresa…</div>`;
+  } else {
+    // Cor do balão da empresa depende do status final:
+    // resolved=verde claro, unresolved=vermelho claro, demais=azul claro
+    const companyBg = st === 'resolved' ? 'var(--green-light)'
+                    : st === 'unresolved' ? 'var(--red-light)'
+                    : 'var(--blue-light)';
+    const companyBorder = st === 'resolved' ? '#34d399'
+                        : st === 'unresolved' ? '#f0997b'
+                        : '#60a5fa';
+    let firstCompanySeen = false;
+    msgHtml = messages.map(m => {
+      const isFromAuthor = m.sender_role === 'client' || m.author_type === 'client';
+      let label;
+      if (isFromAuthor) {
+        label = 'Consumidor';
+      } else if (m.author_type === 'mediator') {
+        label = 'Mediador';
+      } else {
+        if (!firstCompanySeen) { label = 'Resposta da empresa'; firstCompanySeen = true; }
+        else { label = 'Empresa'; }
+      }
+      const dateStr = new Date(m.created_at).toLocaleDateString('pt-BR');
+      const timeStr = new Date(m.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+      return `<div style="margin-bottom:12px;padding:16px;border-radius:12px;background:${isFromAuthor ? '#fff' : companyBg};${isFromAuthor ? '' : 'border:1px solid '+companyBorder+';'}">
+        <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:6px">${label} · ${dateStr} às ${timeStr}</div>
+        <div style="font-size:15px;color:var(--text2);line-height:1.6">${m.message}</div>
+      </div>`;
+    }).join('');
+  }
 
   let html = `
     
@@ -7097,50 +7140,111 @@ async function renderResolutionPage() {
       <div>
         <!-- Cabeçalho da reclamação -->
         <div class="split-card">
-          <div style="font-size:12px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">🚗 ${complaint.vehicle_brand||''} ${complaint.vehicle_model||''} ${complaint.vehicle_year||''}</div>
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px;flex-wrap:wrap">
-            <h2 style="font-family:var(--font);font-weight:900;font-size:22px;color:var(--navy);margin:0;line-height:1.2;flex:1;min-width:0;word-wrap:break-word">${complaint.title}</h2>
-            <span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;white-space:nowrap;background:${statusBg[st]};color:${statusCol[st]}">${statusMap[st]||'🔴 Não respondida'}</span>
+          <h2 style="font-family:var(--font);font-weight:900;font-size:22px;color:var(--navy);margin:0 0 10px;line-height:1.2;word-wrap:break-word">${complaint.title}</h2>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+            ${complaint.state ? `<span style="font-size:13px;color:var(--muted)">📍 ${complaint.state}</span>` : ''}
+            <span style="font-size:13px;color:var(--muted)">📅 ${date}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+            <span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;background:${statusBg[st]};color:${statusCol[st]};white-space:nowrap">${statusMap[st]||'🔴 Não respondida'}</span>
+            ${(st === 'resolved' || st === 'unresolved') && hasNps ? (() => {
+              const s = Math.max(0, Math.min(10, parseFloat(nps.score)));
+              const cat = _npsCategory(s);
+              const pillBg    = cat === 'promotor' ? '#EAF3DE' : cat === 'neutro' ? '#FAEEDA' : '#FCEBEB';
+              const pillBorder= cat === 'promotor' ? '#2a9d6a33' : cat === 'neutro' ? '#EF9F2733' : '#E24B4A33';
+              const numColor  = cat === 'promotor' ? '#2a9d6a' : cat === 'neutro' ? '#b45309' : '#A32D2D';
+              const numTxt = s.toFixed(1).replace('.', ',');
+              return `
+                <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;background:${pillBg};border:1px solid ${pillBorder};height:24px;box-sizing:border-box;white-space:nowrap">
+                  <span style="font-size:11px;font-weight:700;color:${numColor}">Avaliação</span>
+                  <span style="font-family:var(--font);font-weight:900;font-size:13px;color:${numColor};line-height:1">${numTxt}</span>
+                </span>
+              `;
+            })() : ''}
           </div>
           <p style="font-size:14px;color:var(--text2);line-height:1.7;margin:0">${complaint.description||''}</p>
         </div>
 
-        <!-- Diálogo -->
-        <div class="split-card">
-          <div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy);margin-bottom:16px">💬 Diálogo</div>
+        <!-- Acompanhamento (sem card branco wrapper, sem título) -->
+        <div style="margin-top:14px">
           ${msgHtml}
-
           ${formHtml}
         </div>
       </div>
 
       <!-- Sidebar -->
       <div style="display:flex;flex-direction:column;gap:14px">
-        ${complaint.company_name ? `
-        <div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px">
-          <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Empresa</div>
-          <div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy);margin-bottom:10px">${complaint.company_name}</div>
-          <button onclick="openCompanyProfile('${complaint.company_name}')" style="width:100%;background:var(--bg);border:1.5px solid var(--border2);color:var(--navy);border-radius:8px;padding:8px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:12px;transition:border-color .2s" onmouseover="this.style.borderColor='var(--navy)'" onmouseout="this.style.borderColor='var(--border2)'">Ver perfil →</button>
-        </div>` : ''}
+        ${complaint.company_name ? (() => {
+          const firstLetter = (complaint.company_name || '?').trim().charAt(0).toUpperCase();
+          const isClaimed = !!company?.is_claimed;
+          const typeLabel2 = { montadora:'Montadora', oficina:'Oficina', revenda:'Revenda', outro:'Empresa' };
+          const compType = typeLabel2[company?.type] || 'Empresa';
+          return `
+          <div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:18px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:${companyNpsAvg !== null ? '14px' : '12px'}">
+              <div style="position:relative;width:38px;height:38px;flex-shrink:0">
+                <div style="width:38px;height:38px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;font-family:var(--font)">${firstLetter}</div>
+                ${isClaimed ? `<div title="Conta verificada" style="position:absolute;bottom:-2px;right:-2px;width:16px;height:16px;background:#2563eb;color:#fff;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900">✓</div>` : ''}
+              </div>
+              <div style="flex:1;min-width:0">
+                <div style="font-family:var(--font);font-weight:900;font-size:14px;color:var(--navy);line-height:1.2;margin-bottom:2px;word-break:break-word">${complaint.company_name}</div>
+                <div style="font-size:11px;color:var(--muted)">${compType}</div>
+              </div>
+            </div>
+            ${companyNpsAvg !== null ? (() => {
+              const s = Math.max(0, Math.min(10, companyNpsAvg));
+              const cat = _npsCategory(s);
+              const fillColor = cat === 'promotor' ? '#2a9d6a' : cat === 'neutro' ? '#EF9F27' : '#E24B4A';
+              const trackBg = cat === 'promotor' ? '#EAF3DE' : cat === 'neutro' ? '#FAEEDA' : '#FCEBEB';
+              const numColor = cat === 'promotor' ? '#2a9d6a' : cat === 'neutro' ? '#b45309' : '#A32D2D';
+              const pct = (s / 10) * 100;
+              const numTxt = s.toFixed(1).replace('.', ',');
+              return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--border)">
+                <span style="font-family:var(--font);font-weight:900;font-size:18px;color:${numColor};line-height:1;min-width:34px">${numTxt}</span>
+                <span style="display:inline-block;flex:1;height:8px;border-radius:999px;background:${trackBg};overflow:hidden">
+                  <span style="display:block;height:100%;width:${pct}%;background:${fillColor};border-radius:999px"></span>
+                </span>
+                <span style="font-size:11px;color:var(--muted);font-weight:600">Recomendação</span>
+              </div>`;
+            })() : ''}
+            <a onclick="openCompanyProfile('${complaint.company_name}')" style="display:block;text-align:center;font-size:13px;color:var(--navy);font-weight:700;margin-top:6px;text-decoration:none;cursor:pointer">Ver perfil da empresa →</a>
+          </div>`;
+        })() : ''}
 
         <div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px">
-          <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Detalhes</div>
+          <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:none;letter-spacing:.3px;margin-bottom:8px">Detalhes do veículo</div>
+          ${(complaint.vehicle_brand || complaint.vehicle_model) ? `<div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy);margin-bottom:14px;line-height:1.3">${[complaint.vehicle_brand, complaint.vehicle_model, complaint.vehicle_year].filter(Boolean).join(' ')}</div>` : ''}
           <div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
-            <div style="display:flex;justify-content:space-between">
-              <span style="color:var(--muted)">Status</span>
-              <span style="font-weight:700;color:${statusCol[st]}">${statusMap[st]}</span>
-            </div>
             ${complaint.category ? `<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Categoria</span><span style="font-weight:600">${complaint.category}</span></div>` : ''}
-            ${complaint.state ? `<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Estado</span><span style="font-weight:600">${complaint.state}</span></div>` : ''}
-            ${complaint.km ? `<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Km</span><span style="font-weight:600">${Number(complaint.km).toLocaleString('pt-BR')} km</span></div>` : ''}
-            <div style="display:flex;justify-content:space-between">
-              <span style="color:var(--muted)">Publicado</span>
-              <span style="font-weight:600">${new Date(complaint.created_at).toLocaleDateString('pt-BR')}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between">
-              <span style="color:var(--muted)">Mensagens</span>
-              <span style="font-weight:600">${messages.length}</span>
-            </div>
+            ${complaint.km ? `<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Quilometragem</span><span style="font-weight:600">${Number(complaint.km).toLocaleString('pt-BR')} km</span></div>` : ''}
+            ${doxcore !== null ? (() => {
+              const dxColor = doxcore >= 4 ? '#2a9d6a' : doxcore >= 3 ? '#EF9F27' : '#E24B4A';
+              return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+                <span style="color:var(--muted)">Doxcore</span>
+                <span style="font-family:var(--font);font-weight:800;font-size:14px;color:${dxColor}">${doxcore.toFixed(1).replace('.',',')}</span>
+              </div>`;
+            })() : ''}
+            ${complaint.rating ? (() => {
+              const r = complaint.rating;
+              const label = r >= 5 ? 'Ótimo' : r >= 4 ? 'Bom' : r >= 3 ? 'Regular' : r >= 2 ? 'Ruim' : 'Péssimo';
+              const color = r >= 4 ? '#2a9d6a' : r >= 3 ? '#EF9F27' : '#E24B4A';
+              let mouth;
+              if (r === 1)      mouth = '<path d="M 13 27 Q 20 20 27 27" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
+              else if (r === 2) mouth = '<path d="M 13 26 Q 20 23 27 26" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
+              else if (r === 3) mouth = '<line x1="13" y1="25" x2="27" y2="25" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>';
+              else if (r === 4) mouth = '<path d="M 13 24 Q 20 27 27 24" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
+              else              mouth = '<path d="M 13 23 Q 20 29 27 23" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
+              const faceSvgColored = `<svg width="22" height="22" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="18" fill="${color}"/><circle cx="14" cy="16" r="1.8" fill="#fff"/><circle cx="26" cy="16" r="1.8" fill="#fff"/>${mouth}</svg>`;
+              return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+                <span style="color:var(--muted)">Nota do cliente</span>
+                <span style="display:inline-flex;align-items:center;gap:8px">
+                  ${faceSvgColored}
+                  <span style="font-family:var(--font);font-weight:700;font-size:13px;color:${color}">${label}</span>
+                </span>
+              </div>`;
+            })() : ''}
+            <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Publicado em</span><span style="font-weight:600">${date}</span></div>
+            <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Mensagens</span><span style="font-weight:600">${messages.length}</span></div>
           </div>
         </div>
       </div>
@@ -7149,34 +7253,41 @@ async function renderResolutionPage() {
   // NPS em largura total abaixo do grid
   if (complaint.status === 'resolved') {
     if (nps) {
-      const isPromotor = nps.score >= 9;
-      const isDetrator = nps.score <= 6;
-      const npsColor   = isPromotor ? '#16a34a' : isDetrator ? '#dc2626' : '#d97706';
-      const npsBg      = isPromotor ? '#f0fdf4' : isDetrator ? '#fef2f2' : '#fffbeb';
-      const npsBorder  = isPromotor ? '#bbf7d0' : isDetrator ? '#fecaca' : '#fde68a';
-      const npsLabel   = isPromotor ? 'Promotor' : isDetrator ? 'Detrator' : 'Neutro';
-      const npsEmoji   = isPromotor ? '😍' : isDetrator ? '😞' : '😐';
-      const npsDesc    = isPromotor
+      const s = Math.max(0, Math.min(10, parseFloat(nps.score)));
+      const cat = _npsCategory(s);
+      const npsColor   = cat === 'promotor' ? '#2a9d6a' : cat === 'neutro' ? '#EF9F27' : '#E24B4A';
+      const npsBg      = cat === 'promotor' ? '#EAF3DE' : cat === 'neutro' ? '#FAEEDA' : '#FCEBEB';
+      const npsBorder  = cat === 'promotor' ? '#2a9d6a33' : cat === 'neutro' ? '#EF9F2733' : '#E24B4A33';
+      const npsTextDark= cat === 'promotor' ? '#2a9d6a' : cat === 'neutro' ? '#b45309' : '#A32D2D';
+      const npsLabel   = cat === 'promotor' ? 'Promotor' : cat === 'neutro' ? 'Neutro' : 'Detrator';
+      const npsDesc    = cat === 'promotor'
         ? 'Cliente satisfeito e propenso a recomendar a empresa.'
-        : isDetrator
+        : cat === 'detrator'
         ? 'Cliente insatisfeito e pode prejudicar a imagem da empresa.'
         : 'Cliente com experiência razoável, pode melhorar.';
-      html += '<div style="background:' + npsBg + ';border:2px solid ' + npsBorder + ';border-radius:16px;padding:24px">'
-            + '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px">'
-            + '<div style="font-family:var(--font);font-weight:900;font-size:15px;color:var(--navy)">⭐ Avaliação NPS</div>'
-            + '<span style="background:' + npsColor + ';color:#fff;font-family:var(--font);font-weight:800;font-size:12px;padding:4px 12px;border-radius:20px">' + npsEmoji + ' ' + npsLabel + '</span>'
-            + '</div>'
-            + '<div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">'
-            + '<div style="text-align:center;flex-shrink:0">'
-            + '<div style="font-family:var(--font);font-weight:900;font-size:52px;color:' + npsColor + ';line-height:1">' + nps.score + '</div>'
-            + '<div style="font-size:11px;color:var(--muted);font-weight:600;margin-top:2px">de 10</div>'
-            + '</div>'
-            + '<div style="flex:1;min-width:160px">'
-            + '<div style="font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:8px">' + npsDesc + '</div>'
-            + (nps.comment ? '<div style="font-size:13px;color:var(--text2);background:var(--white);border:1px solid ' + npsBorder + ';border-radius:8px;padding:10px 12px;font-style:italic">&ldquo; ' + nps.comment + ' &rdquo;</div>' : '')
-            + '</div>'
-            + '</div>'
-            + '</div>';
+      const pct = (s / 10) * 100;
+      const numTxt = s.toFixed(1).replace('.', ',');
+      html += `<div style="background:${npsBg};border:1px solid ${npsBorder};border-radius:16px;padding:24px;margin-top:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px">
+          <div style="font-family:var(--font);font-weight:900;font-size:15px;color:var(--navy)">Avaliação do cliente</div>
+          <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;background:#fff;border:1px solid ${npsBorder};font-family:var(--font);font-weight:800;font-size:12px;color:${npsTextDark}">${npsLabel}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+          <div style="text-align:center;flex-shrink:0;min-width:80px">
+            <div style="font-family:var(--font);font-weight:900;font-size:52px;color:${npsColor};line-height:1">${numTxt}</div>
+            <div style="font-size:11px;color:var(--muted);font-weight:600;margin-top:4px">de 10</div>
+          </div>
+          <div style="flex:1;min-width:200px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+              <span style="display:inline-block;flex:1;height:8px;border-radius:999px;background:#fff;border:1px solid ${npsBorder};overflow:hidden">
+                <span style="display:block;height:100%;width:${pct}%;background:${npsColor};border-radius:999px"></span>
+              </span>
+            </div>
+            <div style="font-size:13px;color:var(--text2);line-height:1.5">${npsDesc}</div>
+            ${nps.comment ? `<div style="font-size:14px;color:var(--text2);background:#fff;border:1px solid ${npsBorder};border-radius:10px;padding:12px 14px;margin-top:12px;line-height:1.5">&ldquo;${nps.comment}&rdquo;</div>` : ''}
+          </div>
+        </div>
+      </div>`;
     } else if (isClient) {
       html += `
       <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:24px">
