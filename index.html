@@ -6693,6 +6693,7 @@ async function openCompanyProfile(companyName) {
     // NPS clássico (-100 a +100) a partir dos votos individuais 0-10.
     const npsScores = (npsRatings || []).map(n => n.score);
     const nps = calculateClassicNps(npsScores);
+    console.log('[DEBUG NPS]', companyName, '| scores brutos:', npsScores, '| NPS clássico:', nps);
     const tipo = company?.type || 'outro';
     const isOwned = !!company?.owner_id;
     const isOwner = currentUser && company?.owner_id === currentUser.id;
