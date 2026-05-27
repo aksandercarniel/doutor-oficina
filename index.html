@@ -525,17 +525,18 @@ header{
 .price-loading{color:var(--muted2);font-size:12px;font-style:italic}
 
 /* ── CARD DE MARCA (Marcas na home) ── */
-/* Layout: avatar+nome em cima (avatar alinhado ao topo), bloco central com pílula+avaliações
-   centralizado verticalmente no espaço restante, stats no rodapé. */
+/* Layout: avatar+nome em cima (altura fixa de 3 linhas, mesmo se o nome for curto),
+   pílula+avaliações em posição constante no meio (não desloca com nome),
+   stats alinhados à esquerda no rodapé. */
 .mfr-card{display:flex;flex-direction:column;height:100%;padding:18px 16px}
-.mfr-card-head{display:flex;flex-direction:row;align-items:flex-start;gap:10px;width:100%}
+.mfr-card-head{display:flex;flex-direction:row;align-items:flex-start;gap:10px;width:100%;min-height:78px}
 .mfr-card-head-text{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
 .mfr-card-name{font-family:var(--font);font-weight:900;font-size:13px;color:var(--navy);line-height:1.25;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis}
-.mfr-card-center{margin:auto 0;display:flex;flex-direction:column;align-items:center;gap:4px;width:100%}
+.mfr-card-center{padding-top:16px;display:flex;flex-direction:column;align-items:center;gap:4px;width:100%}
 .mfr-card-pill{max-width:180px;width:100%}
-.mfr-card-stats{display:flex;flex-direction:column;gap:2px;width:100%;text-align:center}
+.mfr-card-stats{margin-top:auto;padding-top:20px;display:flex;flex-direction:column;gap:2px;width:100%;text-align:left}
 .mfr-stat{color:var(--muted);font-size:11px;font-weight:500;line-height:1.4}
-.mfr-stat-emph{color:var(--text2);font-weight:600}
+.mfr-stat-emph{color:var(--text2);font-weight:600;text-align:center}
 
 /* ── COMPLAINTS ── */
 .complaints-list{display:flex;flex-direction:column;gap:10px}
