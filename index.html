@@ -6476,13 +6476,9 @@ async function openComplaintDetail(complaintId) {
         <!-- Coluna principal -->
         <div>
           <div class="split-card">
-            <div style="font-size:12px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">
-              ${typeEmoji[complaint.vehicle_type]||'🚗'} ${complaint.vehicle_brand||''} ${complaint.vehicle_model||''} ${complaint.vehicle_year||''}
-            </div>
             <h2 style="font-family:var(--font);font-weight:900;font-size:26px;color:var(--navy);margin:0 0 10px;line-height:1.2">${complaint.title}</h2>
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
               <span style="font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;background:${statusBg[st]};color:${statusCol[st]}">${statusMap[st]||'🔴 Não respondida'}</span>
-              ${complaint.category ? `<span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:12px;background:var(--bg2);color:var(--muted)">${complaint.category}</span>` : ''}
               ${complaint.state ? `<span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:12px;background:var(--bg2);color:var(--muted)">📍 ${complaint.state}</span>` : ''}
               <span style="font-size:12px;color:var(--muted)">Publicado em ${date}</span>
             </div>
@@ -6496,8 +6492,8 @@ async function openComplaintDetail(complaintId) {
             ${messages.map(m => {
               const isFromAuthor = m.sender_role === 'client' || m.author_type === 'client';
               return `<div style="margin-bottom:12px;padding:16px;border-radius:12px;background:${isFromAuthor ? 'var(--blue-light)' : 'var(--green-light)'};border:1px solid ${isFromAuthor ? '#bfdbfe' : '#a7f3d0'}">
-                <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px">${isFromAuthor ? '👤 Consumidor' : '🏢 Empresa'} · ${new Date(m.created_at).toLocaleDateString('pt-BR')}</div>
-                <div style="font-size:14px;color:var(--text2);line-height:1.6">${m.message}</div>
+                <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:6px">${isFromAuthor ? 'Consumidor' : 'Empresa'} · ${new Date(m.created_at).toLocaleDateString('pt-BR')}</div>
+                <div style="font-size:15px;color:var(--text2);line-height:1.6">${m.message}</div>
               </div>`;
             }).join('')}
           </div>` : ''}
@@ -6529,6 +6525,8 @@ async function openComplaintDetail(complaintId) {
           <div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px">
             <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Detalhes</div>
             <div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
+              ${(complaint.vehicle_brand || complaint.vehicle_model) ? `<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--muted)">Veículo</span><span style="font-weight:600;text-align:right">${typeEmoji[complaint.vehicle_type]||'🚗'} ${[complaint.vehicle_brand, complaint.vehicle_model, complaint.vehicle_year].filter(Boolean).join(' ')}</span></div>` : ''}
+              ${complaint.category ? `<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Categoria</span><span style="font-weight:600">${complaint.category}</span></div>` : ''}
               ${complaint.km ? `<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Quilometragem</span><span style="font-weight:600">${Number(complaint.km).toLocaleString('pt-BR')} km</span></div>` : ''}
               ${complaint.rating ? (() => {
                 const r = complaint.rating;
