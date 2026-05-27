@@ -6431,18 +6431,15 @@ async function openComplaintDetail(complaintId) {
         <!-- Coluna principal -->
         <div>
           <div class="split-card">
-            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px">
-              <h2 style="font-family:var(--font);font-weight:900;font-size:26px;color:var(--navy);margin:0;line-height:1.2;flex:1;min-width:0">${complaint.title}</h2>
-              <span style="font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;background:${statusBg[st]};color:${statusCol[st]};flex-shrink:0;white-space:nowrap">${statusMap[st]||'🔴 Não respondida'}</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:16px;color:var(--muted);font-size:13px;margin-bottom:${(st==='resolved'||st==='unresolved') && npsData ? '16' : '24'}px;flex-wrap:wrap">
+            <h2 style="font-family:var(--font);font-weight:900;font-size:26px;color:var(--navy);margin:0 0 14px;line-height:1.2">${complaint.title}</h2>
+            <div style="display:flex;align-items:center;gap:16px;color:var(--muted);font-size:13px;margin-bottom:14px;flex-wrap:wrap">
               ${complaint.state ? `<span>📍 ${complaint.state}</span>` : ''}
               <span>📅 ${date}</span>
             </div>
-            ${(st==='resolved'||st==='unresolved') && npsData ? `
-            <div style="margin-bottom:24px">
-              ${renderNpsCapsule(npsData.score, { compact:true, showNumInside:true })}
-            </div>` : ''}
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;flex-wrap:wrap">
+              <span style="font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;background:${statusBg[st]};color:${statusCol[st]};white-space:nowrap">${statusMap[st]||'🔴 Não respondida'}</span>
+              ${(st==='resolved'||st==='unresolved') && npsData ? `<div style="width:170px">${renderNpsCapsule(npsData.score, { compact:true, showNumInside:true })}</div>` : ''}
+            </div>
 
             <!-- Primeira mensagem: a reclamação em si, sem fundo nem rótulo (já está claro pelo header da página) -->
             <div style="margin-bottom:20px;padding:0 4px">
