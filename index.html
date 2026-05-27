@@ -6518,9 +6518,9 @@ async function openComplaintDetail(complaintId) {
               const companyBg = st === 'resolved' ? 'var(--green-light)'
                               : st === 'unresolved' ? 'var(--red-light)'
                               : 'var(--blue-light)';
-              const companyBorder = st === 'resolved' ? '#a7f3d0'
-                                  : st === 'unresolved' ? 'var(--red-light2)'
-                                  : '#bfdbfe';
+              const companyBorder = st === 'resolved' ? '#34d399'
+                                  : st === 'unresolved' ? '#f0997b'
+                                  : '#60a5fa';
               return messages.map(m => {
                 const isFromAuthor = m.sender_role === 'client' || m.author_type === 'client';
                 let label;
