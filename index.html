@@ -1162,6 +1162,12 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .nps-btn:hover{background:var(--bg2)}
 
 /* ── DOXCORE: pílula pastel + trilho + número ao lado ── */
+.nps-capsule-wrap{display:flex;flex-direction:column;gap:8px;width:100%}
+.nps-capsule-bignum{font-family:var(--font);font-weight:800;font-size:32px;line-height:1}
+.nps-capsule-bignum-promotor{color:#00875e}
+.nps-capsule-bignum-neutro{color:#b45309}
+.nps-capsule-bignum-detrator{color:#A32D2D}
+.nps-capsule-bignum-empty{color:var(--muted)}
 .nps-capsule{display:inline-flex;align-items:center;gap:10px;padding:4px 14px 4px 4px;border-radius:20px;background:#FCEBEB;box-sizing:border-box}
 .nps-capsule-promotor{background:#EAF3DE}
 .nps-capsule-neutro{background:#FAEEDA}
@@ -6560,9 +6566,13 @@ function renderNpsCapsule(score, opts) {
   const trackInner = hasScore
     ? '<div class="nps-capsule-fill nps-capsule-fill-' + cat + '" style="width:' + pct + '%"></div>'
     : '<div class="nps-capsule-edu"><div class="nps-capsule-edu-r"></div><div class="nps-capsule-edu-y"></div><div class="nps-capsule-edu-g"></div></div>';
-  return '<div class="' + pillCls + '">'
+  const bigCls = 'nps-capsule-bignum nps-capsule-bignum-' + cat;
+  return '<div class="nps-capsule-wrap">'
+    + '<div class="' + bigCls + '">' + numTxt + '</div>'
+    + '<div class="' + pillCls + '">'
     + '<div class="nps-capsule-track">' + trackInner + '</div>'
     + '<span class="' + numCls + '">' + numTxt + '</span>'
+    + '</div>'
     + '</div>';
 }
 
