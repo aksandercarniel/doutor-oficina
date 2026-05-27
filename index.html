@@ -6500,7 +6500,7 @@ async function openComplaintDetail(complaintId) {
                   else { label = 'Empresa'; }
                 }
                 return `<div style="margin-bottom:12px;padding:16px;border-radius:12px;background:${isFromAuthor ? 'var(--blue-light)' : 'var(--green-light)'};border:1px solid ${isFromAuthor ? '#bfdbfe' : '#a7f3d0'}">
-                  <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:6px">${label} · ${new Date(m.created_at).toLocaleDateString('pt-BR')}</div>
+                  <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:6px">${label} · ${new Date(m.created_at).toLocaleDateString('pt-BR')}</div>
                   <div style="font-size:15px;color:var(--text2);line-height:1.6">${m.message}</div>
                 </div>`;
               }).join('');
