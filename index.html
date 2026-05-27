@@ -6481,6 +6481,10 @@ async function openComplaintDetail(complaintId) {
         <div>
           <div class="split-card">
             <h2 style="font-family:var(--font);font-weight:900;font-size:26px;color:var(--navy);margin:0 0 10px;line-height:1.2">${complaint.title}</h2>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+              ${complaint.state ? `<span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:12px;background:var(--bg2);color:var(--muted)">📍 ${complaint.state}</span>` : ''}
+              <span style="font-size:12px;color:var(--muted)">Publicado em ${date}</span>
+            </div>
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
               ${(st === 'resolved' || st === 'unresolved') && hasNps ? `
                 <span style="display:inline-flex;align-items:center;gap:10px;padding:5px 12px;border-radius:999px;background:${statusBg[st]};border:1px solid ${statusCol[st]}33">
@@ -6491,8 +6495,6 @@ async function openComplaintDetail(complaintId) {
               ` : `
                 <span style="font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;background:${statusBg[st]};color:${statusCol[st]}">${statusMap[st]||'🔴 Não respondida'}</span>
               `}
-              ${complaint.state ? `<span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:12px;background:var(--bg2);color:var(--muted)">📍 ${complaint.state}</span>` : ''}
-              <span style="font-size:12px;color:var(--muted)">Publicado em ${date}</span>
             </div>
             <div style="font-size:15px;color:var(--text2);line-height:1.8;white-space:pre-wrap">${complaint.description||''}</div>
           </div>
