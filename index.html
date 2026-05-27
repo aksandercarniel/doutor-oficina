@@ -6461,7 +6461,7 @@ async function openComplaintDetail(complaintId) {
                   <span style="font-size:12px;font-weight:700;color:${statusCol[st]};white-space:nowrap;margin-right:12px">${statusMap[st]}</span>
                   <span style="width:1px;height:18px;background:${statusCol[st]};opacity:.25;margin-right:12px"></span>
                   <span style="font-size:11px;font-weight:500;color:var(--muted);letter-spacing:.3px;text-transform:uppercase;margin-right:6px">NPS</span>
-                  <div style="width:140px;height:30px">${renderNpsCapsule(npsData.score, { compact:true, showNumInside:true })}</div>
+                  <div style="width:140px;height:30px">${renderNpsPill(calculateClassicNps([npsData.score]), { variant: 'bar-only' })}</div>
                 </div>
               ` : `
                 <span style="display:inline-flex;font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;background:${statusBg[st]};color:${statusCol[st]};white-space:nowrap">${statusMap[st]||'🔴 Não respondida'}</span>
@@ -6693,7 +6693,6 @@ async function openCompanyProfile(companyName) {
     // NPS clássico (-100 a +100) a partir dos votos individuais 0-10.
     const npsScores = (npsRatings || []).map(n => n.score);
     const nps = calculateClassicNps(npsScores);
-    console.log('[DEBUG NPS]', companyName, '| scores brutos:', npsScores, '| NPS clássico:', nps);
     const tipo = company?.type || 'outro';
     const isOwned = !!company?.owner_id;
     const isOwner = currentUser && company?.owner_id === currentUser.id;
