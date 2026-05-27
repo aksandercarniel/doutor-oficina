@@ -489,7 +489,7 @@ header{
 .see-all:hover{color:var(--red)}
 
 /* ── VEHICLE CARDS ── */
-.vehicles-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.vehicles-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
 .vehicle-card{
   background:var(--white);border:1.5px solid var(--border);border-radius:14px;
   padding:20px;cursor:pointer;transition:border-color .2s,transform .2s,box-shadow .2s;
@@ -6689,13 +6689,9 @@ async function openCompanyProfile(companyName) {
     // unresolved (encerrou negativo). Apenas 'open' fica fora.
     const responded = list.filter(c => c.status && c.status !== 'open').length;
     const pct = total ? Math.round(responded/total*100) : 0;
-    const avgRating = total ? (list.reduce((s,c) => s+(c.rating||0),0)/total).toFixed(1) : '—';
-    // NPS
+    // NPS clássico (-100 a +100) a partir dos votos individuais 0-10.
     const npsScores = (npsRatings || []).map(n => n.score);
-    const npsAvg = npsScores.length ? (npsScores.reduce((a,b)=>a+b,0)/npsScores.length) : null;
-    const npsColor = npsAvg===null ? 'var(--muted)' : npsAvg>=8.1?'#16a34a':npsAvg>=6.1?'#2563eb':npsAvg>=4.1?'#d97706':npsAvg>=2.1?'#ea580c':'#dc2626';
-    const npsBg    = npsAvg===null ? 'var(--bg2)'    : npsAvg>=8.1?'#f0fdf4':npsAvg>=6.1?'#eff6ff':npsAvg>=4.1?'#fffbeb':npsAvg>=2.1?'#fff7ed':'#fef2f2';
-    const npsLabel = npsAvg===null ? 'Sem avaliações' : npsAvg>=8.1?'Ótimo':npsAvg>=6.1?'Bom':npsAvg>=4.1?'Regular':npsAvg>=2.1?'Ruim':'Péssimo';
+    const nps = calculateClassicNps(npsScores);
     const tipo = company?.type || 'outro';
     const isOwned = !!company?.owner_id;
     const isOwner = currentUser && company?.owner_id === currentUser.id;
@@ -6751,9 +6747,9 @@ async function openCompanyProfile(companyName) {
           <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:20px">
             <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
               <span style="font-size:13px;color:var(--muted);font-weight:600">Nota NPS</span>
-              <span style="font-size:12px;color:var(--muted)${npsAvg===null?';font-style:italic':''}">${npsAvg===null?'Seja o 1º a avaliar →':(npsScores.length===1?'1 avaliação':npsScores.length+' avaliações')}</span>
+              <span style="font-size:12px;color:var(--muted)${npsScores.length===0?';font-style:italic':''}">${npsScores.length===0?'Seja o 1º a avaliar →':(npsScores.length===1?'1 avaliação':npsScores.length+' avaliações')}</span>
             </div>
-            ${renderNpsBar(npsAvg, true)}
+            ${renderNpsPill(nps, { variant: 'full' })}
             <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:14px;display:flex;flex-direction:column;gap:8px">
               <div style="display:flex;justify-content:space-between;align-items:center">
                 <span style="font-size:13px;color:var(--muted);font-weight:600">Reclamações</span>
