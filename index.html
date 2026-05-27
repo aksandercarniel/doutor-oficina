@@ -7085,17 +7085,9 @@ async function renderResolutionPage() {
           </div>
         </div>`;
     }
-  } else if (nps) {
-    // Já avaliada: mostra a nota
-    const finalLabel = st === 'resolved' ? 'Resolvida' : 'Não resolvida';
-    const finalColor = st === 'resolved' ? '#16a34a' : '#ea580c';
-    const finalBg = st === 'resolved' ? '#f0fdf4' : '#fff7ed';
-    formHtml = `
-      <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px;background:${finalBg};border-radius:10px;padding:16px;margin-top:12px">
-        <div style="font-family:var(--font);font-weight:800;font-size:13px;color:${finalColor};margin-bottom:6px">Avaliação do cliente: ${finalLabel} · ${nps.score}/10</div>
-        ${nps.comment ? `<div style="font-size:14px;color:var(--text2);line-height:1.6">${nps.comment}</div>` : ''}
-      </div>`;
   }
+  // Quando reclamação é final (resolved/unresolved) e tem NPS, não exibimos resumo aqui:
+  // a pílula composta no header e o bloco "Avaliação do cliente" embaixo do grid já mostram a nota.
 
   // Acompanhamento — mesmo padrão da openComplaintDetail (sem card branco wrapper, sem título "Diálogo", sem emojis nos labels)
   let msgHtml;
