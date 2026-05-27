@@ -6486,7 +6486,7 @@ async function openComplaintDetail(complaintId) {
               <span style="font-size:13px;color:var(--muted)">📅 ${date}</span>
             </div>
             <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
-              <span style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:999px;background:${statusBg[st]};border:1px solid ${statusCol[st]}33;font-size:14px;font-weight:700;color:${statusCol[st]}">${statusMap[st]||'🔴 Não respondida'}</span>
+              <span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;background:${statusBg[st]};color:${statusCol[st]};white-space:nowrap">${statusMap[st]||'🔴 Não respondida'}</span>
               ${(st === 'resolved' || st === 'unresolved') && hasNps ? (() => {
                 const s = Math.max(0, Math.min(10, parseFloat(npsScore)));
                 const cat = _npsCategory(s);
