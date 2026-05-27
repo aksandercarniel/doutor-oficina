@@ -504,7 +504,7 @@ header{
 .badge-yellow{background:var(--yellow-light);color:var(--yellow)}
 .ptag.badge-yellow{background:var(--yellow-light);color:var(--yellow);border-color:#f0d896}
 .badge-red{background:var(--red-light);color:var(--red)}
-.vc-name{font-family:var(--font);font-weight:900;font-size:16px;color:var(--navy);margin-bottom:2px}
+.vc-name{font-family:var(--font);font-weight:900;font-size:19px;color:var(--navy);margin-bottom:2px}
 .vc-brand{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:600}
 .vc-version{color:var(--muted2);font-size:12px;font-weight:500;margin-top:2px;font-style:italic}
 .vc-rating{display:flex;align-items:center;gap:7px;margin:11px 0 5px}
@@ -523,6 +523,19 @@ header{
 .price-label{color:var(--muted2);font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
 .price-val{font-family:var(--font);font-weight:800;font-size:14px;color:var(--green)}
 .price-loading{color:var(--muted2);font-size:12px;font-style:italic}
+
+/* ── CARD DE MARCA (Marcas na home) ── */
+/* Layout: avatar+nome em cima (avatar alinhado ao topo), bloco central com pílula+avaliações
+   centralizado verticalmente no espaço restante, stats no rodapé. */
+.mfr-card{display:flex;flex-direction:column;height:100%;padding:18px 16px}
+.mfr-card-head{display:flex;flex-direction:row;align-items:flex-start;gap:10px;width:100%}
+.mfr-card-head-text{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.mfr-card-name{font-family:var(--font);font-weight:900;font-size:13px;color:var(--navy);line-height:1.25;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis}
+.mfr-card-center{margin:auto 0;display:flex;flex-direction:column;align-items:center;gap:4px;width:100%}
+.mfr-card-pill{max-width:180px;width:100%}
+.mfr-card-stats{display:flex;flex-direction:column;gap:2px;width:100%;text-align:center}
+.mfr-stat{color:var(--muted);font-size:11px;font-weight:500;line-height:1.4}
+.mfr-stat-emph{color:var(--text2);font-weight:600}
 
 /* ── COMPLAINTS ── */
 .complaints-list{display:flex;flex-direction:column;gap:10px}
@@ -3629,7 +3642,8 @@ function _npsBadge(score) {
 }
 
 // Carrega NPS agregado por montadora cadastrada (segment='carro', is_claimed=true)
-// com ≥5 votos. Retorna lista ordenada por nps desc (cabe inverter no render).
+// com ≥5 votos. Também busca reclamações e % respondidas pra exibir no card.
+// Retorna lista ordenada por nps desc (cabe inverter no render).
 async function _loadMarcasData() {
   try {
     // 1. Lista montadoras de carro reivindicadas (chave: name)
@@ -3639,21 +3653,28 @@ async function _loadMarcasData() {
       .eq('is_claimed', true);
     if (!companies?.length) return [];
 
-    // 2. Pra cada uma, agrega NPS (filtra por company_name)
+    // 2. Pra cada uma, agrega NPS + reclamações (em paralelo)
     const results = [];
     for (const c of companies) {
-      const { data: votes } = await sb.from('nps_ratings')
-        .select('score')
-        .eq('company_name', c.name);
+      const [{ data: votes }, { data: complaints }] = await Promise.all([
+        sb.from('nps_ratings').select('score').eq('company_name', c.name),
+        sb.from('complaints').select('status').eq('company_name', c.name)
+      ]);
       const valid = (votes || []).map(v => parseFloat(v.score)).filter(v => !isNaN(v));
       // Threshold: só mostra marca com pelo menos 5 votos (evita ranking baseado em amostra pequena)
       if (valid.length < 5) continue;
       const avg = valid.reduce((a, b) => a + b, 0) / valid.length;
+      // Reclamações: total e respondidas (qualquer status != 'open' = respondida)
+      const totalRecl = (complaints || []).length;
+      const respondedRecl = (complaints || []).filter(x => x.status && x.status !== 'open').length;
+      const pctResp = totalRecl > 0 ? Math.round((respondedRecl / totalRecl) * 100) : 0;
       results.push({
         name: c.name,
         is_claimed: c.is_claimed,
         nps: avg,
-        votos: valid.length
+        votos: valid.length,
+        totalRecl,
+        pctResp
       });
     }
     return results.sort((a, b) => b.nps - a.nps);
@@ -3692,18 +3713,24 @@ async function renderMarcas() {
       : '';
     const safeName = c.name.replace(/'/g, "\\'");
     return `
-    <div class="vehicle-card" onclick="openCompanyProfile('${safeName}')" style="display:flex;flex-direction:column;height:100%">
-      <div class="vc-top">
-        <div style="display:flex;align-items:center;gap:8px">
-          <span class="vc-emoji" style="position:relative;display:inline-flex;width:40px;height:40px;border-radius:50%;background:var(--navy);color:#fff;font-family:var(--font);font-weight:700;font-size:16px;align-items:center;justify-content:center;flex-shrink:0">${initial}${verified}</span>
-          <div class="vc-name">${c.name}</div>
+    <div class="vehicle-card mfr-card" onclick="openCompanyProfile('${safeName}')">
+      <div class="mfr-card-head">
+        <span class="vc-emoji" style="position:relative;display:inline-flex;width:40px;height:40px;border-radius:50%;background:var(--navy);color:#fff;font-family:var(--font);font-weight:700;font-size:16px;align-items:center;justify-content:center;flex-shrink:0">${initial}${verified}</span>
+        <div class="mfr-card-head-text">
+          <div class="mfr-card-name" title="${c.name}">${c.name}</div>
+          <div class="vc-brand">MONTADORA</div>
         </div>
       </div>
-      <div class="vc-brand">MONTADORA</div>
-      <div style="margin:auto 0;padding:8px 0;max-width:180px;width:100%;align-self:center">
-        ${renderNpsBar(c.nps, true)}
+      <div class="mfr-card-center">
+        <div class="mfr-card-pill">
+          ${renderNpsBar(c.nps, true)}
+        </div>
+        <div class="mfr-stat mfr-stat-emph">${c.votos} ${c.votos === 1 ? 'avaliação' : 'avaliações'}</div>
       </div>
-      <div class="vc-count">${c.votos} ${c.votos === 1 ? 'avaliação' : 'avaliações'}</div>
+      <div class="mfr-card-stats">
+        <div class="mfr-stat">${c.totalRecl} ${c.totalRecl === 1 ? 'reclamação' : 'reclamações'}</div>
+        <div class="mfr-stat">${c.pctResp}% respondidas</div>
+      </div>
     </div>`;
   }).join('');
 }
