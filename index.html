@@ -1161,20 +1161,39 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .nps-btn{width:40px;height:40px;border-radius:8px;border:1.5px solid var(--border2);background:var(--white);cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px;color:var(--text);transition:all .2s}
 .nps-btn:hover{background:var(--bg2)}
 
-/* ── NPS CAPSULE: barra preenchida com nota opcional dentro ── */
-/* Versão grande (perfil empresa): 60% de largura, altura proporcional (aspect-ratio 20:1) */
-.nps-capsule{position:relative;aspect-ratio:20/1;border-radius:6px;background:#f3f4f6;overflow:hidden;width:60%;margin:0 auto}
-.nps-capsule-fill{position:absolute;left:0;top:0;height:100%;border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:16px;box-sizing:border-box;animation:nps-cap-grow .9s cubic-bezier(.34,1.36,.64,1) both .15s;transform-origin:left center}
-.nps-capsule-fill-promotor{background:#16a34a}
-.nps-capsule-fill-neutro{background:#d97706}
-.nps-capsule-fill-detrator{background:#dc2626}
-.nps-capsule-num{font-size:26px;font-weight:900;color:#fff;font-family:var(--font);line-height:1}
-.nps-capsule-empty{opacity:.45}
-/* Versão compacta (cards na home): largura cheia, altura fixa, sem aspect-ratio */
-.nps-capsule-compact{aspect-ratio:auto;height:42px;border-radius:9px;width:100%}
-.nps-capsule-compact .nps-capsule-fill{border-radius:9px;padding-right:12px}
-.nps-capsule-compact .nps-capsule-num{font-size:20px}
+/* ── NPS PILL: padrão oficial 27/05 ── */
+/* Escala visual 0-100 (NPS clássico calculado de -100 a +100; negativos mostram barra cheia vermelha) */
+/* Pílula externa: fundo varia por faixa */
+.nps-pill{display:inline-flex;align-items:center;border-radius:24px;padding:4px 14px}
+.nps-pill-critical{background:var(--red-light)}
+.nps-pill-red{background:var(--red-light)}
+.nps-pill-yellow{background:var(--yellow-light)}
+.nps-pill-green{background:var(--green-light)}
+.nps-pill-empty{background:#f3f4f6}
+.nps-pill-label{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-right:10px;font-family:var(--font)}
+/* Variante inline (label+barra ou só barra, sem fundo de pílula) */
+.nps-bar-inline{display:inline-flex;align-items:center;gap:10px}
+/* Trilho: 140x34, fundo cinza-claro por padrão (variantes sem pílula em fundo branco) */
+.nps-track{position:relative;width:140px;height:34px;border-radius:20px;overflow:hidden;background:#f3f4f6}
+/* Dentro da pílula: trilho branco pra contrastar com o fundo pastel */
+.nps-pill .nps-track{background:#fff}
+/* Sem dados: trilho mostra as 3 zonas pasteis (régua educativa do range) */
+.nps-track-empty{background:linear-gradient(90deg,var(--red-light) 0%,var(--red-light) 60%,var(--yellow-light) 60%,var(--yellow-light) 80%,var(--green-light) 80%,var(--green-light) 100%);opacity:.6}
+/* Círculo vermelho indicador de zona crítica (NPS 0-20) */
+.nps-critical-dot{position:absolute;left:6px;top:50%;transform:translateY(-50%);width:26px;height:26px;border-radius:50%;background:var(--red);animation:nps-dot-in .35s ease-out both}
+/* Fill colorido por faixa, width = score% (NPS<0 vai com width=100% e cor vermelha) */
+.nps-fill{position:absolute;top:0;bottom:0;left:0;border-radius:20px;animation:nps-cap-grow .9s cubic-bezier(.34,1.36,.64,1) both .15s;transform-origin:left center}
+.nps-fill-red{background:var(--red)}
+.nps-fill-yellow{background:var(--yellow)}
+.nps-fill-green{background:var(--green)}
+/* Número à direita, cor por faixa */
+.nps-num{font-size:15px;font-weight:800;margin-left:10px;font-family:var(--font);line-height:1}
+.nps-num-critical,.nps-num-red{color:var(--red)}
+.nps-num-yellow{color:#b45309}
+.nps-num-green{color:#00875e}
+.nps-num-empty{color:#9ca3af;font-weight:600;font-size:12px}
 @keyframes nps-cap-grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes nps-dot-in{from{transform:translateY(-50%) scale(0)}to{transform:translateY(-50%) scale(1)}}
 
 /* ── MENU MOBILE ── */
 #mobile-menu{
@@ -6556,41 +6575,104 @@ function normalizeCompanyName(name) {
   return n || null;
 }
 
-// score: 0-10 (decimal). compact: true pra cards menores (home), false pra perfil de empresa.
-// Helper: classifica a nota em zona NPS (detrator/neutro/promotor)
-function _npsCategory(s) {
-  if (s >= 9) return 'promotor';
-  if (s >= 7) return 'neutro';
-  return 'detrator';
+// ══════════════════════════════════════════
+// SISTEMA NPS — padrão oficial 27/05/2026
+// ══════════════════════════════════════════
+// NPS clássico (-100 a +100): (%promotores 9-10) - (%detratores 0-6).
+// Banco continua com votos individuais 0-10 — sem migration.
+// 5 faixas visuais:
+//   < 0      → negativo (barra cheia vermelha)
+//   0-20     → crítico (círculo vermelho indicador)
+//   21-60    → ruim    (barra vermelha width=score%)
+//   61-89    → médio   (barra amarela width=score%)
+//   90-100   → ótimo   (barra verde width=score%)
+
+// Calcula NPS clássico a partir de array de votos individuais (escala 0-10).
+// Retorna número inteiro de -100 a +100, ou null se array vazio.
+function calculateClassicNps(scores) {
+  if (!Array.isArray(scores) || scores.length === 0) return null;
+  const valid = scores.filter(s => s != null && !isNaN(s));
+  if (valid.length === 0) return null;
+  const promotores = valid.filter(s => s >= 9).length;
+  const detratores = valid.filter(s => s <= 6).length;
+  const pctProm = (promotores / valid.length) * 100;
+  const pctDetr = (detratores / valid.length) * 100;
+  return Math.round(pctProm - pctDetr);
 }
 
-// Renderiza a barra-cápsula: trilho cinza + preenchimento sólido (% da nota).
-// opts.compact: true → versão menor (cards); false → versão grande (perfil).
-// opts.showNumInside: true → mostra a nota dentro do preenchimento (compacto, sem número fora).
-// opts.empty: true → trilho desbotado, sem preenchimento (estado sem avaliações).
-function renderNpsCapsule(score, opts) {
+// Classifica um NPS clássico em uma das 5 faixas visuais.
+// Retorna 'empty' se nps for null/undefined/NaN.
+function _npsCategory(nps) {
+  if (nps == null || isNaN(nps)) return 'empty';
+  if (nps < 0)   return 'red';      // negativo: barra cheia vermelha
+  if (nps <= 20) return 'critical'; // círculo crítico
+  if (nps <= 60) return 'red';      // barra vermelha proporcional
+  if (nps <= 89) return 'yellow';   // barra amarela proporcional
+  return 'green';                    // barra verde proporcional
+}
+
+// Renderiza a pílula NPS. Sempre recebe NPS CLÁSSICO (-100 a +100).
+// opts.variant: 'full' (default, com fundo+label+barra+número)
+//             | 'inline-labeled' (sem fundo, label+barra)
+//             | 'bar-only' (só barra)
+// opts.empty: true força estado vazio (trilho com zonas pasteis + "—")
+function renderNpsPill(nps, opts) {
   opts = opts || {};
-  const hasScore = !opts.empty && score != null && !isNaN(score);
-  const s = hasScore ? Math.max(0, Math.min(10, parseFloat(score))) : 0;
-  const cat = hasScore ? _npsCategory(s) : '';
-  const pct = hasScore ? (s / 10) * 100 : 0;
-  const cls = 'nps-capsule' + (opts.compact ? ' nps-capsule-compact' : '') + (hasScore ? '' : ' nps-capsule-empty');
-  let inner = '';
-  if (hasScore) {
-    const numHtml = opts.showNumInside
-      ? '<span class="nps-capsule-num">' + s.toFixed(1) + '</span>'
-      : '';
-    inner = '<div class="nps-capsule-fill nps-capsule-fill-' + cat + '" style="width:' + pct + '%">' + numHtml + '</div>';
+  const variant = opts.variant || 'full';
+  const isEmpty = opts.empty || nps == null || isNaN(nps);
+  const cat = isEmpty ? 'empty' : _npsCategory(nps);
+
+  // Conteúdo interno do trilho
+  let trackContent = '';
+  let trackClass = 'nps-track';
+  if (isEmpty) {
+    trackClass += ' nps-track-empty';
+  } else if (cat === 'critical') {
+    trackContent = '<div class="nps-critical-dot"></div>';
+  } else {
+    // 'red' negativo OU 'red'/'yellow'/'green' positivo
+    const width = (nps < 0) ? 100 : Math.max(0, Math.min(100, nps));
+    trackContent = '<div class="nps-fill nps-fill-' + cat + '" style="width:' + width + '%"></div>';
   }
-  return '<div class="' + cls + '">' + inner + '</div>';
+  const trackHtml = '<div class="' + trackClass + '">' + trackContent + '</div>';
+
+  // Número: só em 'full'. Sinal só em negativos. "—" quando vazio.
+  let numHtml = '';
+  if (variant === 'full') {
+    const numCls = 'nps-num nps-num-' + cat;
+    const numText = isEmpty ? '—' : (nps < 0 ? nps.toString() : Math.abs(nps).toString());
+    numHtml = '<span class="' + numCls + '">' + numText + '</span>';
+  }
+
+  // Label "NPS": em 'full' e 'inline-labeled'.
+  const labelHtml = (variant === 'bar-only')
+    ? ''
+    : '<span class="nps-pill-label">NPS</span>';
+
+  // Wrapper externo: pílula com fundo em 'full', container neutro nas outras.
+  if (variant === 'full') {
+    return '<div class="nps-pill nps-pill-' + cat + '">' + labelHtml + trackHtml + numHtml + '</div>';
+  }
+  return '<div class="nps-bar-inline">' + labelHtml + trackHtml + '</div>';
 }
 
-// Versão compacta: usada nos cards de marca da home e no bloco unificado do perfil de empresa.
-// Só a barra-cápsula. Quando score==null retorna barra desbotada (estado vazio).
-function renderNpsBar(score, compact) {
-  // compact é parâmetro legado — esta versão é sempre compacta.
-  const hasScore = score != null && !isNaN(score);
-  return renderNpsCapsule(score, { compact: true, showNumInside: hasScore, empty: !hasScore });
+// ── Aliases de compatibilidade (callers antigos passam score 0-10) ──
+// Convertem a média 0-10 em NPS clássico aproximado antes de delegar.
+// PROVISÓRIO: vão ser removidos quando os 6 callers forem migrados pra renderNpsPill direto.
+function renderNpsCapsule(scoreOrNps, opts) {
+  // Heurística: se valor entre 0-10, é média antiga → assumimos NPS médio aproximado.
+  // Se >10 ou <0, já é NPS clássico.
+  opts = opts || {};
+  const v = parseFloat(scoreOrNps);
+  if (isNaN(v)) return renderNpsPill(null, opts);
+  // Valores 0-10 são média antiga; convertemos pra estimativa de NPS clássico.
+  // Fórmula provisória: (média - 7.5) * 20 (mapeia 5→-50, 7.5→0, 10→+50)
+  const nps = (v >= 0 && v <= 10) ? Math.round((v - 7.5) * 20) : Math.round(v);
+  return renderNpsPill(nps, opts);
+}
+
+function renderNpsBar(score) {
+  return renderNpsCapsule(score, { variant: 'bar-only' });
 }
 
 async function openCompanyProfile(companyName) {
