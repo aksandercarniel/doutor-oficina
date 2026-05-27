@@ -6989,32 +6989,45 @@ async function showResolution(complaintId) {
   const el = document.getElementById('resolution-content');
   el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Carregando…</div>';
   try {
-    const { data: complaint } = await sb.from('complaints').select('*').eq('id', complaintId).single();
-    if (!complaint) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Reclamação não encontrada.</div>'; return; }
-    const { data: messages } = await sb.from('resolutions').select('*').eq('complaint_id', complaintId).order('created_at', { ascending: true });
-    const { data: npsData } = await sb.from('nps_ratings').select('*').eq('complaint_id', complaintId).maybeSingle();
-    // Dados extras (chip empresa estilo Montadora + Doxcore no card de detalhes)
-    let company = null, companyNpsAvg = null, doxcore = null;
+    const { data: complaint, error: complaintErr } = await sb.from('complaints').select('*').eq('id', complaintId).single();
+    if (complaintErr || !complaint) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Reclamação não encontrada.</div>'; return; }
+    // Cada query auxiliar é isolada — se uma falhar (RLS, rede), as outras continuam.
+    let messages = [], npsData = null, company = null, companyNpsAvg = null, doxcore = null;
+    try {
+      const { data } = await sb.from('resolutions').select('*').eq('complaint_id', complaintId).order('created_at', { ascending: true });
+      messages = data || [];
+    } catch(_) { messages = []; }
+    try {
+      const { data } = await sb.from('nps_ratings').select('*').eq('complaint_id', complaintId).maybeSingle();
+      npsData = data;
+    } catch(_) { npsData = null; }
     if (complaint.company_name) {
-      const { data: c } = await sb.from('companies').select('*').eq('name', complaint.company_name).maybeSingle();
-      company = c;
-      const { data: npsAll } = await sb.from('nps_ratings').select('score').eq('company_name', complaint.company_name);
-      if (npsAll && npsAll.length > 0) {
-        companyNpsAvg = npsAll.reduce((s,n) => s + n.score, 0) / npsAll.length;
-      }
+      try {
+        const { data: c } = await sb.from('companies').select('*').eq('name', complaint.company_name).maybeSingle();
+        company = c;
+      } catch(_) { company = null; }
+      try {
+        const { data: npsAll } = await sb.from('nps_ratings').select('score').eq('company_name', complaint.company_name);
+        if (npsAll && npsAll.length > 0) {
+          companyNpsAvg = npsAll.reduce((s,n) => s + n.score, 0) / npsAll.length;
+        }
+      } catch(_) { companyNpsAvg = null; }
     }
     if (complaint.vehicle_brand && complaint.vehicle_model) {
-      const { data: vk } = await sb.from('vehicle_known_issues')
-        .select('reliability_score')
-        .eq('vehicle_brand', complaint.vehicle_brand)
-        .eq('vehicle_model', complaint.vehicle_model)
-        .eq('is_summary', true)
-        .maybeSingle();
-      if (vk?.reliability_score != null) doxcore = parseFloat(vk.reliability_score);
+      try {
+        const { data: vk } = await sb.from('vehicle_known_issues')
+          .select('reliability_score')
+          .eq('vehicle_brand', complaint.vehicle_brand)
+          .eq('vehicle_model', complaint.vehicle_model)
+          .eq('is_summary', true)
+          .maybeSingle();
+        if (vk?.reliability_score != null) doxcore = parseFloat(vk.reliability_score);
+      } catch(_) { doxcore = null; }
     }
-    currentResolution = { complaint, messages: messages || [], nps: npsData, company, companyNpsAvg, doxcore };
+    currentResolution = { complaint, messages, nps: npsData, company, companyNpsAvg, doxcore };
     await renderResolutionPage();
   } catch(e) {
+    console.error('[showResolution] erro:', e);
     el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)">Erro ao carregar. Tente novamente.</div>';
   }
 }
