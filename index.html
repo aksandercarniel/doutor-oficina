@@ -6485,31 +6485,28 @@ async function openComplaintDetail(complaintId) {
               ${complaint.state ? `<span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:12px;background:var(--bg2);color:var(--muted)">📍 ${complaint.state}</span>` : ''}
               <span style="font-size:13px;color:var(--muted)">📅 ${date}</span>
             </div>
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
-              ${(st === 'resolved' || st === 'unresolved') && hasNps ? `
-                <span style="display:inline-flex;align-items:center;gap:14px;padding:8px 18px;border-radius:999px;background:${statusBg[st]};border:1px solid ${statusCol[st]}33">
-                  <span style="font-size:14px;font-weight:700;color:${statusCol[st]};display:inline-flex;align-items:center;gap:6px">${statusMap[st]}</span>
-                  <span style="width:1px;height:22px;background:${statusCol[st]}40"></span>
-                  ${(() => {
-                    const s = Math.max(0, Math.min(10, parseFloat(npsScore)));
-                    const cat = _npsCategory(s);
-                    const pct = (s / 10) * 100;
-                    const fillColor = cat === 'promotor' ? '#2a9d6a' : cat === 'neutro' ? '#EF9F27' : '#E24B4A';
-                    const trackBg = cat === 'promotor' ? '#d6ead9' : cat === 'neutro' ? '#f5dfb8' : '#f5cccc';
-                    const numColor = cat === 'promotor' ? '#2a9d6a' : cat === 'neutro' ? '#b45309' : '#A32D2D';
-                    const numTxt = s.toFixed(1).replace('.', ',');
-                    return `
-                      <span style="font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.3px">NPS</span>
-                      <span style="display:inline-block;width:180px;height:18px;border-radius:999px;background:${trackBg};overflow:hidden;position:relative">
-                        <span style="display:block;height:100%;width:${pct}%;background:${fillColor};border-radius:999px"></span>
-                      </span>
-                      <span style="font-family:var(--font);font-weight:900;font-size:22px;color:${numColor};line-height:1;min-width:42px;text-align:right">${numTxt}</span>
-                    `;
-                  })()}
-                </span>
-              ` : `
-                <span style="font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;background:${statusBg[st]};color:${statusCol[st]}">${statusMap[st]||'🔴 Não respondida'}</span>
-              `}
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+              <span style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:999px;background:${statusBg[st]};border:1px solid ${statusCol[st]}33;font-size:14px;font-weight:700;color:${statusCol[st]}">${statusMap[st]||'🔴 Não respondida'}</span>
+              ${(st === 'resolved' || st === 'unresolved') && hasNps ? (() => {
+                const s = Math.max(0, Math.min(10, parseFloat(npsScore)));
+                const cat = _npsCategory(s);
+                const pct = (s / 10) * 100;
+                const fillColor = cat === 'promotor' ? '#2a9d6a' : cat === 'neutro' ? '#EF9F27' : '#E24B4A';
+                const pillBg    = cat === 'promotor' ? '#EAF3DE' : cat === 'neutro' ? '#FAEEDA' : '#FCEBEB';
+                const pillBorder= cat === 'promotor' ? '#2a9d6a33' : cat === 'neutro' ? '#EF9F2733' : '#E24B4A33';
+                const numColor  = cat === 'promotor' ? '#2a9d6a' : cat === 'neutro' ? '#b45309' : '#A32D2D';
+                const numTxt = s.toFixed(1).replace('.', ',');
+                return `
+                  <span style="display:inline-flex;align-items:stretch;border-radius:999px;background:${pillBg};border:1px solid ${pillBorder}">
+                    <span style="display:inline-block;width:140px;background:#fff;border-radius:999px;align-self:stretch;overflow:hidden">
+                      <span style="display:block;height:100%;width:${pct}%;background:${fillColor};border-radius:999px"></span>
+                    </span>
+                    <span style="display:inline-flex;align-items:center;padding:6px 16px 6px 12px">
+                      <span style="font-family:var(--font);font-weight:900;font-size:20px;color:${numColor};line-height:1">${numTxt}</span>
+                    </span>
+                  </span>
+                `;
+              })() : ''}
             </div>
             <div style="font-size:15px;color:var(--text2);line-height:1.8;white-space:pre-wrap">${complaint.description||''}</div>
           </div>
