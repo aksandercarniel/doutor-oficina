@@ -6440,27 +6440,32 @@ async function openComplaintDetail(complaintId) {
 
             <h3 style="font-family:var(--font);font-weight:800;font-size:16px;color:var(--navy);margin:20px 0 16px">💬 Acompanhamento</h3>
 
-            <!-- Primeira mensagem: a reclamação em si, como Consumidor -->
-            <div style="margin-bottom:12px;padding:16px;border-radius:12px;background:var(--blue-light);border:1px solid #bfdbfe">
-              <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px">👤 Consumidor · ${date}</div>
+            <!-- Primeira mensagem: a reclamação em si, sem fundo nem rótulo (já está claro pelo header da página) -->
+            <div style="margin-bottom:20px;padding:0 4px">
               <div style="font-size:14px;color:var(--text2);line-height:1.6;white-space:pre-wrap">${complaint.description||''}</div>
             </div>
 
-            ${(messages||[]).map(m => {
-              const isFromAuthor = m.author_type === 'client';
-              // Mensagens da empresa mudam de cor conforme status final da reclamação:
-              // resolved → verde claro, unresolved → vermelho claro, demais → azul saturado
-              let companyBg, companyBorder;
-              if (st === 'resolved')        { companyBg = 'var(--green-light)'; companyBorder = '#a7f3d0'; }
-              else if (st === 'unresolved') { companyBg = 'var(--red-light)';   companyBorder = 'var(--red-light2)'; }
-              else                          { companyBg = '#dbeafe';             companyBorder = '#93c5fd'; }
-              const bg     = isFromAuthor ? 'var(--blue-light)' : companyBg;
-              const border = isFromAuthor ? '#bfdbfe'           : companyBorder;
-              return `<div style="margin-bottom:12px;padding:16px;border-radius:12px;background:${bg};border:1px solid ${border}">
-                <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px">${isFromAuthor ? '👤 Consumidor' : '🏢 Empresa'} · ${new Date(m.created_at).toLocaleDateString('pt-BR')}</div>
-                <div style="font-size:14px;color:var(--text2);line-height:1.6">${m.message}</div>
-              </div>`;
-            }).join('')}
+            ${(() => {
+              // Identifica o índice da PRIMEIRA mensagem da empresa pra rotular como "Resposta da empresa"
+              const msgs = messages || [];
+              const firstCompanyIdx = msgs.findIndex(m => m.author_type !== 'client');
+              return msgs.map((m, idx) => {
+                const isFromAuthor = m.author_type === 'client';
+                // Mensagens da empresa mudam de cor conforme status final da reclamação:
+                // resolved → verde claro, unresolved → vermelho claro, demais → azul saturado
+                let companyBg, companyBorder;
+                if (st === 'resolved')        { companyBg = 'var(--green-light)'; companyBorder = '#a7f3d0'; }
+                else if (st === 'unresolved') { companyBg = 'var(--red-light)';   companyBorder = 'var(--red-light2)'; }
+                else                          { companyBg = '#dbeafe';             companyBorder = '#93c5fd'; }
+                const bg     = isFromAuthor ? 'var(--blue-light)' : companyBg;
+                const border = isFromAuthor ? '#bfdbfe'           : companyBorder;
+                const label  = isFromAuthor ? 'Consumidor' : (idx === firstCompanyIdx ? 'Resposta da empresa' : 'Empresa');
+                return `<div style="margin-bottom:12px;padding:16px;border-radius:12px;background:${bg};border:1px solid ${border}">
+                  <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px">${label} · ${new Date(m.created_at).toLocaleDateString('pt-BR')}</div>
+                  <div style="font-size:14px;color:var(--text2);line-height:1.6">${m.message}</div>
+                </div>`;
+              }).join('');
+            })()}
           </div>
         </div>
 
