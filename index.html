@@ -6456,14 +6456,20 @@ async function openComplaintDetail(complaintId) {
               <span>📅 ${date}</span>
             </div>
             <div style="margin-bottom:24px">
-              ${(st==='resolved'||st==='unresolved') && npsData ? `
-                <div style="display:inline-flex;align-items:center;background:${statusBg[st]};border-radius:24px;padding:6px 6px 6px 14px">
+              ${(st==='resolved'||st==='unresolved') && npsData ? (() => {
+                  const npsVal = calculateClassicNps([npsData.score]);
+                  // Cor do número conforme faixa (mesma paleta do .nps-num-*)
+                  const numColor = npsVal == null ? '#9ca3af' : npsVal < 0 ? 'var(--red)' : npsVal <= 20 ? 'var(--red)' : npsVal <= 60 ? 'var(--red)' : npsVal <= 89 ? '#b45309' : '#00875e';
+                  const numText = npsVal == null ? '—' : (npsVal < 0 ? npsVal.toString() : Math.abs(npsVal).toString());
+                  return `
+                <div style="display:inline-flex;align-items:center;background:${statusBg[st]};border-radius:24px;padding:6px 14px">
                   <span style="font-size:12px;font-weight:700;color:${statusCol[st]};white-space:nowrap;margin-right:12px">${statusMap[st]}</span>
                   <span style="width:1px;height:18px;background:${statusCol[st]};opacity:.25;margin-right:12px"></span>
-                  <span style="font-size:11px;font-weight:500;color:var(--muted);letter-spacing:.3px;text-transform:uppercase;margin-right:6px">NPS</span>
-                  <div style="width:140px;height:30px">${renderNpsPill(calculateClassicNps([npsData.score]), { variant: 'bar-only' })}</div>
-                </div>
-              ` : `
+                  <span style="font-size:11px;font-weight:500;color:var(--muted);letter-spacing:.3px;text-transform:uppercase;margin-right:8px">NPS</span>
+                  ${renderNpsPill(npsVal, { variant: 'bar-only' })}
+                  <span style="font-size:15px;font-weight:800;color:${numColor};margin-left:10px;font-family:var(--font);line-height:1">${numText}</span>
+                </div>`;
+                })() : `
                 <span style="display:inline-flex;font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;background:${statusBg[st]};color:${statusCol[st]};white-space:nowrap">${statusMap[st]||'🔴 Não respondida'}</span>
               `}
             </div>
