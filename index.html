@@ -1162,33 +1162,34 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .nps-btn:hover{background:var(--bg2)}
 
 /* ── DOXCORE: pílula pastel + trilho + número ao lado ── */
-.nps-capsule-wrap{display:flex;flex-direction:column;gap:8px;width:100%}
-.nps-capsule-bignum{font-family:var(--font);font-weight:900;font-size:56px;line-height:1;text-align:center}
+/* Dimensões alinhadas ao velocímetro Doxcore medium (28px) — refinamento 27/05 tarde2 */
+.nps-capsule-wrap{display:flex;flex-direction:column;gap:6px;width:100%;align-items:center;justify-content:center}
+.nps-capsule-bignum{font-family:var(--font);font-weight:900;font-size:32px;line-height:1;text-align:center}
 .nps-capsule-bignum-promotor{color:#2a9d6a}
 .nps-capsule-bignum-neutro{color:#b45309}
 .nps-capsule-bignum-detrator{color:#A32D2D}
 .nps-capsule-bignum-empty{color:var(--muted)}
-.nps-capsule{display:inline-flex;align-items:center;gap:10px;padding:4px 14px 4px 4px;border-radius:20px;background:#FCEBEB;box-sizing:border-box}
+.nps-capsule{display:inline-flex;align-items:center;gap:8px;padding:3px 10px 3px 3px;border-radius:16px;background:#FCEBEB;box-sizing:border-box;width:100%}
 .nps-capsule-promotor{background:#EAF3DE}
 .nps-capsule-neutro{background:#FAEEDA}
 .nps-capsule-detrator{background:#FCEBEB}
 .nps-capsule-empty{background:#f3f4f6}
-.nps-capsule-track{position:relative;flex:1;min-width:0;height:34px;border-radius:20px;background:#fff;overflow:hidden}
-.nps-capsule-fill{position:absolute;left:0;top:0;height:100%;border-radius:20px;animation:nps-cap-grow .9s cubic-bezier(.34,1.36,.64,1) both .15s;transform-origin:left center}
+.nps-capsule-track{position:relative;flex:1;min-width:0;height:22px;border-radius:14px;background:#fff;overflow:hidden}
+.nps-capsule-fill{position:absolute;left:0;top:0;height:100%;border-radius:14px;animation:nps-cap-grow .9s cubic-bezier(.34,1.36,.64,1) both .15s;transform-origin:left center}
 .nps-capsule-fill-promotor{background:#2a9d6a}
 .nps-capsule-fill-neutro{background:#EF9F27}
 .nps-capsule-fill-detrator{background:#E24B4A}
-.nps-capsule-edu{position:absolute;inset:0;display:flex;border-radius:20px;overflow:hidden}
+.nps-capsule-edu{position:absolute;inset:0;display:flex;border-radius:14px;overflow:hidden}
 .nps-capsule-edu-r{flex:70;background:#FCEBEB}
 .nps-capsule-edu-y{flex:20;background:#FAEEDA}
 .nps-capsule-edu-g{flex:10;background:#EAF3DE}
-.nps-capsule-num{font-size:15px;font-weight:700;line-height:1;font-family:var(--font);flex-shrink:0}
+.nps-capsule-num{font-size:13px;font-weight:700;line-height:1;font-family:var(--font);flex-shrink:0}
 .nps-capsule-num-promotor{color:#2a9d6a}
 .nps-capsule-num-neutro{color:#b45309}
 .nps-capsule-num-detrator{color:#A32D2D}
 .nps-capsule-num-empty{color:var(--muted)}
 .nps-capsule-compact{width:100%}
-.nps-capsule-compact .nps-capsule-track{height:30px}
+.nps-capsule-compact .nps-capsule-track{height:20px}
 @keyframes nps-cap-grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 
 /* ── MENU MOBILE ── */
@@ -3675,7 +3676,7 @@ async function renderMarcas() {
       : '';
     const safeName = c.name.replace(/'/g, "\\'");
     return `
-    <div class="vehicle-card" onclick="openCompanyProfile('${safeName}')">
+    <div class="vehicle-card" onclick="openCompanyProfile('${safeName}')" style="display:flex;flex-direction:column;height:100%">
       <div class="vc-top">
         <div style="display:flex;align-items:center;gap:8px">
           <span class="vc-emoji" style="position:relative;display:inline-flex;width:40px;height:40px;border-radius:50%;background:var(--navy);color:#fff;font-family:var(--font);font-weight:700;font-size:16px;align-items:center;justify-content:center;flex-shrink:0">${initial}${verified}</span>
@@ -3683,7 +3684,7 @@ async function renderMarcas() {
         </div>
       </div>
       <div class="vc-brand">MONTADORA</div>
-      <div style="margin:18px 0 6px">
+      <div style="margin:auto 0;padding:8px 0">
         ${renderNpsBar(c.nps, true)}
       </div>
       <div class="vc-count">${c.votos} ${c.votos === 1 ? 'avaliação' : 'avaliações'}</div>
@@ -6592,7 +6593,7 @@ function renderNpsCapsule(score, opts) {
     : '<div class="nps-capsule-edu"><div class="nps-capsule-edu-r"></div><div class="nps-capsule-edu-y"></div><div class="nps-capsule-edu-g"></div></div>';
   const bigCls = 'nps-capsule-bignum nps-capsule-bignum-' + cat;
   const sideEl = hasScore
-    ? _npsFace(cat, 22)
+    ? _npsFace(cat, 18)
     : '<span class="' + numCls + '">—</span>';
   return '<div class="nps-capsule-wrap">'
     + '<div class="' + bigCls + '">' + numTxt + '</div>'
