@@ -1161,40 +1161,20 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .nps-btn{width:40px;height:40px;border-radius:8px;border:1.5px solid var(--border2);background:var(--white);cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px;color:var(--text);transition:all .2s}
 .nps-btn:hover{background:var(--bg2)}
 
-/* ── NPS PILL: padrão oficial 27/05 ── */
-/* Escala visual 0-100 (NPS clássico calculado de -100 a +100; negativos mostram barra cheia vermelha) */
-/* Pílula externa: fundo varia por faixa */
-.nps-pill{display:inline-flex;align-items:center;border-radius:24px;padding:4px 14px}
-.nps-pill-critical{background:var(--red-light)}
-.nps-pill-red{background:var(--red-light)}
-.nps-pill-yellow{background:var(--yellow-light)}
-.nps-pill-green{background:var(--green-light)}
-.nps-pill-empty{background:#f3f4f6}
-.nps-pill-label{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-right:10px;font-family:var(--font)}
-/* Variante inline (label+barra ou só barra, sem fundo de pílula) */
-.nps-bar-inline{display:inline-flex;align-items:center;gap:10px}
-/* Trilho: 140x34, fundo cinza-claro por padrão (variantes sem pílula em fundo branco) */
-.nps-track{position:relative;width:140px;height:34px;border-radius:20px;overflow:hidden;background:#f3f4f6}
-/* Dentro da pílula: trilho branco pra contrastar com o fundo pastel */
-.nps-pill .nps-track{background:#fff}
-/* Sem dados: trilho mostra as 3 zonas pasteis (régua educativa do range).
-   Especificidade reforçada (.nps-track) pra vencer a regra .nps-pill .nps-track que pinta branco. */
-.nps-track.nps-track-empty{background:linear-gradient(90deg,var(--red-light) 0%,var(--red-light) 60%,var(--yellow-light) 60%,var(--yellow-light) 80%,var(--green-light) 80%,var(--green-light) 100%);opacity:.6}
-/* Círculo vermelho indicador de zona crítica (NPS 0-20) */
-.nps-critical-dot{position:absolute;left:6px;top:50%;transform:translateY(-50%);width:26px;height:26px;border-radius:50%;background:var(--red);animation:nps-dot-in .35s ease-out both}
-/* Fill colorido por faixa, width = score% (NPS<0 vai com width=100% e cor vermelha) */
-.nps-fill{position:absolute;top:0;bottom:0;left:0;border-radius:20px;animation:nps-cap-grow .9s cubic-bezier(.34,1.36,.64,1) both .15s;transform-origin:left center}
-.nps-fill-red{background:var(--red)}
-.nps-fill-yellow{background:var(--yellow)}
-.nps-fill-green{background:var(--green)}
-/* Número à direita, cor por faixa */
-.nps-num{font-size:15px;font-weight:800;margin-left:10px;font-family:var(--font);line-height:1}
-.nps-num-critical,.nps-num-red{color:var(--red)}
-.nps-num-yellow{color:#b45309}
-.nps-num-green{color:#00875e}
-.nps-num-empty{color:#9ca3af;font-weight:600;font-size:12px}
+/* ── NPS CAPSULE: barra preenchida com nota opcional dentro ── */
+/* Versão grande (perfil empresa): 60% de largura, altura proporcional (aspect-ratio 20:1) */
+.nps-capsule{position:relative;aspect-ratio:20/1;border-radius:6px;background:#f3f4f6;overflow:hidden;width:60%;margin:0 auto}
+.nps-capsule-fill{position:absolute;left:0;top:0;height:100%;border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:16px;box-sizing:border-box;animation:nps-cap-grow .9s cubic-bezier(.34,1.36,.64,1) both .15s;transform-origin:left center}
+.nps-capsule-fill-promotor{background:#16a34a}
+.nps-capsule-fill-neutro{background:#d97706}
+.nps-capsule-fill-detrator{background:#dc2626}
+.nps-capsule-num{font-size:26px;font-weight:900;color:#fff;font-family:var(--font);line-height:1}
+.nps-capsule-empty{opacity:.45}
+/* Versão compacta (cards na home): largura cheia, altura fixa, sem aspect-ratio */
+.nps-capsule-compact{aspect-ratio:auto;height:42px;border-radius:9px;width:100%}
+.nps-capsule-compact .nps-capsule-fill{border-radius:9px;padding-right:12px}
+.nps-capsule-compact .nps-capsule-num{font-size:20px}
 @keyframes nps-cap-grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-@keyframes nps-dot-in{from{transform:translateY(-50%) scale(0)}to{transform:translateY(-50%) scale(1)}}
 
 /* ── MENU MOBILE ── */
 #mobile-menu{
@@ -1240,7 +1220,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 }
 @media(min-width:768px){
   .split-2col{
-    grid-template-columns:1fr 320px;
+    grid-template-columns:1fr 280px;
     gap:20px;
   }
 }
@@ -1572,11 +1552,11 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
     <span class="filter-label">Filtrar:</span>
     <select class="filter-select" id="all-filter-status" onchange="applyAllFilters()">
       <option value="">Todos os status</option>
-      <option value="s-open" style="color:#e8184a">Não respondidas</option>
-      <option value="s-progress" style="color:#2563eb">Respondidas</option>
-      <option value="s-replied" style="color:#f59e0b">Em réplica</option>
-      <option value="s-resolved" style="color:#00a878">Resolvidas</option>
-      <option value="s-unresolved" style="color:#f97316">Não resolvidas</option>
+      <option value="s-open">🔴 Não respondidas</option>
+      <option value="s-progress">🔵 Respondidas</option>
+      <option value="s-replied">🟡 Em réplica</option>
+      <option value="s-resolved">🟢 Resolvidas</option>
+      <option value="s-unresolved">🟠 Não resolvidas</option>
     </select>
     <select class="filter-select" id="all-filter-brand" onchange="applyAllFilters()">
       <option value="">Todas as marcas</option>
@@ -1609,7 +1589,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
   <div id="company-profile-content"></div>
 </div>
 
-<div id="page-complaint" style="display:none;width:100%;align-self:stretch;max-width:1280px;margin:0 auto;padding:32px 24px">
+<div id="page-complaint" style="display:none;max-width:1100px;margin:0 auto;padding:32px 24px">
   <div id="complaint-detail-content"></div>
 </div>
 
@@ -3616,9 +3596,8 @@ function _npsBadge(score) {
   return                    { color:'#dc2626', bg:'#fef2f2', label:'Péssimo' };
 }
 
-// Carrega NPS agregado por montadora cadastrada (segment='carro', is_claimed=true).
-// Calcula NPS clássico (-100 a +100) a partir dos votos individuais 0-10.
-// Retorna lista ordenada por nps desc (cabe inverter no render).
+// Carrega NPS agregado por montadora cadastrada (segment='carro', is_claimed=true)
+// com ≥5 votos. Retorna lista ordenada por nps desc (cabe inverter no render).
 async function _loadMarcasData() {
   try {
     // 1. Lista montadoras de carro reivindicadas (chave: name)
@@ -3635,11 +3614,12 @@ async function _loadMarcasData() {
         .select('score')
         .eq('company_name', c.name);
       const valid = (votes || []).map(v => parseFloat(v.score)).filter(v => !isNaN(v));
-      if (valid.length === 0) continue;
+      if (valid.length < 5) continue; // Threshold acordado: 5 votos mínimo
+      const avg = valid.reduce((a, b) => a + b, 0) / valid.length;
       results.push({
         name: c.name,
         is_claimed: c.is_claimed,
-        nps: calculateClassicNps(valid),
+        nps: avg,
         votos: valid.length
       });
     }
@@ -3672,6 +3652,7 @@ async function renderMarcas() {
   const list = [...all].sort((a, b) => ascending ? a.nps - b.nps : b.nps - a.nps).slice(0, 4);
 
   grid.innerHTML = list.map(c => {
+    const badge = _npsBadge(c.nps);
     const initial = (c.name || '?')[0].toUpperCase();
     const verified = c.is_claimed
       ? '<span class="mfr-chip-verified" title="Conta verificada">✓</span>'
@@ -3687,7 +3668,7 @@ async function renderMarcas() {
       </div>
       <div class="vc-brand">MONTADORA</div>
       <div style="margin:18px 0 6px">
-        ${renderNpsPill(c.nps, { variant: 'inline-labeled' })}
+        ${renderNpsBar(c.nps, true)}
       </div>
       <div class="vc-count">${c.votos} ${c.votos === 1 ? 'avaliação' : 'avaliações'}</div>
     </div>`;
@@ -6430,7 +6411,6 @@ async function openComplaintDetail(complaintId) {
     const { data: complaint } = await sb.from('complaints').select('*').eq('id', complaintId).single();
     if (!complaint) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Reclamação não encontrada.</div>'; return; }
     const { data: messages } = await sb.from('resolutions').select('*').eq('complaint_id', complaintId).order('created_at', { ascending: true });
-    const { data: npsData } = await sb.from('nps_ratings').select('*').eq('complaint_id', complaintId).maybeSingle();
     const statusMap = { open: statusFace('open',16)+'<span style="vertical-align:middle;margin-left:4px">Não respondida</span>', in_progress: statusFace('in_progress',16)+'<span style="vertical-align:middle;margin-left:4px">Respondida</span>', replied: statusFace('replied',16)+'<span style="vertical-align:middle;margin-left:4px">Em réplica</span>', resolved: statusFace('resolved',16)+'<span style="vertical-align:middle;margin-left:4px">Resolvido</span>', unresolved: statusFace('unresolved',16)+'<span style="vertical-align:middle;margin-left:4px">Não resolvida</span>' };
     const typeEmoji = { carro:'🚗', moto:'🏍️', caminhao:'🚚' };
     const isAuthor = currentUser?.id === complaint.user_id;
@@ -6450,57 +6430,31 @@ async function openComplaintDetail(complaintId) {
         <!-- Coluna principal -->
         <div>
           <div class="split-card">
-            <h2 style="font-family:var(--font);font-weight:900;font-size:26px;color:var(--navy);margin:0 0 14px;line-height:1.2">${complaint.title}</h2>
-            <div style="display:flex;align-items:center;gap:16px;color:var(--muted);font-size:13px;margin-bottom:14px;flex-wrap:wrap">
-              ${complaint.state ? `<span>📍 ${complaint.state}</span>` : ''}
-              <span>📅 ${date}</span>
+            <div style="font-size:12px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">
+              ${typeEmoji[complaint.vehicle_type]||'🚗'} ${complaint.vehicle_brand||''} ${complaint.vehicle_model||''} ${complaint.vehicle_year||''}
             </div>
-            <div style="margin-bottom:24px">
-              ${(st==='resolved'||st==='unresolved') && npsData ? (() => {
-                  const npsVal = calculateClassicNps([npsData.score]);
-                  // Cor do número conforme faixa (mesma paleta do .nps-num-*)
-                  const numColor = npsVal == null ? '#9ca3af' : npsVal < 0 ? 'var(--red)' : npsVal <= 20 ? 'var(--red)' : npsVal <= 60 ? 'var(--red)' : npsVal <= 89 ? '#b45309' : '#00875e';
-                  const numText = npsVal == null ? '—' : (npsVal < 0 ? npsVal.toString() : Math.abs(npsVal).toString());
-                  return `
-                <div style="display:inline-flex;align-items:center;background:${statusBg[st]};border-radius:24px;padding:6px 14px">
-                  <span style="font-size:12px;font-weight:700;color:${statusCol[st]};white-space:nowrap;margin-right:12px">${statusMap[st]}</span>
-                  <span style="width:1px;height:18px;background:${statusCol[st]};opacity:.25;margin-right:12px"></span>
-                  <span style="font-size:11px;font-weight:500;color:var(--muted);letter-spacing:.3px;text-transform:uppercase;margin-right:8px">NPS</span>
-                  ${renderNpsPill(npsVal, { variant: 'bar-only' })}
-                  <span style="font-size:15px;font-weight:800;color:${numColor};margin-left:10px;font-family:var(--font);line-height:1">${numText}</span>
-                </div>`;
-                })() : `
-                <span style="display:inline-flex;font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;background:${statusBg[st]};color:${statusCol[st]};white-space:nowrap">${statusMap[st]||'🔴 Não respondida'}</span>
-              `}
+            <h2 style="font-family:var(--font);font-weight:900;font-size:26px;color:var(--navy);margin:0 0 10px;line-height:1.2">${complaint.title}</h2>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+              <span style="font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;background:${statusBg[st]};color:${statusCol[st]}">${statusMap[st]||'🔴 Não respondida'}</span>
+              ${complaint.category ? `<span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:12px;background:var(--bg2);color:var(--muted)">${complaint.category}</span>` : ''}
+              ${complaint.state ? `<span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:12px;background:var(--bg2);color:var(--muted)">📍 ${complaint.state}</span>` : ''}
+              <span style="font-size:12px;color:var(--muted)">Publicado em ${date}</span>
             </div>
-
-            <!-- Primeira mensagem: a reclamação em si, sem fundo nem rótulo (já está claro pelo header da página) -->
-            <div style="margin-bottom:20px;padding:0 4px">
-              <div style="font-size:14px;color:var(--text2);line-height:1.6;white-space:pre-wrap">${complaint.description||''}</div>
-            </div>
-
-            ${(() => {
-              // Identifica o índice da PRIMEIRA mensagem da empresa pra rotular como "Resposta da empresa"
-              const msgs = messages || [];
-              const firstCompanyIdx = msgs.findIndex(m => m.author_type !== 'client');
-              return msgs.map((m, idx) => {
-                const isFromAuthor = m.author_type === 'client';
-                // Mensagens da empresa mudam de cor conforme status final da reclamação:
-                // resolved → verde claro, unresolved → vermelho claro, demais → azul saturado
-                let companyBg, companyBorder;
-                if (st === 'resolved')        { companyBg = 'var(--green-light)'; companyBorder = '#a7f3d0'; }
-                else if (st === 'unresolved') { companyBg = 'var(--red-light)';   companyBorder = 'var(--red-light2)'; }
-                else                          { companyBg = '#dbeafe';             companyBorder = '#93c5fd'; }
-                const bg     = isFromAuthor ? 'var(--blue-light)' : companyBg;
-                const border = isFromAuthor ? '#bfdbfe'           : companyBorder;
-                const label  = isFromAuthor ? 'Consumidor' : (idx === firstCompanyIdx ? 'Resposta da empresa' : 'Empresa');
-                return `<div style="margin-bottom:12px;padding:16px;border-radius:12px;background:${bg};border:1px solid ${border}">
-                  <div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:6px">${label} · ${new Date(m.created_at).toLocaleDateString('pt-BR')}</div>
-                  <div style="font-size:14px;color:var(--text2);line-height:1.6">${m.message}</div>
-                </div>`;
-              }).join('');
-            })()}
+            <div style="font-size:15px;color:var(--text2);line-height:1.8;white-space:pre-wrap">${complaint.description||''}</div>
           </div>
+
+          <!-- Acompanhamento -->
+          ${messages && messages.length > 0 ? `
+          <div class="split-card">
+            <h3 style="font-family:var(--font);font-weight:800;font-size:16px;color:var(--navy);margin:0 0 16px">💬 Acompanhamento</h3>
+            ${messages.map(m => {
+              const isFromAuthor = m.sender_role === 'client';
+              return `<div style="margin-bottom:12px;padding:16px;border-radius:12px;background:${isFromAuthor ? 'var(--blue-light)' : 'var(--green-light)'};border:1px solid ${isFromAuthor ? '#bfdbfe' : '#a7f3d0'}">
+                <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px">${isFromAuthor ? '👤 Consumidor' : '🏢 Empresa'} · ${new Date(m.created_at).toLocaleDateString('pt-BR')}</div>
+                <div style="font-size:14px;color:var(--text2);line-height:1.6">${m.message}</div>
+              </div>`;
+            }).join('')}
+          </div>` : ''}
         </div>
 
         <!-- Coluna lateral -->
@@ -6529,15 +6483,7 @@ async function openComplaintDetail(complaintId) {
           <div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px">
             <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Detalhes</div>
             <div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
-              ${(complaint.vehicle_brand || complaint.vehicle_model || complaint.vehicle_year) ? `<div style="display:flex;align-items:center;gap:10px;padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:4px">
-                <span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;background:var(--bg2);border-radius:10px;color:var(--navy);flex-shrink:0">${vehicleIcon(typeEmoji[complaint.vehicle_type]||'🚗', complaint.vehicle_model||'')}</span>
-                <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
-                  <span style="font-family:var(--font);font-weight:800;font-size:14px;color:var(--navy);line-height:1.2">${[complaint.vehicle_brand, complaint.vehicle_model].filter(Boolean).join(' ')}</span>
-                  ${complaint.vehicle_year ? `<span style="font-size:12px;color:var(--muted);font-weight:600">${complaint.vehicle_year}</span>` : ''}
-                </div>
-              </div>` : ''}
               ${complaint.km ? `<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Quilometragem</span><span style="font-weight:600">${Number(complaint.km).toLocaleString('pt-BR')} km</span></div>` : ''}
-              ${complaint.category ? `<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Categoria</span><span style="font-weight:600">${complaint.category}</span></div>` : ''}
               ${complaint.rating ? (() => {
                 const r = complaint.rating;
                 const label = r >= 5 ? 'Ótimo' : r >= 4 ? 'Bom' : r >= 3 ? 'Regular' : r >= 2 ? 'Ruim' : 'Péssimo';
@@ -6581,104 +6527,41 @@ function normalizeCompanyName(name) {
   return n || null;
 }
 
-// ══════════════════════════════════════════
-// SISTEMA NPS — padrão oficial 27/05/2026
-// ══════════════════════════════════════════
-// NPS clássico (-100 a +100): (%promotores 9-10) - (%detratores 0-6).
-// Banco continua com votos individuais 0-10 — sem migration.
-// 5 faixas visuais:
-//   < 0      → negativo (barra cheia vermelha)
-//   0-20     → crítico (círculo vermelho indicador)
-//   21-60    → ruim    (barra vermelha width=score%)
-//   61-89    → médio   (barra amarela width=score%)
-//   90-100   → ótimo   (barra verde width=score%)
-
-// Calcula NPS clássico a partir de array de votos individuais (escala 0-10).
-// Retorna número inteiro de -100 a +100, ou null se array vazio.
-function calculateClassicNps(scores) {
-  if (!Array.isArray(scores) || scores.length === 0) return null;
-  const valid = scores.filter(s => s != null && !isNaN(s));
-  if (valid.length === 0) return null;
-  const promotores = valid.filter(s => s >= 9).length;
-  const detratores = valid.filter(s => s <= 6).length;
-  const pctProm = (promotores / valid.length) * 100;
-  const pctDetr = (detratores / valid.length) * 100;
-  return Math.round(pctProm - pctDetr);
+// score: 0-10 (decimal). compact: true pra cards menores (home), false pra perfil de empresa.
+// Helper: classifica a nota em zona NPS (detrator/neutro/promotor)
+function _npsCategory(s) {
+  if (s >= 9) return 'promotor';
+  if (s >= 7) return 'neutro';
+  return 'detrator';
 }
 
-// Classifica um NPS clássico em uma das 5 faixas visuais.
-// Retorna 'empty' se nps for null/undefined/NaN.
-function _npsCategory(nps) {
-  if (nps == null || isNaN(nps)) return 'empty';
-  if (nps < 0)   return 'red';      // negativo: barra cheia vermelha
-  if (nps <= 20) return 'critical'; // círculo crítico
-  if (nps <= 60) return 'red';      // barra vermelha proporcional
-  if (nps <= 89) return 'yellow';   // barra amarela proporcional
-  return 'green';                    // barra verde proporcional
-}
-
-// Renderiza a pílula NPS. Sempre recebe NPS CLÁSSICO (-100 a +100).
-// opts.variant: 'full' (default, com fundo+label+barra+número)
-//             | 'inline-labeled' (sem fundo, label+barra)
-//             | 'bar-only' (só barra)
-// opts.empty: true força estado vazio (trilho com zonas pasteis + "—")
-function renderNpsPill(nps, opts) {
+// Renderiza a barra-cápsula: trilho cinza + preenchimento sólido (% da nota).
+// opts.compact: true → versão menor (cards); false → versão grande (perfil).
+// opts.showNumInside: true → mostra a nota dentro do preenchimento (compacto, sem número fora).
+// opts.empty: true → trilho desbotado, sem preenchimento (estado sem avaliações).
+function renderNpsCapsule(score, opts) {
   opts = opts || {};
-  const variant = opts.variant || 'full';
-  const isEmpty = opts.empty || nps == null || isNaN(nps);
-  const cat = isEmpty ? 'empty' : _npsCategory(nps);
-
-  // Conteúdo interno do trilho
-  let trackContent = '';
-  let trackClass = 'nps-track';
-  if (isEmpty) {
-    trackClass += ' nps-track-empty';
-  } else if (cat === 'critical') {
-    trackContent = '<div class="nps-critical-dot"></div>';
-  } else {
-    // 'red' negativo OU 'red'/'yellow'/'green' positivo
-    const width = (nps < 0) ? 100 : Math.max(0, Math.min(100, nps));
-    trackContent = '<div class="nps-fill nps-fill-' + cat + '" style="width:' + width + '%"></div>';
+  const hasScore = !opts.empty && score != null && !isNaN(score);
+  const s = hasScore ? Math.max(0, Math.min(10, parseFloat(score))) : 0;
+  const cat = hasScore ? _npsCategory(s) : '';
+  const pct = hasScore ? (s / 10) * 100 : 0;
+  const cls = 'nps-capsule' + (opts.compact ? ' nps-capsule-compact' : '') + (hasScore ? '' : ' nps-capsule-empty');
+  let inner = '';
+  if (hasScore) {
+    const numHtml = opts.showNumInside
+      ? '<span class="nps-capsule-num">' + s.toFixed(1) + '</span>'
+      : '';
+    inner = '<div class="nps-capsule-fill nps-capsule-fill-' + cat + '" style="width:' + pct + '%">' + numHtml + '</div>';
   }
-  const trackHtml = '<div class="' + trackClass + '">' + trackContent + '</div>';
-
-  // Número: só em 'full'. Sinal só em negativos. "—" quando vazio.
-  let numHtml = '';
-  if (variant === 'full') {
-    const numCls = 'nps-num nps-num-' + cat;
-    const numText = isEmpty ? '—' : (nps < 0 ? nps.toString() : Math.abs(nps).toString());
-    numHtml = '<span class="' + numCls + '">' + numText + '</span>';
-  }
-
-  // Label "NPS": em 'full' e 'inline-labeled'.
-  const labelHtml = (variant === 'bar-only')
-    ? ''
-    : '<span class="nps-pill-label">NPS</span>';
-
-  // Wrapper externo: pílula com fundo em 'full', container neutro nas outras.
-  if (variant === 'full') {
-    return '<div class="nps-pill nps-pill-' + cat + '">' + labelHtml + trackHtml + numHtml + '</div>';
-  }
-  return '<div class="nps-bar-inline">' + labelHtml + trackHtml + '</div>';
+  return '<div class="' + cls + '">' + inner + '</div>';
 }
 
-// ── Aliases de compatibilidade (callers antigos passam score 0-10) ──
-// Convertem a média 0-10 em NPS clássico aproximado antes de delegar.
-// PROVISÓRIO: vão ser removidos quando os 6 callers forem migrados pra renderNpsPill direto.
-function renderNpsCapsule(scoreOrNps, opts) {
-  // Heurística: se valor entre 0-10, é média antiga → assumimos NPS médio aproximado.
-  // Se >10 ou <0, já é NPS clássico.
-  opts = opts || {};
-  const v = parseFloat(scoreOrNps);
-  if (isNaN(v)) return renderNpsPill(null, opts);
-  // Valores 0-10 são média antiga; convertemos pra estimativa de NPS clássico.
-  // Fórmula provisória: (média - 7.5) * 20 (mapeia 5→-50, 7.5→0, 10→+50)
-  const nps = (v >= 0 && v <= 10) ? Math.round((v - 7.5) * 20) : Math.round(v);
-  return renderNpsPill(nps, opts);
-}
-
-function renderNpsBar(score) {
-  return renderNpsCapsule(score, { variant: 'bar-only' });
+// Versão compacta: usada nos cards de marca da home e no bloco unificado do perfil de empresa.
+// Só a barra-cápsula. Quando score==null retorna barra desbotada (estado vazio).
+function renderNpsBar(score, compact) {
+  // compact é parâmetro legado — esta versão é sempre compacta.
+  const hasScore = score != null && !isNaN(score);
+  return renderNpsCapsule(score, { compact: true, showNumInside: hasScore, empty: !hasScore });
 }
 
 async function openCompanyProfile(companyName) {
@@ -6696,9 +6579,13 @@ async function openCompanyProfile(companyName) {
     // unresolved (encerrou negativo). Apenas 'open' fica fora.
     const responded = list.filter(c => c.status && c.status !== 'open').length;
     const pct = total ? Math.round(responded/total*100) : 0;
-    // NPS clássico (-100 a +100) a partir dos votos individuais 0-10.
+    const avgRating = total ? (list.reduce((s,c) => s+(c.rating||0),0)/total).toFixed(1) : '—';
+    // NPS
     const npsScores = (npsRatings || []).map(n => n.score);
-    const nps = calculateClassicNps(npsScores);
+    const npsAvg = npsScores.length ? (npsScores.reduce((a,b)=>a+b,0)/npsScores.length) : null;
+    const npsColor = npsAvg===null ? 'var(--muted)' : npsAvg>=8.1?'#16a34a':npsAvg>=6.1?'#2563eb':npsAvg>=4.1?'#d97706':npsAvg>=2.1?'#ea580c':'#dc2626';
+    const npsBg    = npsAvg===null ? 'var(--bg2)'    : npsAvg>=8.1?'#f0fdf4':npsAvg>=6.1?'#eff6ff':npsAvg>=4.1?'#fffbeb':npsAvg>=2.1?'#fff7ed':'#fef2f2';
+    const npsLabel = npsAvg===null ? 'Sem avaliações' : npsAvg>=8.1?'Ótimo':npsAvg>=6.1?'Bom':npsAvg>=4.1?'Regular':npsAvg>=2.1?'Ruim':'Péssimo';
     const tipo = company?.type || 'outro';
     const isOwned = !!company?.owner_id;
     const isOwner = currentUser && company?.owner_id === currentUser.id;
@@ -6754,9 +6641,9 @@ async function openCompanyProfile(companyName) {
           <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:20px">
             <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
               <span style="font-size:13px;color:var(--muted);font-weight:600">Nota NPS</span>
-              <span style="font-size:12px;color:var(--muted)${npsScores.length===0?';font-style:italic':''}">${npsScores.length===0?'Seja o 1º a avaliar →':(npsScores.length===1?'1 avaliação':npsScores.length+' avaliações')}</span>
+              <span style="font-size:12px;color:var(--muted)${npsAvg===null?';font-style:italic':''}">${npsAvg===null?'Seja o 1º a avaliar →':(npsScores.length===1?'1 avaliação':npsScores.length+' avaliações')}</span>
             </div>
-            ${renderNpsPill(nps, { variant: 'full' })}
+            ${renderNpsBar(npsAvg, true)}
             <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:14px;display:flex;flex-direction:column;gap:8px">
               <div style="display:flex;justify-content:space-between;align-items:center">
                 <span style="font-size:13px;color:var(--muted);font-weight:600">Reclamações</span>
