@@ -6731,12 +6731,14 @@ async function openCompanyProfile(companyName) {
         <!-- Coluna direita: bloco unificado NPS + métricas -->
         <div style="display:flex;flex-direction:column;gap:16px">
           <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:20px">
-            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
+            <div style="margin-bottom:10px">
               <span style="font-size:13px;color:var(--muted);font-weight:600">Recomendação</span>
-              <span style="font-size:12px;color:var(--muted)${npsAvg===null?';font-style:italic':''}">${npsAvg===null?'Seja o 1º a avaliar →':(npsScores.length===1?'1 avaliação':npsScores.length+' avaliações')}</span>
             </div>
             <div style="max-width:180px;width:100%;margin:0 auto">
               ${renderNpsBar(npsAvg, true)}
+            </div>
+            <div style="text-align:center;margin-top:4px;font-size:11px;color:var(--text2);font-weight:600${npsAvg===null?';font-style:italic;color:var(--muted)':''}">
+              ${npsAvg===null?'Seja o 1º a avaliar →':(npsScores.length===1?'1 avaliação':npsScores.length+' avaliações')}
             </div>
             <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:14px;display:flex;flex-direction:column;gap:8px">
               <div style="display:flex;justify-content:space-between;align-items:center">
