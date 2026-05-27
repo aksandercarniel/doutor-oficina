@@ -6494,7 +6494,7 @@ async function openComplaintDetail(complaintId) {
           <div class="split-card">
             <h3 style="font-family:var(--font);font-weight:800;font-size:16px;color:var(--navy);margin:0 0 16px">💬 Acompanhamento</h3>
             ${messages.map(m => {
-              const isFromAuthor = m.sender_role === 'client';
+              const isFromAuthor = m.sender_role === 'client' || m.author_type === 'client';
               return `<div style="margin-bottom:12px;padding:16px;border-radius:12px;background:${isFromAuthor ? 'var(--blue-light)' : 'var(--green-light)'};border:1px solid ${isFromAuthor ? '#bfdbfe' : '#a7f3d0'}">
                 <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px">${isFromAuthor ? '👤 Consumidor' : '🏢 Empresa'} · ${new Date(m.created_at).toLocaleDateString('pt-BR')}</div>
                 <div style="font-size:14px;color:var(--text2);line-height:1.6">${m.message}</div>
