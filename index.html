@@ -6452,7 +6452,7 @@ async function openComplaintDetail(complaintId) {
               // resolved → verde claro, unresolved → vermelho claro, demais → azul saturado
               let companyBg, companyBorder;
               if (st === 'resolved')        { companyBg = 'var(--green-light)'; companyBorder = '#a7f3d0'; }
-              else if (st === 'unresolved') { companyBg = '#fef2f2';             companyBorder = '#fecaca'; }
+              else if (st === 'unresolved') { companyBg = 'var(--red-light)';   companyBorder = 'var(--red-light2)'; }
               else                          { companyBg = '#dbeafe';             companyBorder = '#93c5fd'; }
               const bg     = isFromAuthor ? 'var(--blue-light)' : companyBg;
               const border = isFromAuthor ? '#bfdbfe'           : companyBorder;
