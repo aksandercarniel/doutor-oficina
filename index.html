@@ -3629,7 +3629,8 @@ async function _loadMarcasData() {
         .select('score')
         .eq('company_name', c.name);
       const valid = (votes || []).map(v => parseFloat(v.score)).filter(v => !isNaN(v));
-      if (valid.length < 5) continue; // Threshold acordado: 5 votos mínimo
+      // TEMP (teste de layout 27/05): threshold removido. RESTAURAR: `if (valid.length < 5) continue;`
+      if (!valid.length) continue;
       const avg = valid.reduce((a, b) => a + b, 0) / valid.length;
       results.push({
         name: c.name,
