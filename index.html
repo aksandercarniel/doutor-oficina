@@ -1177,8 +1177,9 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .nps-track{position:relative;width:140px;height:34px;border-radius:20px;overflow:hidden;background:#f3f4f6}
 /* Dentro da pílula: trilho branco pra contrastar com o fundo pastel */
 .nps-pill .nps-track{background:#fff}
-/* Sem dados: trilho mostra as 3 zonas pasteis (régua educativa do range) */
-.nps-track-empty{background:linear-gradient(90deg,var(--red-light) 0%,var(--red-light) 60%,var(--yellow-light) 60%,var(--yellow-light) 80%,var(--green-light) 80%,var(--green-light) 100%);opacity:.6}
+/* Sem dados: trilho mostra as 3 zonas pasteis (régua educativa do range).
+   Especificidade reforçada (.nps-track) pra vencer a regra .nps-pill .nps-track que pinta branco. */
+.nps-track.nps-track-empty{background:linear-gradient(90deg,var(--red-light) 0%,var(--red-light) 60%,var(--yellow-light) 60%,var(--yellow-light) 80%,var(--green-light) 80%,var(--green-light) 100%);opacity:.6}
 /* Círculo vermelho indicador de zona crítica (NPS 0-20) */
 .nps-critical-dot{position:absolute;left:6px;top:50%;transform:translateY(-50%);width:26px;height:26px;border-radius:50%;background:var(--red);animation:nps-dot-in .35s ease-out both}
 /* Fill colorido por faixa, width = score% (NPS<0 vai com width=100% e cor vermelha) */
