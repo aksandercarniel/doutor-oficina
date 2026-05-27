@@ -6497,12 +6497,13 @@ async function openComplaintDetail(complaintId) {
                 const numColor  = cat === 'promotor' ? '#2a9d6a' : cat === 'neutro' ? '#b45309' : '#A32D2D';
                 const numTxt = s.toFixed(1).replace('.', ',');
                 return `
-                  <span style="display:inline-flex;align-items:stretch;border-radius:999px;background:${pillBg};border:1px solid ${pillBorder}">
-                    <span style="display:inline-block;width:140px;background:#fff;border-radius:999px;align-self:stretch;overflow:hidden">
-                      <span style="display:block;height:100%;width:${pct}%;background:${fillColor};border-radius:999px"></span>
+                  <span style="display:inline-flex;align-items:stretch;border-radius:20px;background:${pillBg};border:1px solid ${pillBorder};height:24px;box-sizing:border-box">
+                    <span style="display:inline-block;width:90px;background:#fff;border-radius:20px;align-self:stretch;overflow:hidden">
+                      <span style="display:block;height:100%;width:${pct}%;background:${fillColor};border-radius:20px"></span>
                     </span>
-                    <span style="display:inline-flex;align-items:center;padding:6px 16px 6px 12px">
-                      <span style="font-family:var(--font);font-weight:900;font-size:20px;color:${numColor};line-height:1">${numTxt}</span>
+                    <span style="display:inline-flex;align-items:center;gap:5px;padding:0 10px 0 8px">
+                      <span style="font-size:10px;font-weight:700;color:${numColor};text-transform:uppercase;letter-spacing:.3px">Nota</span>
+                      <span style="font-family:var(--font);font-weight:900;font-size:13px;color:${numColor};line-height:1">${numTxt}</span>
                     </span>
                   </span>
                 `;
