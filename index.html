@@ -6459,6 +6459,17 @@ async function openComplaintDetail(complaintId) {
         companyNpsAvg = nps.reduce((s,n) => s + n.score, 0) / nps.length;
       }
     }
+    // Busca Doxcore do veículo (reliability_score do summary curado)
+    let doxcore = null;
+    if (complaint.vehicle_brand && complaint.vehicle_model) {
+      const { data: vk } = await sb.from('vehicle_known_issues')
+        .select('reliability_score')
+        .eq('vehicle_brand', complaint.vehicle_brand)
+        .eq('vehicle_model', complaint.vehicle_model)
+        .eq('is_summary', true)
+        .maybeSingle();
+      if (vk?.reliability_score != null) doxcore = parseFloat(vk.reliability_score);
+    }
     const statusMap = { open: statusFace('open',16)+'<span style="vertical-align:middle;margin-left:4px">Não respondida</span>', in_progress: statusFace('in_progress',16)+'<span style="vertical-align:middle;margin-left:4px">Respondida</span>', replied: statusFace('replied',16)+'<span style="vertical-align:middle;margin-left:4px">Em réplica</span>', resolved: statusFace('resolved',16)+'<span style="vertical-align:middle;margin-left:4px">Resolvido</span>', unresolved: statusFace('unresolved',16)+'<span style="vertical-align:middle;margin-left:4px">Não resolvida</span>' };
     const typeEmoji = { carro:'🚗', moto:'🏍️', caminhao:'🚚' };
     const isAuthor = currentUser?.id === complaint.user_id;
@@ -6591,11 +6602,18 @@ async function openComplaintDetail(complaintId) {
           </div>` : ''}
 
           <div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px">
-            <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Detalhes do Veículo</div>
+            <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:none;letter-spacing:.3px;margin-bottom:8px">Detalhes do veículo</div>
             ${(complaint.vehicle_brand || complaint.vehicle_model) ? `<div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy);margin-bottom:14px;line-height:1.3">${[complaint.vehicle_brand, complaint.vehicle_model, complaint.vehicle_year].filter(Boolean).join(' ')}</div>` : ''}
             <div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
               ${complaint.category ? `<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Categoria</span><span style="font-weight:600">${complaint.category}</span></div>` : ''}
               ${complaint.km ? `<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Quilometragem</span><span style="font-weight:600">${Number(complaint.km).toLocaleString('pt-BR')} km</span></div>` : ''}
+              ${doxcore !== null ? (() => {
+                const dxColor = doxcore >= 4 ? '#2a9d6a' : doxcore >= 3 ? '#EF9F27' : '#E24B4A';
+                return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+                  <span style="color:var(--muted)">Doxcore</span>
+                  <span style="font-family:var(--font);font-weight:800;font-size:14px;color:${dxColor}">${doxcore.toFixed(1).replace('.',',')}</span>
+                </div>`;
+              })() : ''}
               ${complaint.rating ? (() => {
                 const r = complaint.rating;
                 const label = r >= 5 ? 'Ótimo' : r >= 4 ? 'Bom' : r >= 3 ? 'Regular' : r >= 2 ? 'Ruim' : 'Péssimo';
