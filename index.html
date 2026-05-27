@@ -6411,6 +6411,7 @@ async function openComplaintDetail(complaintId) {
     const { data: complaint } = await sb.from('complaints').select('*').eq('id', complaintId).single();
     if (!complaint) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Reclamação não encontrada.</div>'; return; }
     const { data: messages } = await sb.from('resolutions').select('*').eq('complaint_id', complaintId).order('created_at', { ascending: true });
+    const { data: npsData } = await sb.from('nps_ratings').select('*').eq('complaint_id', complaintId).maybeSingle();
     const statusMap = { open: statusFace('open',16)+'<span style="vertical-align:middle;margin-left:4px">Não respondida</span>', in_progress: statusFace('in_progress',16)+'<span style="vertical-align:middle;margin-left:4px">Respondida</span>', replied: statusFace('replied',16)+'<span style="vertical-align:middle;margin-left:4px">Em réplica</span>', resolved: statusFace('resolved',16)+'<span style="vertical-align:middle;margin-left:4px">Resolvido</span>', unresolved: statusFace('unresolved',16)+'<span style="vertical-align:middle;margin-left:4px">Não resolvida</span>' };
     const typeEmoji = { carro:'🚗', moto:'🏍️', caminhao:'🚚' };
     const isAuthor = currentUser?.id === complaint.user_id;
@@ -6430,13 +6431,18 @@ async function openComplaintDetail(complaintId) {
         <!-- Coluna principal -->
         <div>
           <div class="split-card">
-            <h2 style="font-family:var(--font);font-weight:900;font-size:26px;color:var(--navy);margin:0 0 10px;line-height:1.2">${complaint.title}</h2>
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
-              <span style="font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;background:${statusBg[st]};color:${statusCol[st]}">${statusMap[st]||'🔴 Não respondida'}</span>
-              ${complaint.category ? `<span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:12px;background:var(--bg2);color:var(--muted)">${complaint.category}</span>` : ''}
-              ${complaint.state ? `<span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:12px;background:var(--bg2);color:var(--muted)">📍 ${complaint.state}</span>` : ''}
-              <span style="font-size:12px;color:var(--muted)">Publicado em ${date}</span>
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px">
+              <h2 style="font-family:var(--font);font-weight:900;font-size:26px;color:var(--navy);margin:0;line-height:1.2;flex:1;min-width:0">${complaint.title}</h2>
+              <span style="font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;background:${statusBg[st]};color:${statusCol[st]};flex-shrink:0;white-space:nowrap">${statusMap[st]||'🔴 Não respondida'}</span>
             </div>
+            <div style="display:flex;align-items:center;gap:16px;color:var(--muted);font-size:13px;margin-bottom:${(st==='resolved'||st==='unresolved') && npsData ? '16' : '24'}px;flex-wrap:wrap">
+              ${complaint.state ? `<span>📍 ${complaint.state}</span>` : ''}
+              <span>📅 ${date}</span>
+            </div>
+            ${(st==='resolved'||st==='unresolved') && npsData ? `
+            <div style="margin-bottom:24px">
+              ${renderNpsCapsule(npsData.score, { compact:true, showNumInside:true })}
+            </div>` : ''}
 
             <!-- Primeira mensagem: a reclamação em si, sem fundo nem rótulo (já está claro pelo header da página) -->
             <div style="margin-bottom:20px;padding:0 4px">
@@ -6501,6 +6507,7 @@ async function openComplaintDetail(complaintId) {
                 </div>
               </div>` : ''}
               ${complaint.km ? `<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Quilometragem</span><span style="font-weight:600">${Number(complaint.km).toLocaleString('pt-BR')} km</span></div>` : ''}
+              ${complaint.category ? `<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Categoria</span><span style="font-weight:600">${complaint.category}</span></div>` : ''}
               ${complaint.rating ? (() => {
                 const r = complaint.rating;
                 const label = r >= 5 ? 'Ótimo' : r >= 4 ? 'Bom' : r >= 3 ? 'Regular' : r >= 2 ? 'Ruim' : 'Péssimo';
