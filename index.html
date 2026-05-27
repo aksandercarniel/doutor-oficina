@@ -1192,6 +1192,22 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .nps-capsule-compact .nps-capsule-track{height:20px}
 @keyframes nps-cap-grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 
+/* ── DOXCORE MINI: variante inline/horizontal pra contextos apertados ── */
+/* Chip Montadora, lista Minhas Empresas. Sem carinha (espaço apertado). */
+.nps-mini{display:inline-flex;align-items:center;gap:5px;padding:2px 7px 2px 3px;border-radius:11px;vertical-align:middle;line-height:1}
+.nps-mini-promotor{background:#EAF3DE}
+.nps-mini-neutro{background:#FAEEDA}
+.nps-mini-detrator{background:#FCEBEB}
+.nps-mini-num{font-family:var(--font);font-weight:800;font-size:11px;line-height:1;padding-left:3px}
+.nps-mini-promotor .nps-mini-num{color:#2a9d6a}
+.nps-mini-neutro .nps-mini-num{color:#b45309}
+.nps-mini-detrator .nps-mini-num{color:#A32D2D}
+.nps-mini-track{position:relative;width:34px;height:7px;border-radius:5px;background:#fff;overflow:hidden;flex-shrink:0}
+.nps-mini-fill{position:absolute;left:0;top:0;height:100%;border-radius:5px;animation:nps-cap-grow .9s cubic-bezier(.34,1.36,.64,1) both .15s;transform-origin:left center}
+.nps-mini-fill-promotor{background:#2a9d6a}
+.nps-mini-fill-neutro{background:#EF9F27}
+.nps-mini-fill-detrator{background:#E24B4A}
+
 /* ── MENU MOBILE ── */
 #mobile-menu{
   position:fixed;top:0;right:0;bottom:0;
@@ -3630,8 +3646,8 @@ async function _loadMarcasData() {
         .select('score')
         .eq('company_name', c.name);
       const valid = (votes || []).map(v => parseFloat(v.score)).filter(v => !isNaN(v));
-      // TEMP (teste de layout 27/05): threshold removido. RESTAURAR: `if (valid.length < 5) continue;`
-      if (!valid.length) continue;
+      // Threshold: só mostra marca com pelo menos 5 votos (evita ranking baseado em amostra pequena)
+      if (valid.length < 5) continue;
       const avg = valid.reduce((a, b) => a + b, 0) / valid.length;
       results.push({
         name: c.name,
@@ -4250,17 +4266,7 @@ async function renderManufacturerChip(brand, containerId, vehicleType, fipeBrand
     const respondedRel = (complaints || []).filter(c => c.status && c.status !== 'open').length;
     const pctResolvidas = totalRel > 0 ? Math.round((respondedRel/totalRel)*100) : null;
 
-    // 5. Classe de cor do NPS (mesma lógica de openCompanyProfile)
-    let npsClass = '';
-    if (npsAvg !== null) {
-      if (npsAvg >= 8.1) npsClass = 'mfr-chip-nps-otimo';
-      else if (npsAvg >= 6.1) npsClass = 'mfr-chip-nps-bom';
-      else if (npsAvg >= 4.1) npsClass = 'mfr-chip-nps-regular';
-      else if (npsAvg >= 2.1) npsClass = 'mfr-chip-nps-ruim';
-      else npsClass = 'mfr-chip-nps-pessimo';
-    }
-
-    // 6. Monta string de stats e CTA conforme estado
+    // 5. Monta string de stats e CTA conforme estado
     const inicial = brand.trim().charAt(0).toUpperCase();
     const isClaimed = !!(company && company.is_claimed);
     const isRegistered = !!company;
@@ -4270,21 +4276,13 @@ async function renderManufacturerChip(brand, containerId, vehicleType, fipeBrand
     const safeCompanyName = (company?.name || brand).replace(/'/g, "\\'");
 
     let statsParts = [];
-    if (npsAvg !== null) statsParts.push('NPS <span class="' + npsClass + '">' + npsAvg.toFixed(1) + '</span>');
+    if (npsAvg !== null) statsParts.push(renderNpsMiniPill(npsAvg));
     if (pctResolvidas !== null) statsParts.push(pctResolvidas + '% respondidas');
     // Quando não há nenhum dado, deixa em branco — não polui o chip com "sem dados"
     const statsStr = statsParts.join(' · ');
 
-    let ctaStr;
-    if (isRegistered) {
-      // Se há stats, separa com bullet; se não, CTA fica no começo
-      const sep = statsStr ? ' · ' : '';
-      ctaStr = sep + '<span style="color:var(--navy)">ver perfil →</span>';
-    } else {
-      // Marca não cadastrada em companies (caso raro: chinesas novas, etc).
-      // Chip fica informativo, sem CTA e sem clique.
-      ctaStr = '';
-    }
+    // CTA "ver perfil" removido (27/05): chip mais limpo, clique no chip todo já abre o perfil
+    const ctaStr = '';
 
     // 7. Tooltip e onclick conforme estado
     const tooltipVerified = isClaimed ? 'Conta verificada — administrada pela ' + brand : '';
@@ -6612,6 +6610,21 @@ function renderNpsBar(score, compact) {
   return renderNpsCapsule(score, { compact: true, showNumInside: hasScore, empty: !hasScore });
 }
 
+// Variante INLINE/HORIZONTAL: nota pequena + trilho fino, tudo em uma linha.
+// Pra contextos apertados onde a pílula vertical não cabe (chip montadora, lista minhas empresas).
+// Sem carinha (espaço apertado). Sem estado vazio (chamadores filtram antes).
+function renderNpsMiniPill(score) {
+  if (score == null || isNaN(score)) return '';
+  const s = Math.max(0, Math.min(10, parseFloat(score)));
+  const cat = _npsCategory(s);
+  const pct = (s / 10) * 100;
+  const numTxt = s.toFixed(1).replace('.', ',');
+  return '<span class="nps-mini nps-mini-' + cat + '">'
+    + '<span class="nps-mini-num">' + numTxt + '</span>'
+    + '<span class="nps-mini-track"><span class="nps-mini-fill nps-mini-fill-' + cat + '" style="width:' + pct + '%"></span></span>'
+    + '</span>';
+}
+
 async function openCompanyProfile(companyName) {
   showPage('company-profile', {name: encodeURIComponent(companyName)});
   const el = document.getElementById('company-profile-content');
@@ -7519,14 +7532,7 @@ async function renderProfile() {
         const npsAvg = stats && stats.npsScores && stats.npsScores.length
           ? (stats.npsScores.reduce((a,b) => a+b, 0) / stats.npsScores.length)
           : null;
-        const npsLabel = npsAvg === null ? null
-          : npsAvg >= 8.1 ? 'Ótimo' : npsAvg >= 6.1 ? 'Bom' : npsAvg >= 4.1 ? 'Regular' : npsAvg >= 2.1 ? 'Ruim' : 'Péssimo';
-        const npsLabelColor = npsAvg === null ? null
-          : npsAvg >= 8.1 ? '#16a34a' : npsAvg >= 6.1 ? '#2563eb' : npsAvg >= 4.1 ? '#d97706' : npsAvg >= 2.1 ? '#ea580c' : '#dc2626';
-        const notaDisplay = npsAvg !== null
-          ? '<span style="font-weight:900;color:' + npsLabelColor + ';font-size:15px;font-family:var(--font)">' + npsAvg.toFixed(1) + '</span>'
-          + '<span style="font-size:11px;font-weight:700;color:' + npsLabelColor + ';background:' + (npsAvg >= 8.1 ? '#f0fdf4' : npsAvg >= 6.1 ? '#eff6ff' : npsAvg >= 4.1 ? '#fffbeb' : npsAvg >= 2.1 ? '#fff7ed' : '#fef2f2') + ';padding:2px 8px;border-radius:20px;margin-left:6px">' + npsLabel + '</span>'
-          : '';
+        const notaDisplay = npsAvg !== null ? renderNpsMiniPill(npsAvg) : '';
         const totalRecl = stats ? stats.total + ' reclamação(ões)' : '';
         const resolved = stats ? stats.resolved + ' respondida(s)' : '';
         const canClick = e.status === 'approved';
