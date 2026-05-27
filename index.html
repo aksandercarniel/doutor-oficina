@@ -1393,7 +1393,6 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
       <h2 style="font-family:var(--font);font-size:26px;font-weight:900;color:var(--navy)">🛡️ Painel Admin</h2>
       <p style="color:var(--muted);font-size:14px;margin-top:4px">Gerencie mediações e empresas</p>
     </div>
-    <button onclick="goBack()" style="background:none;border:1.5px solid var(--border2);border-radius:8px;padding:8px 16px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;color:var(--navy)">← Voltar</button>
   </div>
 
   <!-- Abas principais -->
@@ -1511,7 +1510,6 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
     <div>
       <h2 style="font-family:var(--font);font-size:24px;font-weight:900;color:var(--navy);margin:0">🏢 Painel da Empresa</h2>
     </div>
-    <button onclick="goBack()" style="background:none;border:1.5px solid var(--border2);border-radius:8px;padding:8px 16px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;color:var(--navy)">← Voltar</button>
   </div>
   <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
     <button class="qf-btn qf-btn-status-open" onclick="companyFilterComplaints(this,'open')"><span class="face-slot" data-status="open"></span> <span class="qf-btn-label">Não respondidas</span></button>
@@ -1540,9 +1538,6 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 
 <!-- ══ PÁGINA: TODOS OS VEÍCULOS (com filtros e ordenação) ══ -->
 <div id="page-vehicles" style="display:none;max-width:1280px;margin:0 auto;padding:32px 24px">
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
-    <button onclick="goBack()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body)">← Voltar</button>
-  </div>
   <div style="margin-bottom:24px">
     <h2 style="font-family:var(--font);font-size:26px;font-weight:900;color:var(--navy);margin:0 0 6px">Todos os <span style="color:var(--red)">veículos</span></h2>
     <p id="all-vehicles-subtitle" style="color:var(--muted);font-size:14px;margin:0">Carregando…</p>
@@ -1580,9 +1575,6 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 
 <!-- ══ PÁGINA: TODAS AS RECLAMAÇÕES (paginada, com filtros e ordenação) ══ -->
 <div id="page-complaints" style="display:none;max-width:1100px;margin:0 auto;padding:32px 24px">
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
-    <button onclick="goBack()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body)">← Voltar</button>
-  </div>
   <div style="margin-bottom:24px">
     <h2 style="font-family:var(--font);font-size:26px;font-weight:900;color:var(--navy);margin:0 0 6px">Todas as <span style="color:var(--red)">reclamações</span></h2>
     <p id="all-complaints-subtitle" style="color:var(--muted);font-size:14px;margin:0">Carregando…</p>
@@ -1645,7 +1637,6 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 
 <div id="page-search" style="display:none;max-width:860px;width:100%;margin:0 auto;padding:24px 24px;box-sizing:border-box">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
-    <button onclick="goBack()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body)">← Voltar</button>
     <h2 id="search-results-title" style="font-family:var(--font-body);font-size:14px;font-weight:400;color:var(--muted);margin:0"></h2>
   </div>
   <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:24px">
@@ -2030,7 +2021,6 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 <!-- ══ PAGE PERFIL ══ -->
 <div id="page-profile" style="display:none">
   <div class="profile-page-wrap">
-    <button class="back-btn" onclick="goBack()">← Voltar</button>
     <div class="user-hero">
       <div class="user-big-avatar" id="profile-avatar-big">U</div>
       <div class="user-info">
@@ -2067,7 +2057,6 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 <!-- ══ PAGE COMPARADOR ══ -->
 <div id="page-compare" style="display:none">
   <div class="compare-wrap">
-    <button class="back-btn" onclick="goBack()">← Voltar</button>
     <div class="section-title" style="margin-bottom:24px">Comparar <span class="accent">veículos</span></div>
     <div class="compare-selectors">
       <div class="compare-sel-card">
@@ -3916,7 +3905,6 @@ function renderVehicleProfileSkeleton(v) {
   _currentVehicle = v; // rastreia veículo atual para o botão Reclamar
   const el = document.getElementById('vehicle-profile-content');
   el.innerHTML = `
-    <button class="back-btn" onclick="goBack()">← Voltar</button>
     <div class="profile-hero">
       <div class="profile-left">
         <div class="mfr-chip-wrap" id="mfr-chip-skeleton-${(v.brand||'').replace(/[^a-zA-Z0-9]/g,'_')}"><div class="mfr-chip-skeleton"></div></div>
@@ -4619,7 +4607,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
       + '</div>';
 
   // -- Monta HTML final
-  el.innerHTML = '<button class="back-btn" onclick="goBack()">← Voltar</button>'
+  el.innerHTML = ''
 
     // Hero
     + '<div class="profile-hero">'
@@ -6473,7 +6461,7 @@ async function openComplaintDetail(complaintId) {
     const isResolved = complaint.status === 'resolved';
 
     let html = `
-      <button onclick="goBack()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body);margin-bottom:20px;display:flex;align-items:center;gap:6px">← Voltar</button>
+      
 
       <div class="split-2col">
 
@@ -6742,7 +6730,7 @@ async function openCompanyProfile(companyName) {
     }
 
     let html = `
-      <button onclick="goBack()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body);margin-bottom:20px;display:flex;align-items:center;gap:6px">← Voltar</button>
+      
 
       <div class="company-profile-grid">
 
@@ -7038,7 +7026,7 @@ async function renderResolutionPage() {
       </div>`).join('');
 
   let html = `
-    <button onclick="goBack()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body);margin-bottom:24px;display:flex;align-items:center;gap:6px">← Voltar</button>
+    
 
     <div class="split-2col">
 
@@ -8411,7 +8399,7 @@ function renderMediationLawyerList(complaintId, complaint, lawyers) {
       }).join('');
 
   el.innerHTML = `
-    <button onclick="goBack()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body);margin-bottom:24px;display:flex;align-items:center;gap:6px">← Voltar</button>
+    
 
     <!-- Cabeçalho -->
     <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:24px">
@@ -8616,7 +8604,7 @@ async function openMediationChannel(mediationId) {
     }).join('') || '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Nenhuma mensagem ainda.</div>';
 
     el.innerHTML = `
-      <button onclick="goBack()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0;font-family:var(--font-body);margin-bottom:24px;display:flex;align-items:center;gap:6px">← Voltar</button>
+      
 
       <div class="split-2col">
 
