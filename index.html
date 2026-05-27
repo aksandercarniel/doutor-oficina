@@ -6512,6 +6512,15 @@ async function openComplaintDetail(complaintId) {
           <div style="margin-top:14px">
             ${(() => {
               let firstCompanySeen = false;
+              // Cor do balão da empresa depende do status final da reclamação:
+              // resolved = verde claro (sucesso final), unresolved = vermelho claro (falha final),
+              // qualquer outro (open/in_progress/replied) = azul claro (em andamento).
+              const companyBg = st === 'resolved' ? 'var(--green-light)'
+                              : st === 'unresolved' ? 'var(--red-light)'
+                              : 'var(--blue-light)';
+              const companyBorder = st === 'resolved' ? '#a7f3d0'
+                                  : st === 'unresolved' ? 'var(--red-light2)'
+                                  : '#bfdbfe';
               return messages.map(m => {
                 const isFromAuthor = m.sender_role === 'client' || m.author_type === 'client';
                 let label;
@@ -6521,7 +6530,7 @@ async function openComplaintDetail(complaintId) {
                   if (!firstCompanySeen) { label = 'Resposta da empresa'; firstCompanySeen = true; }
                   else { label = 'Empresa'; }
                 }
-                return `<div style="margin-bottom:12px;padding:16px;border-radius:12px;background:${isFromAuthor ? '#fff' : 'var(--green-light)'};${isFromAuthor ? '' : 'border:1px solid #a7f3d0;'}">
+                return `<div style="margin-bottom:12px;padding:16px;border-radius:12px;background:${isFromAuthor ? '#fff' : companyBg};${isFromAuthor ? '' : 'border:1px solid '+companyBorder+';'}">
                   <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:6px">${label} · ${new Date(m.created_at).toLocaleDateString('pt-BR')}</div>
                   <div style="font-size:15px;color:var(--text2);line-height:1.6">${m.message}</div>
                 </div>`;
