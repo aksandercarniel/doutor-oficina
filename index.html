@@ -6482,7 +6482,7 @@ async function openComplaintDetail(complaintId) {
           <div class="split-card">
             <h2 style="font-family:var(--font);font-weight:900;font-size:26px;color:var(--navy);margin:0 0 10px;line-height:1.2">${complaint.title}</h2>
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
-              ${complaint.state ? `<span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:12px;background:var(--bg2);color:var(--muted)">📍 ${complaint.state}</span>` : ''}
+              ${complaint.state ? `<span style="font-size:13px;color:var(--muted)">📍 ${complaint.state}</span>` : ''}
               <span style="font-size:13px;color:var(--muted)">📅 ${date}</span>
             </div>
             <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
@@ -6521,7 +6521,7 @@ async function openComplaintDetail(complaintId) {
                   if (!firstCompanySeen) { label = 'Resposta da empresa'; firstCompanySeen = true; }
                   else { label = 'Empresa'; }
                 }
-                return `<div style="margin-bottom:12px;padding:16px;border-radius:12px;background:${isFromAuthor ? 'var(--blue-light)' : 'var(--green-light)'};border:1px solid ${isFromAuthor ? '#bfdbfe' : '#a7f3d0'}">
+                return `<div style="margin-bottom:12px;padding:16px;border-radius:12px;background:${isFromAuthor ? '#fff' : 'var(--green-light)'};${isFromAuthor ? '' : 'border:1px solid #a7f3d0;'}">
                   <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:6px">${label} · ${new Date(m.created_at).toLocaleDateString('pt-BR')}</div>
                   <div style="font-size:15px;color:var(--text2);line-height:1.6">${m.message}</div>
                 </div>`;
