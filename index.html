@@ -1168,7 +1168,6 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .nps-capsule-neutro{background:#FAEEDA}
 .nps-capsule-detrator{background:#FCEBEB}
 .nps-capsule-empty{background:#f3f4f6}
-.nps-capsule-label{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;flex-shrink:0}
 .nps-capsule-track{position:relative;flex:1;min-width:0;height:34px;border-radius:20px;background:#fff;overflow:hidden}
 .nps-capsule-fill{position:absolute;left:0;top:0;height:100%;border-radius:20px;animation:nps-cap-grow .9s cubic-bezier(.34,1.36,.64,1) both .15s;transform-origin:left center}
 .nps-capsule-fill-promotor{background:#639922}
@@ -6564,7 +6563,6 @@ function renderNpsCapsule(score, opts) {
     ? '<div class="nps-capsule-fill nps-capsule-fill-' + cat + '" style="width:' + pct + '%"></div>'
     : '<div class="nps-capsule-edu"><div class="nps-capsule-edu-r"></div><div class="nps-capsule-edu-y"></div><div class="nps-capsule-edu-g"></div></div>';
   return '<div class="' + pillCls + '">'
-    + '<span class="nps-capsule-label">Doxcore</span>'
     + '<div class="nps-capsule-track">' + trackInner + '</div>'
     + '<span class="' + numCls + '">' + numTxt + '</span>'
     + '</div>';
@@ -6654,7 +6652,7 @@ async function openCompanyProfile(companyName) {
         <div style="display:flex;flex-direction:column;gap:16px">
           <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:20px">
             <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
-              <span style="font-size:13px;color:var(--muted);font-weight:600">Nota NPS</span>
+              <span style="font-size:13px;color:var(--muted);font-weight:600">Doxcore</span>
               <span style="font-size:12px;color:var(--muted)${npsAvg===null?';font-style:italic':''}">${npsAvg===null?'Seja o 1º a avaliar →':(npsScores.length===1?'1 avaliação':npsScores.length+' avaliações')}</span>
             </div>
             ${renderNpsBar(npsAvg, true)}
