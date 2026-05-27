@@ -6449,6 +6449,16 @@ async function openComplaintDetail(complaintId) {
     const { data: npsData } = await sb.from('nps_ratings').select('score').eq('complaint_id', complaintId).maybeSingle();
     const npsScore = npsData?.score;
     const hasNps = npsScore != null && !isNaN(npsScore);
+    // Busca dados da empresa (chip estilo Montadora: avatar, selo verificado, NPS médio)
+    let company = null, companyNpsAvg = null;
+    if (complaint.company_name) {
+      const { data: c } = await sb.from('companies').select('*').eq('name', complaint.company_name).maybeSingle();
+      company = c;
+      const { data: nps } = await sb.from('nps_ratings').select('score').eq('company_name', complaint.company_name);
+      if (nps && nps.length > 0) {
+        companyNpsAvg = nps.reduce((s,n) => s + n.score, 0) / nps.length;
+      }
+    }
     const statusMap = { open: statusFace('open',16)+'<span style="vertical-align:middle;margin-left:4px">Não respondida</span>', in_progress: statusFace('in_progress',16)+'<span style="vertical-align:middle;margin-left:4px">Respondida</span>', replied: statusFace('replied',16)+'<span style="vertical-align:middle;margin-left:4px">Em réplica</span>', resolved: statusFace('resolved',16)+'<span style="vertical-align:middle;margin-left:4px">Resolvido</span>', unresolved: statusFace('unresolved',16)+'<span style="vertical-align:middle;margin-left:4px">Não resolvida</span>' };
     const typeEmoji = { carro:'🚗', moto:'🏍️', caminhao:'🚚' };
     const isAuthor = currentUser?.id === complaint.user_id;
@@ -6529,12 +6539,42 @@ async function openComplaintDetail(complaintId) {
 
         <!-- Coluna lateral -->
         <div style="display:flex;flex-direction:column;gap:14px">
-          ${complaint.company_name ? `
-          <div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px">
-            <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Empresa reclamada</div>
-            <div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy);margin-bottom:10px">${complaint.company_name}</div>
-            <button onclick="openCompanyProfile('${complaint.company_name}')" style="width:100%;background:var(--bg);border:1.5px solid var(--border2);color:var(--navy);border-radius:8px;padding:8px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:12px;transition:border-color .2s" onmouseover="this.style.borderColor='var(--navy)'" onmouseout="this.style.borderColor='var(--border2)'">Ver perfil da empresa →</button>
-          </div>` : ''}
+          ${complaint.company_name ? (() => {
+            const firstLetter = (complaint.company_name || '?').trim().charAt(0).toUpperCase();
+            const isClaimed = !!company?.is_claimed;
+            const typeLabel2 = { montadora:'Montadora', oficina:'Oficina', revenda:'Revenda', outro:'Empresa' };
+            const compType = typeLabel2[company?.type] || 'Empresa';
+            return `
+            <div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:18px">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:${companyNpsAvg !== null ? '14px' : '12px'}">
+                <div style="position:relative;width:38px;height:38px;flex-shrink:0">
+                  <div style="width:38px;height:38px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;font-family:var(--font)">${firstLetter}</div>
+                  ${isClaimed ? `<div title="Conta verificada" style="position:absolute;bottom:-2px;right:-2px;width:16px;height:16px;background:#2563eb;color:#fff;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900">✓</div>` : ''}
+                </div>
+                <div style="flex:1;min-width:0">
+                  <div style="font-family:var(--font);font-weight:900;font-size:14px;color:var(--navy);line-height:1.2;margin-bottom:2px;word-break:break-word">${complaint.company_name}</div>
+                  <div style="font-size:11px;color:var(--muted)">${compType}</div>
+                </div>
+              </div>
+              ${companyNpsAvg !== null ? (() => {
+                const s = Math.max(0, Math.min(10, companyNpsAvg));
+                const cat = _npsCategory(s);
+                const fillColor = cat === 'promotor' ? '#2a9d6a' : cat === 'neutro' ? '#EF9F27' : '#E24B4A';
+                const trackBg = cat === 'promotor' ? '#EAF3DE' : cat === 'neutro' ? '#FAEEDA' : '#FCEBEB';
+                const numColor = cat === 'promotor' ? '#2a9d6a' : cat === 'neutro' ? '#b45309' : '#A32D2D';
+                const pct = (s / 10) * 100;
+                const numTxt = s.toFixed(1).replace('.', ',');
+                return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--border)">
+                  <span style="font-family:var(--font);font-weight:900;font-size:18px;color:${numColor};line-height:1;min-width:34px">${numTxt}</span>
+                  <span style="display:inline-block;flex:1;height:8px;border-radius:999px;background:${trackBg};overflow:hidden">
+                    <span style="display:block;height:100%;width:${pct}%;background:${fillColor};border-radius:999px"></span>
+                  </span>
+                  <span style="font-size:11px;color:var(--muted);font-weight:600">NPS</span>
+                </div>`;
+              })() : ''}
+              <a onclick="openCompanyProfile('${complaint.company_name}')" style="display:block;text-align:center;font-size:13px;color:var(--navy);font-weight:700;margin-top:6px;text-decoration:none;cursor:pointer">Ver perfil da empresa →</a>
+            </div>`;
+          })() : ''}
 
           ${isAuthor ? `
           <div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:10px">
@@ -6553,21 +6593,26 @@ async function openComplaintDetail(complaintId) {
           <div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px">
             <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Detalhes</div>
             <div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
-              ${(complaint.vehicle_brand || complaint.vehicle_model) ? `<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--muted)">Veículo</span><span style="font-weight:600;text-align:right">${typeEmoji[complaint.vehicle_type]||'🚗'} ${[complaint.vehicle_brand, complaint.vehicle_model, complaint.vehicle_year].filter(Boolean).join(' ')}</span></div>` : ''}
+              ${(complaint.vehicle_brand || complaint.vehicle_model) ? `<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--muted)">Veículo</span><span style="font-weight:600;text-align:right">${[complaint.vehicle_brand, complaint.vehicle_model, complaint.vehicle_year].filter(Boolean).join(' ')}</span></div>` : ''}
               ${complaint.category ? `<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Categoria</span><span style="font-weight:600">${complaint.category}</span></div>` : ''}
               ${complaint.km ? `<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Quilometragem</span><span style="font-weight:600">${Number(complaint.km).toLocaleString('pt-BR')} km</span></div>` : ''}
               ${complaint.rating ? (() => {
                 const r = complaint.rating;
                 const label = r >= 5 ? 'Ótimo' : r >= 4 ? 'Bom' : r >= 3 ? 'Regular' : r >= 2 ? 'Ruim' : 'Péssimo';
-                const color = r >= 4 ? '#16a34a' : r >= 3 ? '#d97706' : '#dc2626';
-                const bg    = r >= 4 ? '#f0fdf4' : r >= 3 ? '#fffbeb' : '#fef2f2';
+                const color = r >= 4 ? '#2a9d6a' : r >= 3 ? '#EF9F27' : '#E24B4A';
+                let mouth;
+                if (r === 1)      mouth = '<path d="M 13 27 Q 20 20 27 27" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
+                else if (r === 2) mouth = '<path d="M 13 26 Q 20 23 27 26" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
+                else if (r === 3) mouth = '<line x1="13" y1="25" x2="27" y2="25" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>';
+                else if (r === 4) mouth = '<path d="M 13 24 Q 20 27 27 24" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
+                else              mouth = '<path d="M 13 23 Q 20 29 27 23" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
+                const faceSvgColored = `<svg width="22" height="22" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="18" fill="${color}"/><circle cx="14" cy="16" r="1.8" fill="#fff"/><circle cx="26" cy="16" r="1.8" fill="#fff"/>${mouth}</svg>`;
                 return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
                   <span style="color:var(--muted)">Nota do cliente</span>
-                  <div style="display:flex;align-items:center;gap:6px">
-                    <span style="font-size:14px;color:#f59e0b">${'★'.repeat(r)}${'☆'.repeat(5-r)}</span>
-                    <span style="font-family:var(--font);font-weight:800;font-size:14px;color:${color}">${r}/5</span>
-                    <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:12px;background:${bg};color:${color}">${label}</span>
-                  </div>
+                  <span style="display:inline-flex;align-items:center;gap:8px">
+                    ${faceSvgColored}
+                    <span style="font-family:var(--font);font-weight:700;font-size:13px;color:${color}">${label}</span>
+                  </span>
                 </div>`;
               })() : ''}
               <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Publicado em</span><span style="font-weight:600">${date}</span></div>
