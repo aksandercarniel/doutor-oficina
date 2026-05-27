@@ -6490,7 +6490,7 @@ async function openComplaintDetail(complaintId) {
                 <span style="display:inline-flex;align-items:center;gap:10px;padding:5px 12px;border-radius:999px;background:${statusBg[st]};border:1px solid ${statusCol[st]}33">
                   <span style="font-size:12px;font-weight:700;color:${statusCol[st]};display:inline-flex;align-items:center;gap:4px">${statusMap[st]}</span>
                   <span style="width:1px;height:16px;background:${statusCol[st]}40"></span>
-                  <span style="display:inline-flex;align-items:center">${renderNpsBar(npsScore, true)}</span>
+                  <span style="display:inline-flex;align-items:center">${renderNpsMiniPill(npsScore)}</span>
                 </span>
               ` : `
                 <span style="font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;background:${statusBg[st]};color:${statusCol[st]}">${statusMap[st]||'🔴 Não respondida'}</span>
