@@ -1161,19 +1161,31 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .nps-btn{width:40px;height:40px;border-radius:8px;border:1.5px solid var(--border2);background:var(--white);cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px;color:var(--text);transition:all .2s}
 .nps-btn:hover{background:var(--bg2)}
 
-/* ── NPS CAPSULE: barra preenchida com nota opcional dentro ── */
-/* Versão grande (perfil empresa): 60% de largura, altura proporcional (aspect-ratio 20:1) */
-.nps-capsule{position:relative;aspect-ratio:20/1;border-radius:6px;background:#f3f4f6;overflow:hidden;width:60%;margin:0 auto}
-.nps-capsule-fill{position:absolute;left:0;top:0;height:100%;border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:16px;box-sizing:border-box;animation:nps-cap-grow .9s cubic-bezier(.34,1.36,.64,1) both .15s;transform-origin:left center}
-.nps-capsule-fill-promotor{background:#16a34a}
-.nps-capsule-fill-neutro{background:#d97706}
-.nps-capsule-fill-detrator{background:#dc2626}
-.nps-capsule-num{font-size:26px;font-weight:900;color:#fff;font-family:var(--font);line-height:1}
-.nps-capsule-empty{opacity:.45}
-/* Versão compacta (cards na home): largura cheia, altura fixa, sem aspect-ratio */
-.nps-capsule-compact{aspect-ratio:auto;height:42px;border-radius:9px;width:100%}
-.nps-capsule-compact .nps-capsule-fill{border-radius:9px;padding-right:12px}
-.nps-capsule-compact .nps-capsule-num{font-size:20px}
+/* ── DOXCORE: pílula pastel + label + trilho + número ao lado ── */
+/* Variante full (única usada hoje): pílula pastel envolvendo label + trilho branco + número */
+.nps-capsule{display:inline-flex;align-items:center;gap:10px;padding:4px 14px;border-radius:20px;background:#FCEBEB;box-sizing:border-box}
+.nps-capsule-promotor{background:#EAF3DE}
+.nps-capsule-neutro{background:#FAEEDA}
+.nps-capsule-detrator{background:#FCEBEB}
+.nps-capsule-empty{background:#f3f4f6}
+.nps-capsule-label{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;flex-shrink:0}
+.nps-capsule-track{position:relative;flex:1;min-width:0;height:34px;border-radius:20px;background:#fff;overflow:hidden}
+.nps-capsule-fill{position:absolute;left:0;top:0;height:100%;border-radius:20px;animation:nps-cap-grow .9s cubic-bezier(.34,1.36,.64,1) both .15s;transform-origin:left center}
+.nps-capsule-fill-promotor{background:#639922}
+.nps-capsule-fill-neutro{background:#EF9F27}
+.nps-capsule-fill-detrator{background:#E24B4A}
+.nps-capsule-edu{position:absolute;inset:0;display:flex;border-radius:20px;overflow:hidden}
+.nps-capsule-edu-r{flex:70;background:#FCEBEB}
+.nps-capsule-edu-y{flex:20;background:#FAEEDA}
+.nps-capsule-edu-g{flex:10;background:#EAF3DE}
+.nps-capsule-num{font-size:15px;font-weight:700;line-height:1;font-family:var(--font);flex-shrink:0}
+.nps-capsule-num-promotor{color:#00875e}
+.nps-capsule-num-neutro{color:#b45309}
+.nps-capsule-num-detrator{color:#A32D2D}
+.nps-capsule-num-empty{color:var(--muted)}
+/* Versão compacta (cards na home): mesma anatomia, leve ajuste de proporção */
+.nps-capsule-compact{width:100%}
+.nps-capsule-compact .nps-capsule-track{height:30px}
 @keyframes nps-cap-grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 
 /* ── MENU MOBILE ── */
@@ -6535,25 +6547,27 @@ function _npsCategory(s) {
   return 'detrator';
 }
 
-// Renderiza a barra-cápsula: trilho cinza + preenchimento sólido (% da nota).
-// opts.compact: true → versão menor (cards); false → versão grande (perfil).
-// opts.showNumInside: true → mostra a nota dentro do preenchimento (compacto, sem número fora).
-// opts.empty: true → trilho desbotado, sem preenchimento (estado sem avaliações).
+// Renderiza a pílula Doxcore: label "Doxcore" + trilho + barra colorida + número.
+// opts.compact: true → versão menor (cards na home); false → versão grande (perfil empresa).
+// opts.showNumInside: parâmetro legado, ignorado (número agora sempre fica ao lado, não dentro).
+// opts.empty: true → trilho com régua educativa (3 zonas pasteis), número "—".
 function renderNpsCapsule(score, opts) {
   opts = opts || {};
   const hasScore = !opts.empty && score != null && !isNaN(score);
   const s = hasScore ? Math.max(0, Math.min(10, parseFloat(score))) : 0;
-  const cat = hasScore ? _npsCategory(s) : '';
+  const cat = hasScore ? _npsCategory(s) : 'empty';
   const pct = hasScore ? (s / 10) * 100 : 0;
-  const cls = 'nps-capsule' + (opts.compact ? ' nps-capsule-compact' : '') + (hasScore ? '' : ' nps-capsule-empty');
-  let inner = '';
-  if (hasScore) {
-    const numHtml = opts.showNumInside
-      ? '<span class="nps-capsule-num">' + s.toFixed(1) + '</span>'
-      : '';
-    inner = '<div class="nps-capsule-fill nps-capsule-fill-' + cat + '" style="width:' + pct + '%">' + numHtml + '</div>';
-  }
-  return '<div class="' + cls + '">' + inner + '</div>';
+  const pillCls = 'nps-capsule nps-capsule-' + cat + (opts.compact ? ' nps-capsule-compact' : '');
+  const numCls = 'nps-capsule-num nps-capsule-num-' + cat;
+  const numTxt = hasScore ? s.toFixed(1).replace('.', ',') : '—';
+  const trackInner = hasScore
+    ? '<div class="nps-capsule-fill nps-capsule-fill-' + cat + '" style="width:' + pct + '%"></div>'
+    : '<div class="nps-capsule-edu"><div class="nps-capsule-edu-r"></div><div class="nps-capsule-edu-y"></div><div class="nps-capsule-edu-g"></div></div>';
+  return '<div class="' + pillCls + '">'
+    + '<span class="nps-capsule-label">Doxcore</span>'
+    + '<div class="nps-capsule-track">' + trackInner + '</div>'
+    + '<span class="' + numCls + '">' + numTxt + '</span>'
+    + '</div>';
 }
 
 // Versão compacta: usada nos cards de marca da home e no bloco unificado do perfil de empresa.
