@@ -4661,14 +4661,11 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + '<div class="profile-rating">'
     + '<span class="doxcore-badge">' + (function(){
         // Distingue a origem da nota exibida (mesma lógica do avgRating):
-        //   - scoreData.score != null  → dado per-FIPE  → "Doxcore desta versão"
-        //   - senão, summary curado    → fallback modelo → "Doxcore do {Modelo} geral"
-        //   - nenhum dos dois          → sem análise     → "Doxcore"
+        //   - scoreData.score != null  → dado per-FIPE      → "Doxcore desta versão"
+        //   - senão, summary curado    → fallback modelo     → "Doxcore de todas as versões"
+        //   - nenhum dos dois          → sem análise         → "Doxcore"
         if (scoreData && scoreData.score != null) return 'Doxcore desta versão';
-        if (summary && summary.reliability_score != null) {
-          var m = (summary.vehicle_model || (v.name || '').split(' ')[0] || '').trim();
-          return m ? ('Doxcore do ' + m + ' geral') : 'Doxcore';
-        }
+        if (summary && summary.reliability_score != null) return 'Doxcore de todas as versões';
         return 'Doxcore';
       })() + '</span>'
     + (displayRating ? ('<span class="doxcore-velocimetro-wrap">' + renderDoxcoreVelocimetro(displayRating, 'large') + '</span>') : '')
@@ -4724,7 +4721,10 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + '<div class="pc-title"><span class="pc-emoji">👨‍🔧</span> Raio-X</div>'
 
     // ── Sub-bloco 1: Curadoria ──
-    + '<div class="raiox-subtitle">Curadoria</div>'
+    // Curadoria é SEMPRE de nível modelo (loadKnownIssues busca por marca+modelo,
+    // não por fipe_code). Granularidade por versão mora na comunidade, abaixo.
+    // Por isso o rótulo é fixo "de todas as versões" — nunca "desta versão".
+    + '<div class="raiox-subtitle">Curadoria de todas as versões</div>'
     + (summary
       ? '<div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px;padding:12px 14px;background:' + summaryColors.bg + ';border-radius:10px;border:1px solid ' + summaryColors.border + '">' + summary.issue_description
         + (summary.source ? '<div style="margin-top:8px;font-size:10px;font-weight:600;color:var(--muted);text-align:right">Análise: ' + summary.source + '</div>' : '')
