@@ -670,7 +670,7 @@ header{
 .rank-brand{color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase}
 .rank-score{font-family:var(--font);font-weight:900;font-size:17px;color:var(--green);min-width:34px;text-align:right}
 
-/* ── PERFIL DE EMPRESA: grid de 2 colunas (identidade + NPS/reclamações) ── */
+/* ── PERFIL DE EMPRESA: grid de 2 colunas (identidade + Doxcare/reclamações) ── */
 .company-profile-grid{
   display:grid;
   grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);
@@ -1075,11 +1075,6 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .mfr-chip-text{display:flex;flex-direction:column;line-height:1.15}
 .mfr-chip-name{font-family:var(--font);font-size:11px;font-weight:700;color:var(--navy);letter-spacing:.3px;text-transform:uppercase}
 .mfr-chip-stats{font-size:10px;color:var(--muted)}
-.mfr-chip-nps-otimo{color:#16a34a;font-weight:700}
-.mfr-chip-nps-bom{color:#2563eb;font-weight:700}
-.mfr-chip-nps-regular{color:#d97706;font-weight:700}
-.mfr-chip-nps-ruim{color:#ea580c;font-weight:700}
-.mfr-chip-nps-pessimo{color:#dc2626;font-weight:700}
 .mfr-chip-skeleton{background:linear-gradient(90deg,#f3f4f6 0%,#e5e7eb 50%,#f3f4f6 100%);background-size:200% 100%;animation:mfr-shimmer 1.2s infinite;border-radius:8px;height:32px;width:180px;display:inline-block}
 @keyframes mfr-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 .profile-name{font-family:var(--font);font-weight:900;font-size:38px;line-height:1;color:var(--navy);margin-bottom:5px;display:flex;align-items:center;gap:10px}
@@ -1167,59 +1162,59 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .dist-count{font-size:12px;color:var(--muted);min-width:30px;font-weight:600}
 
 .fipe-row{display:flex;flex-direction:column;gap:8px}
-/* ── NPS ── */
-.nps-btn{width:40px;height:40px;border-radius:8px;border:1.5px solid var(--border2);background:var(--white);cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px;color:var(--text);transition:all .2s}
-.nps-btn:hover{background:var(--bg2)}
+/* ── Doxcare ── */
+.doxcare-btn{width:40px;height:40px;border-radius:8px;border:1.5px solid var(--border2);background:var(--white);cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px;color:var(--text);transition:all .2s}
+.doxcare-btn:hover{background:var(--bg2)}
 
-/* ── DOXCORE: pílula pastel + trilho + número ao lado ── */
+/* ── Doxcore: pílula pastel + trilho + número ao lado ── */
 /* Dimensões alinhadas ao velocímetro Doxcore medium (28px) — refinamento 27/05 tarde2 */
-.nps-capsule-wrap{display:flex;flex-direction:column;gap:6px;width:100%;align-items:center;justify-content:center}
-.nps-capsule-bignum{font-family:var(--font);font-weight:600;font-size:48px;line-height:1;text-align:center}
-.nps-capsule-bignum-promotor{color:#15643F}
-.nps-capsule-bignum-neutro{color:#b45309}
-.nps-capsule-bignum-detrator{color:#A32D2D}
-.nps-capsule-bignum-empty{color:var(--muted)}
-.nps-capsule{display:inline-flex;align-items:center;padding:3px;border-radius:16px;background:#FCEBEB;box-sizing:border-box;width:100%}
-.nps-capsule-promotor{background:#EAF3DE}
-.nps-capsule-neutro{background:#FAEEDA}
-.nps-capsule-detrator{background:#FCEBEB}
-.nps-capsule-empty{background:#f3f4f6}
+.doxcare-capsule-wrap{display:flex;flex-direction:column;gap:6px;width:100%;align-items:center;justify-content:center}
+.doxcare-capsule-bignum{font-family:var(--font);font-weight:600;font-size:48px;line-height:1;text-align:center}
+.doxcare-capsule-bignum-promotor{color:#15643F}
+.doxcare-capsule-bignum-neutro{color:#b45309}
+.doxcare-capsule-bignum-detrator{color:#A32D2D}
+.doxcare-capsule-bignum-empty{color:var(--muted)}
+.doxcare-capsule{display:inline-flex;align-items:center;padding:3px;border-radius:16px;background:#FCEBEB;box-sizing:border-box;width:100%}
+.doxcare-capsule-promotor{background:#EAF3DE}
+.doxcare-capsule-neutro{background:#FAEEDA}
+.doxcare-capsule-detrator{background:#FCEBEB}
+.doxcare-capsule-empty{background:#f3f4f6}
 /* V1a: trilho usa mesma cor pastel da pílula + borda 1px na cor forte da categoria */
-.nps-capsule-track{position:relative;flex:1;min-width:0;height:22px;border-radius:14px;overflow:hidden;box-sizing:border-box;border:1px solid transparent}
-.nps-capsule-track-promotor{background:#EAF3DE;border-color:#2a9d6a}
-.nps-capsule-track-neutro{background:#FAEEDA;border-color:#EF9F27}
-.nps-capsule-track-detrator{background:#FCEBEB;border-color:#E24B4A}
-.nps-capsule-track-empty{background:#fff;border-color:#e5e7eb}
+.doxcare-capsule-track{position:relative;flex:1;min-width:0;height:22px;border-radius:14px;overflow:hidden;box-sizing:border-box;border:1px solid transparent}
+.doxcare-capsule-track-promotor{background:#EAF3DE;border-color:#2a9d6a}
+.doxcare-capsule-track-neutro{background:#FAEEDA;border-color:#EF9F27}
+.doxcare-capsule-track-detrator{background:#FCEBEB;border-color:#E24B4A}
+.doxcare-capsule-track-empty{background:#fff;border-color:#e5e7eb}
 /* Preenchimento: cor INTERMEDIÁRIA (mais clara que a borda, mais escura que o trilho),
    pra que o trilho/fill/borda tenham 3 níveis de profundidade visíveis.
    padding-right:1px deixa 1px de margem entre a carinha e a borda direita do trilho. */
-.nps-capsule-fill{position:absolute;left:0;top:0;height:100%;border-radius:13px;animation:nps-cap-grow .9s cubic-bezier(.34,1.36,.64,1) both .15s;transform-origin:left center;display:flex;align-items:center;justify-content:flex-end;padding-right:1px;box-sizing:border-box}
-.nps-capsule-fill-promotor{background:#6BC093}
-.nps-capsule-fill-neutro{background:#F4B556}
-.nps-capsule-fill-detrator{background:#E87575}
-.nps-capsule-edu{position:absolute;inset:0;display:flex;border-radius:13px;overflow:hidden}
-.nps-capsule-edu-r{flex:70;background:#FCEBEB}
-.nps-capsule-edu-y{flex:20;background:#FAEEDA}
-.nps-capsule-edu-g{flex:10;background:#EAF3DE}
-.nps-capsule-compact{width:100%}
-.nps-capsule-compact .nps-capsule-track{height:20px}
-@keyframes nps-cap-grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.doxcare-capsule-fill{position:absolute;left:0;top:0;height:100%;border-radius:13px;animation:doxcare-cap-grow .9s cubic-bezier(.34,1.36,.64,1) both .15s;transform-origin:left center;display:flex;align-items:center;justify-content:flex-end;padding-right:1px;box-sizing:border-box}
+.doxcare-capsule-fill-promotor{background:#6BC093}
+.doxcare-capsule-fill-neutro{background:#F4B556}
+.doxcare-capsule-fill-detrator{background:#E87575}
+.doxcare-capsule-edu{position:absolute;inset:0;display:flex;border-radius:13px;overflow:hidden}
+.doxcare-capsule-edu-r{flex:70;background:#FCEBEB}
+.doxcare-capsule-edu-y{flex:20;background:#FAEEDA}
+.doxcare-capsule-edu-g{flex:10;background:#EAF3DE}
+.doxcare-capsule-compact{width:100%}
+.doxcare-capsule-compact .doxcare-capsule-track{height:20px}
+@keyframes doxcare-cap-grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 
-/* ── DOXCORE MINI: variante inline/horizontal pra contextos apertados ── */
+/* ── Doxcore mini: variante inline/horizontal pra contextos apertados ── */
 /* Chip Montadora, lista Minhas Empresas. Sem carinha (espaço apertado). */
-.nps-mini{display:inline-flex;align-items:center;gap:5px;padding:2px 7px 2px 3px;border-radius:11px;vertical-align:middle;line-height:1}
-.nps-mini-promotor{background:#EAF3DE}
-.nps-mini-neutro{background:#FAEEDA}
-.nps-mini-detrator{background:#FCEBEB}
-.nps-mini-num{font-family:var(--font);font-weight:800;font-size:11px;line-height:1;padding-left:3px}
-.nps-mini-promotor .nps-mini-num{color:#2a9d6a}
-.nps-mini-neutro .nps-mini-num{color:#b45309}
-.nps-mini-detrator .nps-mini-num{color:#A32D2D}
-.nps-mini-track{position:relative;width:34px;height:7px;border-radius:5px;background:#fff;overflow:hidden;flex-shrink:0}
-.nps-mini-fill{position:absolute;left:0;top:0;height:100%;border-radius:5px;animation:nps-cap-grow .9s cubic-bezier(.34,1.36,.64,1) both .15s;transform-origin:left center}
-.nps-mini-fill-promotor{background:#2a9d6a}
-.nps-mini-fill-neutro{background:#EF9F27}
-.nps-mini-fill-detrator{background:#E24B4A}
+.doxcare-mini{display:inline-flex;align-items:center;gap:5px;padding:2px 7px 2px 3px;border-radius:11px;vertical-align:middle;line-height:1}
+.doxcare-mini-promotor{background:#EAF3DE}
+.doxcare-mini-neutro{background:#FAEEDA}
+.doxcare-mini-detrator{background:#FCEBEB}
+.doxcare-mini-num{font-family:var(--font);font-weight:800;font-size:11px;line-height:1;padding-left:3px}
+.doxcare-mini-promotor .doxcare-mini-num{color:#2a9d6a}
+.doxcare-mini-neutro .doxcare-mini-num{color:#b45309}
+.doxcare-mini-detrator .doxcare-mini-num{color:#A32D2D}
+.doxcare-mini-track{position:relative;width:34px;height:7px;border-radius:5px;background:#fff;overflow:hidden;flex-shrink:0}
+.doxcare-mini-fill{position:absolute;left:0;top:0;height:100%;border-radius:5px;animation:doxcare-cap-grow .9s cubic-bezier(.34,1.36,.64,1) both .15s;transform-origin:left center}
+.doxcare-mini-fill-promotor{background:#2a9d6a}
+.doxcare-mini-fill-neutro{background:#EF9F27}
+.doxcare-mini-fill-detrator{background:#E24B4A}
 
 /* ── MENU MOBILE ── */
 #mobile-menu{
@@ -1574,7 +1569,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 </div>
 
 <!-- ══ PÁGINA: TODAS AS RECLAMAÇÕES (paginada, com filtros e ordenação) ══ -->
-<div id="page-complaints" style="display:none;max-width:1100px;margin:0 auto;padding:32px 24px">
+<div id="page-complaints" style="display:none;width:100%;align-self:stretch;max-width:1100px;margin:0 auto;padding:32px 24px">
   <div style="margin-bottom:24px">
     <h2 style="font-family:var(--font);font-size:26px;font-weight:900;color:var(--navy);margin:0 0 6px">Todas as <span style="color:var(--red)">reclamações</span></h2>
     <p id="all-complaints-subtitle" style="color:var(--muted);font-size:14px;margin:0">Carregando…</p>
@@ -1658,7 +1653,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 </div>
 
 <!-- Página Resolução Direta -->
-<div id="page-company-profile" style="display:none;width:100%;max-width:1100px;margin:0 auto;padding:32px 24px">
+<div id="page-company-profile" style="display:none;width:100%;align-self:stretch;max-width:1100px;margin:0 auto;padding:32px 24px">
   <div id="company-profile-content"></div>
 </div>
 
@@ -1752,7 +1747,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
   </section>
 
   <!-- MARCAS (Empresas) — esconde quando não há dados suficientes
-       Aparece automaticamente quando alguma marca atinge 5+ votos NPS -->
+       Aparece automaticamente quando alguma marca atinge 5+ votos Doxcare -->
   <section class="section section-alt mode-best" id="marcas-section" style="display:none">
     <div class="section-inner">
       <div class="section-header">
@@ -3633,10 +3628,10 @@ async function renderRanking(){
 }
 
 // ═════════════════════════════════════════════════════════════════
-// BLOCO MARCAS (home) — NPS de montadoras com 5+ votos
+// BLOCO MARCAS (home) — Doxcare de montadoras com 5+ votos
 // ═════════════════════════════════════════════════════════════════
 // Espelha a mecânica do bloco Veículos (abas Melhores/Piores, fundo
-// verde/vermelho-claro), mas usa NPS agregado por empresa.
+// verde/vermelho-claro), mas usa Doxcare agregado por empresa.
 // COMPORTAMENTO CHAVE: a seção começa com display:none e SÓ é revelada
 // se houver dados suficientes (≥1 marca com ≥5 votos). Senão, fica
 // invisível pro usuário — sem espaço quebrado, sem CTA forçado.
@@ -3661,16 +3656,16 @@ function setMarcasMode(mode){
   renderMarcas();
 }
 
-// Cor + label semafóricos pra um NPS (escala 0-10). Mesma escala usada
+// Cor + label semafóricos pra um Doxcare (escala 0-10). Mesma escala usada
 // na função loadCompanyRanking (página dedicada de empresas).
 // ─────────────────────────────────────────────────────────────────
 // MARCAS NA HOME — funções de carga e render
 // ─────────────────────────────────────────────────────────────────
-// (função _npsBadge removida — não tinha uso ativo. Rótulos "Promotor/Neutro/Detrator"
+// (função _doxcareBadge removida — não tinha uso ativo. Rótulos "Promotor/Neutro/Detrator"
 //  foram descartados no novo padrão visual Doxcare, que comunica categoria
 //  via cor da pílula + carinha dentro do trilho, sem texto.)
 
-// Carrega NPS agregado por montadora cadastrada (segment='carro', is_claimed=true)
+// Carrega Doxcare agregado por montadora cadastrada (segment='carro', is_claimed=true)
 // com ≥5 votos. Também busca reclamações e % respondidas pra exibir no card.
 // Retorna lista ordenada por nps desc (cabe inverter no render).
 async function _loadMarcasData() {
@@ -3682,11 +3677,11 @@ async function _loadMarcasData() {
       .eq('is_claimed', true);
     if (!companies?.length) return [];
 
-    // 2. Pra cada uma, agrega NPS + reclamações (em paralelo)
+    // 2. Pra cada uma, agrega Doxcare + reclamações (em paralelo)
     const results = [];
     for (const c of companies) {
       const [{ data: votes }, { data: complaints }] = await Promise.all([
-        sb.from('nps_ratings').select('score').eq('company_name', c.name),
+        sb.from('doxcare_ratings').select('score').eq('company_name', c.name),
         sb.from('complaints').select('status').eq('company_name', c.name)
       ]);
       const valid = (votes || []).map(v => parseFloat(v.score)).filter(v => !isNaN(v));
@@ -3751,7 +3746,7 @@ async function renderMarcas() {
       </div>
       <div class="mfr-card-center">
         <div class="mfr-card-pill">
-          ${renderNpsBar(c.nps, true)}
+          ${renderDoxcareBar(c.nps, true)}
         </div>
         <div class="mfr-stat mfr-stat-emph">${c.votos} ${c.votos === 1 ? 'avaliação' : 'avaliações'}</div>
       </div>
@@ -4303,18 +4298,18 @@ async function renderManufacturerChip(brand, containerId, vehicleType, fipeBrand
       }
     }
 
-    // 3. Busca NPS e reclamações em paralelo
-    //    Nota: complaints.company_name e nps_ratings.company_name são preenchidos
+    // 3. Busca Doxcare e reclamações em paralelo
+    //    Nota: complaints.company_name e doxcare_ratings.company_name são preenchidos
     //    pelo usuário ao reclamar, então usam o nome curto ("Toyota"), não o jurídico.
     //    Buscamos pelo brand original do veículo, que é o mesmo padrão.
-    const [{ data: npsRatings }, { data: complaints }] = await Promise.all([
-      sb.from('nps_ratings').select('score').ilike('company_name', '%' + brand + '%'),
+    const [{ data: doxcareRatings }, { data: complaints }] = await Promise.all([
+      sb.from('doxcare_ratings').select('score').ilike('company_name', '%' + brand + '%'),
       sb.from('complaints').select('status').ilike('company_name', '%' + brand + '%')
     ]);
 
     // 4. Calcula stats
-    const npsScores = (npsRatings || []).map(n => n.score);
-    const npsAvg = npsScores.length ? (npsScores.reduce((a,b)=>a+b,0)/npsScores.length) : null;
+    const doxcareScores = (doxcareRatings || []).map(n => n.score);
+    const doxcareAvg = doxcareScores.length ? (doxcareScores.reduce((a,b)=>a+b,0)/doxcareScores.length) : null;
     const totalRel = (complaints || []).length;
     // "Respondidas" = qualquer status onde a empresa já respondeu pelo menos 1 vez.
     // complaints aqui vem cru de sb.from('complaints').select('status') na linha ~4176,
@@ -4344,15 +4339,15 @@ async function renderManufacturerChip(brand, containerId, vehicleType, fipeBrand
       ? '<span class="mfr-chip-verified" title="' + tooltipVerified + '">✓</span>'
       : '';
 
-    // Nota + carinha inline (só quando há NPS)
-    let npsInline = '';
-    if (npsAvg !== null) {
-      const cat = _npsCategory(npsAvg);
+    // Nota + carinha inline (só quando há Doxcare)
+    let doxcareInline = '';
+    if (doxcareAvg !== null) {
+      const cat = _doxcareCategory(doxcareAvg);
       const numColor = cat === 'promotor' ? '#2a9d6a' : cat === 'neutro' ? '#b45309' : '#A32D2D';
-      const numTxt = npsAvg.toFixed(1).replace('.', ',');
-      npsInline = '<span style="display:inline-flex;align-items:center;gap:4px;margin-left:6px">'
+      const numTxt = doxcareAvg.toFixed(1).replace('.', ',');
+      doxcareInline = '<span style="display:inline-flex;align-items:center;gap:4px;margin-left:6px">'
         + '<span style="font-weight:800;color:' + numColor + ';font-size:11px">' + numTxt + '</span>'
-        + _npsFace(cat, 13)
+        + _doxcareFace(cat, 13)
         + '</span>';
     }
 
@@ -4360,7 +4355,7 @@ async function renderManufacturerChip(brand, containerId, vehicleType, fipeBrand
       '<a class="' + chipClass + '"' + onClickAttr + '>' +
         '<div class="mfr-chip-avatar">' + inicial + verifiedBadge + '</div>' +
         '<div class="mfr-chip-text">' +
-          '<span class="mfr-chip-name" style="display:inline-flex;align-items:center">' + brand + npsInline + '</span>' +
+          '<span class="mfr-chip-name" style="display:inline-flex;align-items:center">' + brand + doxcareInline + '</span>' +
         '</div>' +
       '</a>';
   } catch (e) {
@@ -6539,18 +6534,18 @@ async function openComplaintDetail(complaintId) {
     const { data: complaint } = await sb.from('complaints').select('*').eq('id', complaintId).single();
     if (!complaint) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Reclamação não encontrada.</div>'; return; }
     const { data: messages } = await sb.from('resolutions').select('*').eq('complaint_id', complaintId).order('created_at', { ascending: true });
-    // Busca NPS de encerramento (só existe se reclamação foi encerrada via modal de avaliação)
-    const { data: npsData } = await sb.from('nps_ratings').select('score, comment').eq('complaint_id', complaintId).maybeSingle();
-    const npsScore = npsData?.score;
-    const hasNps = npsScore != null && !isNaN(npsScore);
-    // Busca dados da empresa (chip estilo Montadora: avatar, selo verificado, NPS médio)
-    let company = null, companyNpsAvg = null;
+    // Busca Doxcare de encerramento (só existe se reclamação foi encerrada via modal de avaliação)
+    const { data: doxcareData } = await sb.from('doxcare_ratings').select('score, comment').eq('complaint_id', complaintId).maybeSingle();
+    const doxcareScore = doxcareData?.score;
+    const hasNps = doxcareScore != null && !isNaN(doxcareScore);
+    // Busca dados da empresa (chip estilo Montadora: avatar, selo verificado, Doxcare médio)
+    let company = null, companyDoxcareAvg = null;
     if (complaint.company_name) {
       const { data: c } = await sb.from('companies').select('*').eq('name', complaint.company_name).maybeSingle();
       company = c;
-      const { data: nps } = await sb.from('nps_ratings').select('score').eq('company_name', complaint.company_name);
+      const { data: nps } = await sb.from('doxcare_ratings').select('score').eq('company_name', complaint.company_name);
       if (nps && nps.length > 0) {
-        companyNpsAvg = nps.reduce((s,n) => s + n.score, 0) / nps.length;
+        companyDoxcareAvg = nps.reduce((s,n) => s + n.score, 0) / nps.length;
       }
     }
     // Busca Doxcore do veículo (reliability_score do summary curado)
@@ -6645,8 +6640,8 @@ async function openComplaintDetail(complaintId) {
                 ? `<span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;background:#eef2f7;color:var(--navy);white-space:nowrap">💬 Opinião sobre o veículo</span>`
                 : `<span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;background:${statusBg[st]};color:${statusCol[st]};white-space:nowrap">${statusMap[st]||'🔴 Não respondida'}</span>`}
               ${!isOpiniao && (st === 'resolved' || st === 'unresolved') && hasNps ? (() => {
-                const s = Math.max(0, Math.min(10, parseFloat(npsScore)));
-                const cat = _npsCategory(s);
+                const s = Math.max(0, Math.min(10, parseFloat(doxcareScore)));
+                const cat = _doxcareCategory(s);
                 const pct = (s / 10) * 100;
                 const fillColor = cat === 'promotor' ? '#2a9d6a' : cat === 'neutro' ? '#EF9F27' : '#E24B4A';
                 const pillBg    = cat === 'promotor' ? '#EAF3DE' : cat === 'neutro' ? '#FAEEDA' : '#FCEBEB';
@@ -6713,7 +6708,7 @@ async function openComplaintDetail(complaintId) {
             const compType = typeLabel2[company?.type] || 'Empresa';
             return `
             <div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:18px">
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:${companyNpsAvg !== null ? '14px' : '12px'}">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:${companyDoxcareAvg !== null ? '14px' : '12px'}">
                 <div style="position:relative;width:38px;height:38px;flex-shrink:0">
                   <div style="width:38px;height:38px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;font-family:var(--font)">${firstLetter}</div>
                   ${isClaimed ? `<div title="Conta verificada" style="position:absolute;bottom:-2px;right:-2px;width:16px;height:16px;background:#2563eb;color:#fff;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900">✓</div>` : ''}
@@ -6723,9 +6718,9 @@ async function openComplaintDetail(complaintId) {
                   <div style="font-size:11px;color:var(--muted)">${compType}</div>
                 </div>
               </div>
-              ${companyNpsAvg !== null ? (() => {
-                const s = Math.max(0, Math.min(10, companyNpsAvg));
-                const cat = _npsCategory(s);
+              ${companyDoxcareAvg !== null ? (() => {
+                const s = Math.max(0, Math.min(10, companyDoxcareAvg));
+                const cat = _doxcareCategory(s);
                 const fillColor = cat === 'promotor' ? '#2a9d6a' : cat === 'neutro' ? '#EF9F27' : '#E24B4A';
                 const trackBg = cat === 'promotor' ? '#EAF3DE' : cat === 'neutro' ? '#FAEEDA' : '#FCEBEB';
                 const numColor = cat === 'promotor' ? '#2a9d6a' : cat === 'neutro' ? '#b45309' : '#A32D2D';
@@ -6788,42 +6783,42 @@ async function openComplaintDetail(complaintId) {
         </div>
       </div>`;
 
-    // Balão grande do Doxcare em largura total (exibido quando resolvida + com NPS)
+    // Balão grande do Doxcare em largura total (exibido quando resolvida + com Doxcare)
     if (complaint.status === 'resolved' && hasNps) {
-      const s = Math.max(0, Math.min(10, parseFloat(npsData.score)));
-      const cat = _npsCategory(s);
-      const npsColor   = cat === 'promotor' ? '#2a9d6a' : cat === 'neutro' ? '#EF9F27' : '#E24B4A';
-      // npsFill: cor INTERMEDIÁRIA da paleta V1 (padrão V1a, coerência com cards de marca)
-      const npsFill    = cat === 'promotor' ? '#6BC093' : cat === 'neutro' ? '#F4B556' : '#E87575';
-      const npsBg      = cat === 'promotor' ? '#EAF3DE' : cat === 'neutro' ? '#FAEEDA' : '#FCEBEB';
-      const npsBorder  = cat === 'promotor' ? '#2a9d6a33' : cat === 'neutro' ? '#EF9F2733' : '#E24B4A33';
-      const npsTextDark= cat === 'promotor' ? '#2a9d6a' : cat === 'neutro' ? '#b45309' : '#A32D2D';
-      const npsLabel   = cat === 'promotor' ? 'Promotor' : cat === 'neutro' ? 'Neutro' : 'Detrator';
-      const npsDesc    = cat === 'promotor'
+      const s = Math.max(0, Math.min(10, parseFloat(doxcareData.score)));
+      const cat = _doxcareCategory(s);
+      const doxcareColor   = cat === 'promotor' ? '#2a9d6a' : cat === 'neutro' ? '#EF9F27' : '#E24B4A';
+      // doxcareFill: cor INTERMEDIÁRIA da paleta V1 (padrão V1a, coerência com cards de marca)
+      const doxcareFill    = cat === 'promotor' ? '#6BC093' : cat === 'neutro' ? '#F4B556' : '#E87575';
+      const doxcareBg      = cat === 'promotor' ? '#EAF3DE' : cat === 'neutro' ? '#FAEEDA' : '#FCEBEB';
+      const doxcareBorder  = cat === 'promotor' ? '#2a9d6a33' : cat === 'neutro' ? '#EF9F2733' : '#E24B4A33';
+      const doxcareTextDark= cat === 'promotor' ? '#2a9d6a' : cat === 'neutro' ? '#b45309' : '#A32D2D';
+      const doxcareLabel   = cat === 'promotor' ? 'Promotor' : cat === 'neutro' ? 'Neutro' : 'Detrator';
+      const doxcareDesc    = cat === 'promotor'
         ? 'Cliente satisfeito e propenso a recomendar a empresa.'
         : cat === 'detrator'
         ? 'Cliente insatisfeito e pode prejudicar a imagem da empresa.'
         : 'Cliente com experiência razoável, pode melhorar.';
       const pct = (s / 10) * 100;
       const numTxt = s.toFixed(1).replace('.', ',');
-      html += `<div style="background:${npsBg};border:1px solid ${npsBorder};border-radius:16px;padding:24px;margin-top:14px">
+      html += `<div style="background:${doxcareBg};border:1px solid ${doxcareBorder};border-radius:16px;padding:24px;margin-top:14px">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px">
           ${_doxcareLabel({ size: 16 })}
-          <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;background:#fff;border:1px solid ${npsBorder};font-family:var(--font);font-weight:800;font-size:12px;color:${npsTextDark}">${npsLabel}</span>
+          <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;background:#fff;border:1px solid ${doxcareBorder};font-family:var(--font);font-weight:800;font-size:12px;color:${doxcareTextDark}">${doxcareLabel}</span>
         </div>
         <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
           <div style="text-align:center;flex-shrink:0;min-width:80px">
-            <div style="font-family:var(--font);font-weight:900;font-size:52px;color:${npsColor};line-height:1">${numTxt}</div>
+            <div style="font-family:var(--font);font-weight:900;font-size:52px;color:${doxcareColor};line-height:1">${numTxt}</div>
             <div style="font-size:11px;color:var(--muted);font-weight:600;margin-top:4px">de 10</div>
           </div>
           <div style="flex:1;min-width:200px">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-              <span style="display:inline-block;flex:1;height:8px;border-radius:999px;background:#fff;border:1px solid ${npsColor};overflow:hidden;box-sizing:border-box">
-                <span style="display:block;height:100%;width:${pct}%;background:${npsFill};border-radius:999px"></span>
+              <span style="display:inline-block;flex:1;height:8px;border-radius:999px;background:#fff;border:1px solid ${doxcareColor};overflow:hidden;box-sizing:border-box">
+                <span style="display:block;height:100%;width:${pct}%;background:${doxcareFill};border-radius:999px"></span>
               </span>
             </div>
-            <div style="font-size:13px;color:var(--text2);line-height:1.5">${npsDesc}</div>
-            ${npsData.comment ? `<div style="font-size:14px;color:var(--text2);background:#fff;border:1px solid ${npsBorder};border-radius:10px;padding:12px 14px;margin-top:12px;line-height:1.5">&ldquo;${npsData.comment}&rdquo;</div>` : ''}
+            <div style="font-size:13px;color:var(--text2);line-height:1.5">${doxcareDesc}</div>
+            ${doxcareData.comment ? `<div style="font-size:14px;color:var(--text2);background:#fff;border:1px solid ${doxcareBorder};border-radius:10px;padding:12px 14px;margin-top:12px;line-height:1.5">&ldquo;${doxcareData.comment}&rdquo;</div>` : ''}
           </div>
         </div>
       </div>`;
@@ -6840,7 +6835,7 @@ async function openComplaintDetail(complaintId) {
 // ══════════════════════════════════════════
 const typeLabel = { montadora:'🏭 Montadora', oficina:'🔧 Oficina', revenda:'🚗 Revenda', outro:'📋 Outro' };
 
-// Renderiza a barra NPS unificada.
+// Renderiza a barra Doxcare unificada.
 // Normaliza nome de empresa antes de salvar no banco.
 // Conservador: preserva maiúsculas, barras (S/A), hífens, &, e abreviações tipo "S.A."
 // Remove apenas: espaços nas pontas, espaços duplos internos, ponto final SE
@@ -6853,8 +6848,8 @@ function normalizeCompanyName(name) {
 }
 
 // score: 0-10 (decimal). compact: true pra cards menores (home), false pra perfil de empresa.
-// Helper: classifica a nota em zona NPS (detrator/neutro/promotor)
-function _npsCategory(s) {
+// Helper: classifica a nota em zona Doxcare (detrator/neutro/promotor)
+function _doxcareCategory(s) {
   if (s >= 9) return 'promotor';
   if (s >= 7) return 'neutro';
   return 'detrator';
@@ -6862,7 +6857,7 @@ function _npsCategory(s) {
 
 // Helper: retorna SVG da carinha por categoria (mesma anatomia do statusFace).
 // Cor do círculo bate com a cor do fill da barra.
-function _npsFace(cat, size) {
+function _doxcareFace(cat, size) {
   size = size || 22;
   let bg, mouth;
   if (cat === 'promotor') {
@@ -6902,34 +6897,34 @@ function _doxcareLabel(opts) {
 // opts.compact: true → versão menor (cards na home); false → versão grande (perfil empresa).
 // opts.showNumInside: parâmetro legado, ignorado.
 // opts.empty: true → trilho com régua educativa (3 zonas pasteis), número "—".
-function renderNpsCapsule(score, opts) {
+function renderDoxcareCapsule(score, opts) {
   opts = opts || {};
   const hasScore = !opts.empty && score != null && !isNaN(score);
   const s = hasScore ? Math.max(0, Math.min(10, parseFloat(score))) : 0;
-  const cat = hasScore ? _npsCategory(s) : 'empty';
+  const cat = hasScore ? _doxcareCategory(s) : 'empty';
   const pct = hasScore ? (s / 10) * 100 : 0;
-  const pillCls = 'nps-capsule nps-capsule-' + cat + (opts.compact ? ' nps-capsule-compact' : '');
+  const pillCls = 'doxcare-capsule doxcare-capsule-' + cat + (opts.compact ? ' doxcare-capsule-compact' : '');
   const numTxt = hasScore ? s.toFixed(1).replace('.', ',') : '—';
-  const bigCls = 'nps-capsule-bignum nps-capsule-bignum-' + cat;
+  const bigCls = 'doxcare-capsule-bignum doxcare-capsule-bignum-' + cat;
   // V1a: carinha BRANCA com traços coloridos, dentro do trilho, encostada no fim do preenchimento.
   // Tamanhos calculados pra deixar 1px de margem em cima/embaixo/direita:
   //   - Não-compact: trilho 22px - borda 2px = 20px útil → carinha 18px
   //   - Compact: trilho 20px - borda 2px = 18px útil → carinha 16px
   const faceInside = hasScore ? _doxcareFaceInverted(cat, opts.compact ? 16 : 18) : '';
   const trackInner = hasScore
-    ? '<div class="nps-capsule-fill nps-capsule-fill-' + cat + '" style="width:' + pct + '%">' + faceInside + '</div>'
-    : '<div class="nps-capsule-edu"><div class="nps-capsule-edu-r"></div><div class="nps-capsule-edu-y"></div><div class="nps-capsule-edu-g"></div></div>';
-  return '<div class="nps-capsule-wrap">'
+    ? '<div class="doxcare-capsule-fill doxcare-capsule-fill-' + cat + '" style="width:' + pct + '%">' + faceInside + '</div>'
+    : '<div class="doxcare-capsule-edu"><div class="doxcare-capsule-edu-r"></div><div class="doxcare-capsule-edu-y"></div><div class="doxcare-capsule-edu-g"></div></div>';
+  return '<div class="doxcare-capsule-wrap">'
     + '<div class="' + bigCls + '">' + numTxt + '</div>'
     + '<div class="' + pillCls + '">'
-    + '<div class="nps-capsule-track nps-capsule-track-' + cat + '">' + trackInner + '</div>'
+    + '<div class="doxcare-capsule-track doxcare-capsule-track-' + cat + '">' + trackInner + '</div>'
     + '</div>'
     + '</div>';
 }
 
 // Carinha "invertida" pro padrão V1a: fundo branco, olhos+boca na cor INTERMEDIÁRIA do fill.
 // Usada dentro do trilho do Doxcare, encostada no fim do preenchimento.
-// As cores batem com .nps-capsule-fill-* pra coerência visual (carinha = mesma cor do fill atrás).
+// As cores batem com .doxcare-capsule-fill-* pra coerência visual (carinha = mesma cor do fill atrás).
 function _doxcareFaceInverted(cat, size) {
   size = size || 16;
   let stroke, mouth;
@@ -6953,24 +6948,24 @@ function _doxcareFaceInverted(cat, size) {
 
 // Versão compacta: usada nos cards de marca da home e no bloco unificado do perfil de empresa.
 // Só a barra-cápsula. Quando score==null retorna barra desbotada (estado vazio).
-function renderNpsBar(score, compact) {
+function renderDoxcareBar(score, compact) {
   // compact é parâmetro legado — esta versão é sempre compacta.
   const hasScore = score != null && !isNaN(score);
-  return renderNpsCapsule(score, { compact: true, showNumInside: hasScore, empty: !hasScore });
+  return renderDoxcareCapsule(score, { compact: true, showNumInside: hasScore, empty: !hasScore });
 }
 
 // Variante INLINE/HORIZONTAL: nota pequena + trilho fino, tudo em uma linha.
 // Pra contextos apertados onde a pílula vertical não cabe (chip montadora, lista minhas empresas).
 // Sem carinha (espaço apertado). Sem estado vazio (chamadores filtram antes).
-function renderNpsMiniPill(score) {
+function renderDoxcareMiniPill(score) {
   if (score == null || isNaN(score)) return '';
   const s = Math.max(0, Math.min(10, parseFloat(score)));
-  const cat = _npsCategory(s);
+  const cat = _doxcareCategory(s);
   const pct = (s / 10) * 100;
   const numTxt = s.toFixed(1).replace('.', ',');
-  return '<span class="nps-mini nps-mini-' + cat + '">'
-    + '<span class="nps-mini-num">' + numTxt + '</span>'
-    + '<span class="nps-mini-track"><span class="nps-mini-fill nps-mini-fill-' + cat + '" style="width:' + pct + '%"></span></span>'
+  return '<span class="doxcare-mini doxcare-mini-' + cat + '">'
+    + '<span class="doxcare-mini-num">' + numTxt + '</span>'
+    + '<span class="doxcare-mini-track"><span class="doxcare-mini-fill doxcare-mini-fill-' + cat + '" style="width:' + pct + '%"></span></span>'
     + '</span>';
 }
 
@@ -6981,7 +6976,7 @@ async function openCompanyProfile(companyName) {
   try {
     const { data: company } = await sb.from('companies').select('*').eq('name', companyName).maybeSingle();
     const { data: complaints } = await sb.from('complaints').select('*').eq('company_name', companyName).order('created_at', { ascending: false }).limit(20);
-    const { data: npsRatings } = await sb.from('nps_ratings').select('score').eq('company_name', companyName);
+    const { data: doxcareRatings } = await sb.from('doxcare_ratings').select('score').eq('company_name', companyName);
     const list = complaints || [];
     const total = list.length;
     // "Respondidas" agrupa todos os status onde a empresa já respondeu pelo menos 1 vez:
@@ -6990,12 +6985,12 @@ async function openCompanyProfile(companyName) {
     const responded = list.filter(c => c.status && c.status !== 'open').length;
     const pct = total ? Math.round(responded/total*100) : 0;
     const avgRating = total ? (list.reduce((s,c) => s+(c.rating||0),0)/total).toFixed(1) : '—';
-    // NPS
-    const npsScores = (npsRatings || []).map(n => n.score);
-    const npsAvg = npsScores.length ? (npsScores.reduce((a,b)=>a+b,0)/npsScores.length) : null;
-    const npsColor = npsAvg===null ? 'var(--muted)' : npsAvg>=8.1?'#16a34a':npsAvg>=6.1?'#2563eb':npsAvg>=4.1?'#d97706':npsAvg>=2.1?'#ea580c':'#dc2626';
-    const npsBg    = npsAvg===null ? 'var(--bg2)'    : npsAvg>=8.1?'#f0fdf4':npsAvg>=6.1?'#eff6ff':npsAvg>=4.1?'#fffbeb':npsAvg>=2.1?'#fff7ed':'#fef2f2';
-    const npsLabel = npsAvg===null ? 'Sem avaliações' : npsAvg>=8.1?'Ótimo':npsAvg>=6.1?'Bom':npsAvg>=4.1?'Regular':npsAvg>=2.1?'Ruim':'Péssimo';
+    // Doxcare
+    const doxcareScores = (doxcareRatings || []).map(n => n.score);
+    const doxcareAvg = doxcareScores.length ? (doxcareScores.reduce((a,b)=>a+b,0)/doxcareScores.length) : null;
+    const doxcareColor = doxcareAvg===null ? 'var(--muted)' : doxcareAvg>=8.1?'#16a34a':doxcareAvg>=6.1?'#2563eb':doxcareAvg>=4.1?'#d97706':doxcareAvg>=2.1?'#ea580c':'#dc2626';
+    const doxcareBg    = doxcareAvg===null ? 'var(--bg2)'    : doxcareAvg>=8.1?'#f0fdf4':doxcareAvg>=6.1?'#eff6ff':doxcareAvg>=4.1?'#fffbeb':doxcareAvg>=2.1?'#fff7ed':'#fef2f2';
+    const doxcareLabel = doxcareAvg===null ? 'Sem avaliações' : doxcareAvg>=8.1?'Ótimo':doxcareAvg>=6.1?'Bom':doxcareAvg>=4.1?'Regular':doxcareAvg>=2.1?'Ruim':'Péssimo';
     const tipo = company?.type || 'outro';
     const isOwned = !!company?.owner_id;
     const isOwner = currentUser && company?.owner_id === currentUser.id;
@@ -7046,17 +7041,17 @@ async function openCompanyProfile(companyName) {
           </div>` : ''}
         </div>
 
-        <!-- Coluna direita: bloco unificado NPS + métricas -->
+        <!-- Coluna direita: bloco unificado Doxcare + métricas -->
         <div style="display:flex;flex-direction:column;gap:16px">
           <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:20px">
             <div style="margin-bottom:10px">
               ${_doxcareLabel({ size: 13 })}
             </div>
             <div style="max-width:180px;width:100%;margin:0 auto">
-              ${renderNpsBar(npsAvg, true)}
+              ${renderDoxcareBar(doxcareAvg, true)}
             </div>
-            <div style="text-align:center;margin-top:4px;font-size:11px;color:var(--text2);font-weight:600${npsAvg===null?';font-style:italic;color:var(--muted)':''}">
-              ${npsAvg===null?'Seja o 1º a avaliar →':(npsScores.length===1?'1 avaliação':npsScores.length+' avaliações')}
+            <div style="text-align:center;margin-top:4px;font-size:11px;color:var(--text2);font-weight:600${doxcareAvg===null?';font-style:italic;color:var(--muted)':''}">
+              ${doxcareAvg===null?'Seja o 1º a avaliar →':(doxcareScores.length===1?'1 avaliação':doxcareScores.length+' avaliações')}
             </div>
             <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:14px;display:flex;flex-direction:column;gap:6px">
               <div style="display:flex;align-items:baseline;gap:10px">
@@ -7210,7 +7205,7 @@ async function claimCompany(companyName) {
 // ══════════════════════════════════════════
 // RESOLUÇÃO DIRETA
 // ══════════════════════════════════════════
-let npsScore = null;
+let doxcareScore = null;
 
 // Fase C da fusão: showResolution agora é só um alias da tela única (openComplaintDetail).
 // Mantido o nome porque vários onclick e o restoreFromHash ainda o referenciam — assim
@@ -7219,15 +7214,15 @@ async function showResolution(complaintId) {
   return openComplaintDetail(complaintId);
 }
 
-function selectNPS(score, btn, complaintId) {
-  npsScore = score;
-  document.querySelectorAll('.nps-btn').forEach(b => {
+function selectDoxcare(score, btn, complaintId) {
+  doxcareScore = score;
+  document.querySelectorAll('.doxcare-btn').forEach(b => {
     b.style.background=''; b.style.color=''; b.style.borderColor='';
   });
   if (score >= 9) { btn.style.background='var(--green)'; btn.style.color='#fff'; btn.style.borderColor='var(--green)'; }
   else if (score <= 6) { btn.style.background='var(--red)'; btn.style.color='#fff'; btn.style.borderColor='var(--red)'; }
   else { btn.style.background='var(--navy)'; btn.style.color='#fff'; btn.style.borderColor='var(--navy)'; }
-  const b = document.getElementById('nps-submit-btn');
+  const b = document.getElementById('doxcare-submit-btn');
   if (b) { b.disabled=false; b.style.opacity='1'; }
 }
 
@@ -7305,7 +7300,7 @@ async function sendResolutionMessage(complaintId) {
 }
 
 // Helper de transição: re-renderiza a tela de detalhe (única, após a fusão).
-// Mantido como função porque submitNPSModal a chama; centraliza o re-render pós-ação.
+// Mantido como função porque submitDoxcareModal a chama; centraliza o re-render pós-ação.
 async function _rerenderComplaintScreens(complaintId) {
   await openComplaintDetail(complaintId);
 }
@@ -7317,60 +7312,60 @@ async function markResolved(complaintId) {
     const { data } = await sb.from('complaints').select('company_name').eq('id', complaintId).maybeSingle();
     companyName = data?.company_name || '';
   } catch(e) { /* segue sem nome */ }
-  openNPSModal(complaintId, companyName);
+  openDoxcareModal(complaintId, companyName);
 }
 
-function openNPSModal(complaintId, companyName) {
+function openDoxcareModal(complaintId, companyName) {
   // Reset estado do voto a cada abertura
-  npsScore = null;
+  doxcareScore = null;
   // Remove modal anterior se existir (segurança)
-  const old = document.getElementById('nps-resolve-modal');
+  const old = document.getElementById('doxcare-resolve-modal');
   if (old) old.remove();
   const modal = document.createElement('div');
-  modal.id = 'nps-resolve-modal';
+  modal.id = 'doxcare-resolve-modal';
   modal.className = 'modal-overlay open';
   modal.innerHTML = `
     <div class="modal" style="max-width:520px">
       <div class="modal-header">
         <h2 class="modal-title">Avaliar <span class="accent">atendimento</span></h2>
-        <button class="modal-close" onclick="closeNPSModal()" aria-label="Cancelar">✕</button>
+        <button class="modal-close" onclick="closeDoxcareModal()" aria-label="Cancelar">✕</button>
       </div>
       <div class="modal-body">
         <div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy);margin-bottom:6px;text-align:center">Como foi a experiência com ${companyName||'a empresa'}?</div>
         <div style="font-size:13px;color:var(--muted);text-align:center;margin-bottom:20px">De 0 a 10, qual a chance de você voltar a fazer negócio com essa empresa?</div>
         <div style="display:flex;gap:6px;justify-content:center;flex-wrap:nowrap;margin-bottom:14px">
-          ${[0,1,2,3,4,5,6,7,8,9,10].map(n=>`<button class="nps-btn" style="flex:1;min-width:0;max-width:44px" onclick="selectNPS(${n},this,'${complaintId}')">${n}</button>`).join('')}
+          ${[0,1,2,3,4,5,6,7,8,9,10].map(n=>`<button class="doxcare-btn" style="flex:1;min-width:0;max-width:44px" onclick="selectDoxcare(${n},this,'${complaintId}')">${n}</button>`).join('')}
         </div>
         <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:16px;padding:0 4px">
           <span>Definitivamente não</span><span>Definitivamente sim</span>
         </div>
-        <textarea id="nps-comment" placeholder="Comentário opcional…" style="width:100%;min-height:70px;border:1.5px solid var(--border2);border-radius:10px;padding:12px;font-family:var(--font-body);font-size:13px;resize:none;outline:none;box-sizing:border-box;margin-bottom:16px"></textarea>
-        <button onclick="submitNPSModal('${complaintId}','${(companyName||'').replace(/'/g,"\\'")}')" id="nps-submit-btn" disabled style="width:100%;background:var(--navy);color:#fff;border:none;border-radius:10px;padding:12px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px;opacity:.5">Enviar avaliação</button>
+        <textarea id="doxcare-comment" placeholder="Comentário opcional…" style="width:100%;min-height:70px;border:1.5px solid var(--border2);border-radius:10px;padding:12px;font-family:var(--font-body);font-size:13px;resize:none;outline:none;box-sizing:border-box;margin-bottom:16px"></textarea>
+        <button onclick="submitDoxcareModal('${complaintId}','${(companyName||'').replace(/'/g,"\\'")}')" id="doxcare-submit-btn" disabled style="width:100%;background:var(--navy);color:#fff;border:none;border-radius:10px;padding:12px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px;opacity:.5">Enviar avaliação</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
 }
 
-function closeNPSModal() {
-  const m = document.getElementById('nps-resolve-modal');
+function closeDoxcareModal() {
+  const m = document.getElementById('doxcare-resolve-modal');
   if (m) m.remove();
-  npsScore = null;
+  doxcareScore = null;
 }
 
-async function submitNPSModal(complaintId, companyName) {
+async function submitDoxcareModal(complaintId, companyName) {
   // Sem score: noop (botão já fica desabilitado, mas defesa extra)
-  if (npsScore === null) return;
-  const comment = document.getElementById('nps-comment')?.value.trim() || null;
-  const scoreToSend = npsScore;
-  // Decisão de desfecho pela nota (spec encerramento): NPS >= 7 → resolved; <= 6 → unresolved
+  if (doxcareScore === null) return;
+  const comment = document.getElementById('doxcare-comment')?.value.trim() || null;
+  const scoreToSend = doxcareScore;
+  // Decisão de desfecho pela nota (spec encerramento): Doxcare >= 7 → resolved; <= 6 → unresolved
   const finalStatus = scoreToSend >= 7 ? 'resolved' : 'unresolved';
   try {
     // UPDATE status com o desfecho calculado
     const { error: stErr } = await sb.from('complaints').update({ status:finalStatus }).eq('id', complaintId);
     if (stErr) { alert('Erro ao atualizar status: ' + stErr.message); return; }
-    // INSERT NPS
-    await sb.from('nps_ratings').insert([{ complaint_id:complaintId, user_id:currentUser.id, score:scoreToSend, comment:comment, company_name:normalizeCompanyName(companyName) }]);
-    closeNPSModal();
+    // INSERT Doxcare
+    await sb.from('doxcare_ratings').insert([{ complaint_id:complaintId, user_id:currentUser.id, score:scoreToSend, comment:comment, company_name:normalizeCompanyName(companyName) }]);
+    closeDoxcareModal();
     // Re-renderiza a tela de detalhe (única)
     await _rerenderComplaintScreens(complaintId);
   } catch(e) { alert('Erro ao concluir. Tente novamente.'); }
@@ -7509,8 +7504,8 @@ async function loadCompanyRanking() {
   if (!list) return;
   list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Carregando…</div>';
   try {
-    // Busca médias de NPS por empresa
-    const { data } = await sb.from('nps_ratings').select('company_name, score');
+    // Busca médias de Doxcare por empresa
+    const { data } = await sb.from('doxcare_ratings').select('company_name, score');
     if (!data?.length) {
       list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Nenhuma avaliação registrada ainda.</div>';
       return;
@@ -7642,23 +7637,23 @@ async function renderProfile() {
           .in('company_name', approvedIds);
         if (statsData) {
           statsData.forEach(c => {
-            if (!statsMap[c.company_name]) statsMap[c.company_name] = { total: 0, resolved: 0, npsScores: [] };
+            if (!statsMap[c.company_name]) statsMap[c.company_name] = { total: 0, resolved: 0, doxcareScores: [] };
             statsMap[c.company_name].total++;
             // "Respondidas" = qualquer status onde empresa já respondeu pelo menos 1 vez.
             // Apenas 'open' (nunca respondida) fica fora.
             if (c.status && c.status !== 'open') statsMap[c.company_name].resolved++;
           });
         }
-        // Busca NPS por empresa
-        const { data: npsData } = await sb
-          .from('nps_ratings')
+        // Busca Doxcare por empresa
+        const { data: doxcareData } = await sb
+          .from('doxcare_ratings')
           .select('company_name, score')
           .in('company_name', approvedIds);
-        if (npsData) {
-          npsData.forEach(n => {
+        if (doxcareData) {
+          doxcareData.forEach(n => {
             if (!n.company_name) return;
-            if (!statsMap[n.company_name]) statsMap[n.company_name] = { total: 0, resolved: 0, npsScores: [] };
-            statsMap[n.company_name].npsScores.push(n.score);
+            if (!statsMap[n.company_name]) statsMap[n.company_name] = { total: 0, resolved: 0, doxcareScores: [] };
+            statsMap[n.company_name].doxcareScores.push(n.score);
           });
         }
       }
@@ -7675,10 +7670,10 @@ async function renderProfile() {
 
       listEl.innerHTML = myCompanies.map(e => {
         const stats = statsMap[e.name] || null;
-        const npsAvg = stats && stats.npsScores && stats.npsScores.length
-          ? (stats.npsScores.reduce((a,b) => a+b, 0) / stats.npsScores.length)
+        const doxcareAvg = stats && stats.doxcareScores && stats.doxcareScores.length
+          ? (stats.doxcareScores.reduce((a,b) => a+b, 0) / stats.doxcareScores.length)
           : null;
-        const notaDisplay = npsAvg !== null ? renderNpsMiniPill(npsAvg) : '';
+        const notaDisplay = doxcareAvg !== null ? renderDoxcareMiniPill(doxcareAvg) : '';
         const totalRecl = stats ? stats.total + ' reclamação(ões)' : '';
         const resolved = stats ? stats.resolved + ' respondida(s)' : '';
         const canClick = e.status === 'approved';
@@ -8457,7 +8452,7 @@ function renderMediationLawyerList(complaintId, complaint, lawyers) {
         const specs = l.specialties || 'Direito do Consumidor';
         const state = l.state || '';
         const oab   = l.oab || '';
-        // NPS do advogado (futuro) — por enquanto sem nota
+        // Doxcare do advogado (futuro) — por enquanto sem nota
         // Usa user_id se disponível, senão usa id
       const lawyerUid = l.user_id || l.id;
       return `
@@ -9137,7 +9132,7 @@ function openVotePrompt() {
 //   - Curadoria (reliability_score) = 60% do score quando há votos suficientes
 //   - Comunidade (vehicle_ratings)  = 40% do score, mínimo 5 votos pra contar
 //   - Voto casual e voto de reclamação têm peso 1 cada (Sprint 2 decisão)
-//   - Escala NPS (0-10) é normalizada pra estrelas (0-5) dividindo por 2
+//   - Escala Doxcare (0-10) é normalizada pra Doxcore (0-5) dividindo por 2
 //
 // Níveis (Decisão #30): FIPE → Modelo → Marca, todos combinam 60/40.
 //   - FIPE: score direto da FIPE específica
@@ -9189,7 +9184,7 @@ function normalizeRating(rating, scale) {
   if (rating == null) return null;
   const r = Number(rating);
   if (isNaN(r)) return null;
-  if (scale === 'nps') return r / 2;     // NPS 0-10 → 0-5
+  if (scale === 'doxcare') return r / 2;     // Doxcare 0-10 → 0-5
   return r;                              // stars 0-5 → 0-5
 }
 
@@ -9236,7 +9231,7 @@ async function calculateFipeScore(fipeCode) {
       .eq('fipe_code', fipeCode);
     if (compRatings && compRatings.length) {
       compRatings.forEach(c => {
-        const v = normalizeRating(c.rating, 'stars');
+        const v = normalizeRating(c.rating, 'doxcore');
         if (v != null) normedAll.push(v);
       });
     }
@@ -9419,7 +9414,7 @@ function statusFace(status, size) {
           + '<circle cx="26" cy="16" r="1.8" fill="#fff"/>'
           + '<line x1="13" y1="25" x2="27" y2="25" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>';
   } else if (status === 'unresolved' || status === 's-unresolved') {
-    // coral: cliente avaliou mal (NPS <=6) - boca em X (reclamação silenciada, empresa não ouviu)
+    // coral: cliente avaliou mal (Doxcare <=6) - boca em X (reclamação silenciada, empresa não ouviu)
     bg = '#ea580c';
     parts = '<circle cx="14" cy="16" r="1.8" fill="#fff"/>'
           + '<circle cx="26" cy="16" r="1.8" fill="#fff"/>'
@@ -9613,13 +9608,13 @@ async function castQuickVote(fipeCode, rating, btnEl) {
 // Insere ou atualiza um voto da comunidade em vehicle_ratings.
 // Parâmetros:
 //   fipeCode    (string, obrigatório)  ex: '004278-7'
-//   rating      (number, obrigatório)  1-5 se scale='stars', 0-10 se scale='nps'
+//   rating      (number, obrigatório)  1-5 se scale='doxcore', 0-10 se scale='doxcare'
 //   options     (object, opcional):
 //     dimensions    (object|null)      ex: { motor: 4, cambio: 3 }
 //     vehicleType   (string|null)      'carro' | 'moto' | 'caminhao' (necessário se dimensions vier)
 //     source        (string)           'casual' (default) | 'complaint'
 //     complaintId   (string|null)      uuid, obrigatório se source='complaint'
-//     scale         (string)           'stars' (default) | 'nps'
+//     scale         (string)           'doxcore' (default) | 'doxcare'
 //
 // Retorna:
 //   { success: true, voteId: '...', isUpdate: bool }
@@ -9632,18 +9627,18 @@ async function castQuickVote(fipeCode, rating, btnEl) {
 //   - Não dispara alert/toast/render — quem chama decide o feedback.
 //   - Invalida cache de score (fipe + model + brand) após sucesso.
 async function submitVote(fipeCode, rating, options = {}) {
-  const { dimensions = null, vehicleType = null, source = 'casual', complaintId = null, scale = 'stars' } = options;
+  const { dimensions = null, vehicleType = null, source = 'casual', complaintId = null, scale = 'doxcore' } = options;
 
   // ── Validações
   if (!fipeCode) return { success: false, error: 'Código FIPE ausente.' };
   if (rating == null || isNaN(rating)) return { success: false, error: 'Avaliação inválida.' };
 
   const r = Number(rating);
-  if (scale === 'stars' && (r < 1 || r > 5 || r !== Math.floor(r))) {
+  if (scale === 'doxcore' && (r < 1 || r > 5 || r !== Math.floor(r))) {
     return { success: false, error: 'A nota deve ser de 1 a 5 estrelas.' };
   }
-  if (scale === 'nps' && (r < 0 || r > 10)) {
-    return { success: false, error: 'A nota NPS deve ser de 0 a 10.' };
+  if (scale === 'doxcare' && (r < 0 || r > 10)) {
+    return { success: false, error: 'A nota Doxcare deve ser de 0 a 10.' };
   }
   if (source !== 'casual' && source !== 'complaint') {
     return { success: false, error: 'Origem do voto inválida.' };
