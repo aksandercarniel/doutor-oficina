@@ -4393,7 +4393,13 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
   //   curadoria específica, o header se enche naturalmente.
   // - Página genérica do modelo → usa summary legacy (comportamento original).
   const effectiveSummary = v.fipe_code ? summarySpecific : summary;
-  const issues = knownIssues.filter(i => !i.is_summary);
+  // issues também segue o nível efetivo:
+  // - Página FIPE-específica → só issues com fipe_code === v.fipe_code.
+  //   Hoje vazio (banco só tem genéricas). Página fica honesta.
+  // - Página genérica → todas as issues do modelo (comportamento legacy).
+  const issues = v.fipe_code
+    ? knownIssues.filter(i => !i.is_summary && i.fipe_code === v.fipe_code)
+    : knownIssues.filter(i => !i.is_summary);
 
   // -- Calcula stats de reclamações reais
   const totalComplaints = stats?.total_complaints || complaints.length || 0;
@@ -4646,7 +4652,10 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
       raioXCards = (cardsP[0] || '') + (cardsP[1] || '') + (cardsS[0] || '');
     }
   } else {
-    raioXCards = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0">Nenhum problema crônico mapeado ainda para este modelo.</div>';
+    // Sem issues mapeadas: NÃO mostra "nenhum problema crônico mapeado" porque
+    // pode parecer endosso ("o carro não tem problemas"). Bloco fica vazio,
+    // o que é honesto: simplesmente não temos dados pra exibir aqui ainda.
+    raioXCards = '';
   }
 
   // -- Reclamações reais da plataforma
