@@ -2181,6 +2181,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
             </select>
           </div>
         </div>
+        <div id="vehicle-select-error" style="display:none;font-size:13px;color:var(--red);font-weight:600;margin:-6px 0 4px"></div>
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Ano</label>
@@ -5651,13 +5652,16 @@ function goStep1WithPlate() {
     return (opt && opt.text && !opt.text.toLowerCase().includes('selecione') && !opt.text.toLowerCase().includes('carregando')) ? opt.text.trim() : '';
   };
   const status = document.getElementById('plate-status');
+  const vehErr = document.getElementById('vehicle-select-error');
   if (!getOptText(brandSel) || !getOptText(modelSel)) {
-    if (status) {
-      status.className = 'plate-status error';
-      status.innerHTML = '❌ Selecione a marca e o modelo do veículo antes de continuar.';
+    if (vehErr) {
+      vehErr.style.display = 'block';
+      vehErr.innerHTML = '❌ Selecione a marca e o modelo do veículo antes de continuar.';
     }
+    (modelSel || brandSel)?.scrollIntoView({ behavior:'smooth', block:'center' });
     return;
   }
+  if (vehErr) vehErr.style.display = 'none';
   goStep(1);
 }
 
