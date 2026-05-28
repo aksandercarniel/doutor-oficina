@@ -1179,7 +1179,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 /* Dimensões alinhadas ao velocímetro Doxcore medium (28px) — refinamento 27/05 tarde2 */
 .nps-capsule-wrap{display:flex;flex-direction:column;gap:6px;width:100%;align-items:center;justify-content:center}
 .nps-capsule-bignum{font-family:var(--font);font-weight:900;font-size:32px;line-height:1;text-align:center}
-.nps-capsule-bignum-promotor{color:#2a9d6a}
+.nps-capsule-bignum-promotor{color:#15643F}
 .nps-capsule-bignum-neutro{color:#b45309}
 .nps-capsule-bignum-detrator{color:#A32D2D}
 .nps-capsule-bignum-empty{color:var(--muted)}
@@ -7300,6 +7300,9 @@ async function renderResolutionPage() {
       const s = Math.max(0, Math.min(10, parseFloat(nps.score)));
       const cat = _npsCategory(s);
       const npsColor   = cat === 'promotor' ? '#2a9d6a' : cat === 'neutro' ? '#EF9F27' : '#E24B4A';
+      // npsFill: cor INTERMEDIÁRIA da paleta V1 (decisão sessão 28/05 noite-29/05).
+      // Usada no fill da barra fina interna pra coerência com cards de marca (padrão V1a).
+      const npsFill    = cat === 'promotor' ? '#6BC093' : cat === 'neutro' ? '#F4B556' : '#E87575';
       const npsBg      = cat === 'promotor' ? '#EAF3DE' : cat === 'neutro' ? '#FAEEDA' : '#FCEBEB';
       const npsBorder  = cat === 'promotor' ? '#2a9d6a33' : cat === 'neutro' ? '#EF9F2733' : '#E24B4A33';
       const npsTextDark= cat === 'promotor' ? '#2a9d6a' : cat === 'neutro' ? '#b45309' : '#A32D2D';
@@ -7323,8 +7326,8 @@ async function renderResolutionPage() {
           </div>
           <div style="flex:1;min-width:200px">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-              <span style="display:inline-block;flex:1;height:8px;border-radius:999px;background:#fff;border:1px solid ${npsBorder};overflow:hidden">
-                <span style="display:block;height:100%;width:${pct}%;background:${npsColor};border-radius:999px"></span>
+              <span style="display:inline-block;flex:1;height:8px;border-radius:999px;background:#fff;border:1px solid ${npsColor};overflow:hidden;box-sizing:border-box">
+                <span style="display:block;height:100%;width:${pct}%;background:${npsFill};border-radius:999px"></span>
               </span>
             </div>
             <div style="font-size:13px;color:var(--text2);line-height:1.5">${npsDesc}</div>
