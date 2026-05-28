@@ -1682,10 +1682,6 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
   <div id="complaint-detail-content"></div>
 </div>
 
-<div id="page-resolution" style="display:none;width:100%;align-self:stretch;max-width:1280px;margin:0 auto;padding:32px 24px">
-  <div id="resolution-content"></div>
-</div>
-
 <div id="page-search" style="display:none;max-width:860px;width:100%;margin:0 auto;padding:24px 24px;box-sizing:border-box">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
     <h2 id="search-results-title" style="font-family:var(--font-body);font-size:14px;font-weight:400;color:var(--muted);margin:0"></h2>
@@ -5503,7 +5499,7 @@ function showPage(page, params={}){
       sbSelectType('carros', {keepClosed: true});
     }
   }
-  ['home','vehicle','profile','compare','search','admin','lawyers','resolution','company','ranking-companies','complaint','company-profile','mediation','lawyer-panel','mediation-channel','complaints','opinioes','vehicles'].forEach(p=>{
+  ['home','vehicle','profile','compare','search','admin','lawyers','company','ranking-companies','complaint','company-profile','mediation','lawyer-panel','mediation-channel','complaints','opinioes','vehicles'].forEach(p=>{
     const el=document.getElementById('page-'+p);
     if(el) el.style.display=p===page?'block':'none';
   });
@@ -6586,8 +6582,7 @@ async function openComplaintDetail(complaintId) {
     const isResolved = complaint.status === 'resolved';
     const isOpiniao = complaint.type === 'opiniao';
 
-    // ── Fase A da fusão: interação embutida (réplica do cliente / resposta da empresa / NPS) ──
-    // Lógica portada de renderResolutionPage. Decide o que mostrar na área de ação por status + papel.
+    // ── Interação embutida: réplica do cliente / resposta da empresa, por status e papel ──
     let formHtml = '';
     const isFinal = st === 'resolved' || st === 'unresolved';
     if (!isOpiniao && !isFinal) {
@@ -6799,7 +6794,7 @@ async function openComplaintDetail(complaintId) {
         </div>
       </div>`;
 
-    // Balão grande do Doxcare em largura total (portado de renderResolutionPage — paridade entre as duas telas de reclamação)
+    // Balão grande do Doxcare em largura total (exibido quando resolvida + com NPS)
     if (complaint.status === 'resolved' && hasNps) {
       const s = Math.max(0, Math.min(10, parseFloat(npsData.score)));
       const cat = _npsCategory(s);
@@ -7221,7 +7216,6 @@ async function claimCompany(companyName) {
 // ══════════════════════════════════════════
 // RESOLUÇÃO DIRETA
 // ══════════════════════════════════════════
-let currentResolution = null;
 let npsScore = null;
 
 // Fase C da fusão: showResolution agora é só um alias da tela única (openComplaintDetail).
@@ -7229,293 +7223,6 @@ let npsScore = null;
 // TODOS os caminhos de entrada (home, perfil, cards, reload) caem na mesma tela fundida.
 async function showResolution(complaintId) {
   return openComplaintDetail(complaintId);
-}
-
-async function renderResolutionPage() {
-  const { complaint, messages, nps, company, companyNpsAvg, doxcore } = currentResolution;
-  const el = document.getElementById('resolution-content');
-  const isClient = currentUser?.id === complaint.user_id;
-  const hasNps = nps?.score != null && !isNaN(nps?.score);
-  const date = new Date(complaint.created_at).toLocaleDateString('pt-BR');
-  const statusMap  = { open: statusFace('open',16)+'<span style="vertical-align:middle;margin-left:4px">Não respondida</span>', in_progress: statusFace('in_progress',16)+'<span style="vertical-align:middle;margin-left:4px">Respondida</span>', replied: statusFace('replied',16)+'<span style="vertical-align:middle;margin-left:4px">Em réplica</span>', resolved: statusFace('resolved',16)+'<span style="vertical-align:middle;margin-left:4px">Resolvido</span>', unresolved: statusFace('unresolved',16)+'<span style="vertical-align:middle;margin-left:4px">Não resolvida</span>' };
-  const statusBg   = { open:'#fef2f2', in_progress:'#eff6ff', replied:'#fef3c7', resolved:'#f0fdf4', unresolved:'#fff7ed' };
-  const statusCol  = { open:'#dc2626', in_progress:'#2563eb', replied:'#d97706', resolved:'#16a34a', unresolved:'#ea580c' };
-  const st = complaint.status || 'open';
-  const isOpiniao = complaint.type === 'opiniao';
-
-  // F4: decide o que mostrar na área de ação (form/botões/mensagens) baseado em status + papel + canEvaluate
-  let formHtml = '';
-  const isFinal = st === 'resolved' || st === 'unresolved';
-  if (!isOpiniao && !isFinal) {
-    if (isClient) {
-      // Cliente: variantes por status
-      const podeAvaliar = await canEvaluate(complaint, currentUser);
-      const textareaHtml = `<textarea id="resolution-msg-input" placeholder="Descreva o andamento ou replique a resposta da empresa…" style="width:100%;min-height:100px;border:1.5px solid var(--border2);border-radius:10px;padding:12px;font-family:var(--font-body);font-size:14px;resize:vertical;outline:none;box-sizing:border-box;transition:border-color .2s" onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='var(--border2)'"></textarea>`;
-      if (st === 'open' && !podeAvaliar) {
-        // Aguardando primeira resposta da empresa, prazo ainda não venceu
-        const daysSince = Math.floor((Date.now() - new Date(complaint.created_at).getTime()) / 86400000);
-        formHtml = `
-          <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px;text-align:center;color:var(--muted);font-size:13px">
-            ⏳ Aguardando resposta da empresa (há ${daysSince === 0 ? 'menos de 1 dia' : daysSince === 1 ? '1 dia' : daysSince + ' dias'})
-          </div>`;
-      } else if (st === 'open' && podeAvaliar) {
-        // Prazo venceu sem resposta — pode avaliar mesmo assim
-        formHtml = `
-          <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px">
-            <div style="background:#fef3c7;color:#92400e;border:1px solid #fbbf24;border-radius:10px;padding:12px;font-size:13px;margin-bottom:12px">
-              ⚠️ A empresa ainda não respondeu. Você pode avaliar o atendimento agora — sua avaliação ficará pública.
-            </div>
-            <button onclick="markResolved('${complaint.id}')" style="width:100%;background:var(--navy);color:#fff;border:none;border-radius:8px;padding:12px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px">Avaliar atendimento</button>
-          </div>`;
-      } else if (st === 'in_progress') {
-        // Empresa respondeu — cliente escolhe: avaliar ou replicar
-        formHtml = `
-          <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px">
-            <div style="font-family:var(--font);font-weight:700;font-size:13px;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">✍️ Sua réplica (opcional)</div>
-            ${textareaHtml}
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;flex-wrap:wrap;gap:10px">
-              <button onclick="markResolved('${complaint.id}')" style="background:var(--navy);color:#fff;border:none;border-radius:8px;padding:10px 16px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">Avaliar atendimento</button>
-              <button onclick="sendResolutionMessage('${complaint.id}')" style="background:var(--white);color:var(--navy);border:1.5px solid var(--navy);border-radius:8px;padding:10px 16px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">Enviar →</button>
-            </div>
-          </div>`;
-      } else if (st === 'replied') {
-        // Cliente já replicou — aguarda nova resposta da empresa
-        formHtml = `
-          <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px;text-align:center;color:var(--muted);font-size:13px">
-            ⏳ Aguardando nova resposta da empresa
-          </div>`;
-      }
-    } else {
-      // Empresa: mantém o form de resposta como antes (sem o botão verde "marcar resolvido")
-      formHtml = `
-        <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px">
-          <div style="font-family:var(--font);font-weight:700;font-size:13px;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">🏢 Resposta da empresa</div>
-          <textarea id="resolution-msg-input" placeholder="Responda a reclamação do cliente…"
-            style="width:100%;min-height:100px;border:1.5px solid var(--border2);border-radius:10px;padding:12px;font-family:var(--font-body);font-size:14px;resize:vertical;outline:none;box-sizing:border-box;transition:border-color .2s"
-            onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='var(--border2)'"></textarea>
-          <div style="display:flex;justify-content:flex-end;margin-top:12px">
-            <button onclick="sendResolutionMessage('${complaint.id}')" style="background:var(--navy);color:#fff;border:none;border-radius:8px;padding:10px 24px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px">Enviar →</button>
-          </div>
-        </div>`;
-    }
-  }
-  // Quando reclamação é final (resolved/unresolved) e tem NPS, não exibimos resumo aqui:
-  // a pílula composta no header e o bloco "Avaliação do cliente" embaixo do grid já mostram a nota.
-
-  // Acompanhamento — mesmo padrão da openComplaintDetail (sem card branco wrapper, sem título "Diálogo", sem emojis nos labels)
-  let msgHtml;
-  if (messages.length === 0) {
-    msgHtml = `<div style="text-align:center;padding:32px;color:var(--muted);background:var(--bg);border-radius:12px;font-size:14px">Aguardando resposta da empresa…</div>`;
-  } else {
-    // Cor do balão da empresa depende do status final:
-    // resolved=verde claro, unresolved=vermelho claro, demais=azul claro
-    const companyBg = st === 'resolved' ? 'var(--green-light)'
-                    : st === 'unresolved' ? 'var(--red-light)'
-                    : 'var(--blue-light)';
-    const companyBorder = st === 'resolved' ? '#34d399'
-                        : st === 'unresolved' ? '#f0997b'
-                        : '#60a5fa';
-    let firstCompanySeen = false;
-    msgHtml = messages.map(m => {
-      const isFromAuthor = m.sender_role === 'client' || m.author_type === 'client';
-      let label;
-      if (isFromAuthor) {
-        label = 'Consumidor';
-      } else if (m.author_type === 'mediator') {
-        label = 'Mediador';
-      } else {
-        if (!firstCompanySeen) { label = 'Resposta da empresa'; firstCompanySeen = true; }
-        else { label = 'Empresa'; }
-      }
-      const dateStr = new Date(m.created_at).toLocaleDateString('pt-BR');
-      const timeStr = new Date(m.created_at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-      return `<div style="margin-bottom:12px;padding:16px;border-radius:12px;background:${isFromAuthor ? '#fff' : companyBg};${isFromAuthor ? '' : 'border:1px solid '+companyBorder+';'}">
-        <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:6px">${label} · ${dateStr} às ${timeStr}</div>
-        <div style="font-size:15px;color:var(--text2);line-height:1.6">${m.message}</div>
-      </div>`;
-    }).join('');
-  }
-
-  let html = `
-    
-
-    <div class="split-2col">
-
-      <!-- Coluna principal -->
-      <div>
-        <!-- Cabeçalho da reclamação -->
-        <div class="split-card">
-          <h2 style="font-family:var(--font);font-weight:900;font-size:22px;color:var(--navy);margin:0 0 10px;line-height:1.2;word-wrap:break-word">${complaint.title}</h2>
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
-            ${complaint.state ? `<span style="font-size:13px;color:var(--muted)">📍 ${complaint.state}</span>` : ''}
-            <span style="font-size:13px;color:var(--muted)">📅 ${date}</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
-            ${isOpiniao
-              ? `<span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;background:#eef2f7;color:var(--navy);white-space:nowrap">💬 Opinião sobre o veículo</span>`
-              : `<span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;background:${statusBg[st]};color:${statusCol[st]};white-space:nowrap">${statusMap[st]||'🔴 Não respondida'}</span>`}
-            ${!isOpiniao && (st === 'resolved' || st === 'unresolved') && hasNps ? (() => {
-              const s = Math.max(0, Math.min(10, parseFloat(nps.score)));
-              const cat = _npsCategory(s);
-              const pillBg    = cat === 'promotor' ? '#EAF3DE' : cat === 'neutro' ? '#FAEEDA' : '#FCEBEB';
-              const pillBorder= cat === 'promotor' ? '#2a9d6a33' : cat === 'neutro' ? '#EF9F2733' : '#E24B4A33';
-              const numColor  = cat === 'promotor' ? '#2a9d6a' : cat === 'neutro' ? '#b45309' : '#A32D2D';
-              const numTxt = s.toFixed(1).replace('.', ',');
-              return `
-                <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;background:${pillBg};border:1px solid ${pillBorder};height:24px;box-sizing:border-box;white-space:nowrap">
-                  <span style="font-size:11px;font-weight:700;color:${numColor}">Avaliação</span>
-                  <span style="font-family:var(--font);font-weight:900;font-size:13px;color:${numColor};line-height:1">${numTxt}</span>
-                </span>
-              `;
-            })() : ''}
-          </div>
-          <p style="font-size:14px;color:var(--text2);line-height:1.7;margin:0">${complaint.description||''}</p>
-        </div>
-
-        <!-- Acompanhamento (sem card branco wrapper, sem título) -->
-        <div style="margin-top:14px">
-          ${msgHtml}
-          ${formHtml}
-        </div>
-      </div>
-
-      <!-- Sidebar -->
-      <div style="display:flex;flex-direction:column;gap:14px">
-        ${complaint.company_name ? (() => {
-          const firstLetter = (complaint.company_name || '?').trim().charAt(0).toUpperCase();
-          const isClaimed = !!company?.is_claimed;
-          const typeLabel2 = { montadora:'Montadora', oficina:'Oficina', revenda:'Revenda', outro:'Empresa' };
-          const compType = typeLabel2[company?.type] || 'Empresa';
-          return `
-          <div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:18px">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:${companyNpsAvg !== null ? '14px' : '12px'}">
-              <div style="position:relative;width:38px;height:38px;flex-shrink:0">
-                <div style="width:38px;height:38px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;font-family:var(--font)">${firstLetter}</div>
-                ${isClaimed ? `<div title="Conta verificada" style="position:absolute;bottom:-2px;right:-2px;width:16px;height:16px;background:#2563eb;color:#fff;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900">✓</div>` : ''}
-              </div>
-              <div style="flex:1;min-width:0">
-                <div style="font-family:var(--font);font-weight:900;font-size:14px;color:var(--navy);line-height:1.2;margin-bottom:2px;word-break:break-word">${complaint.company_name}</div>
-                <div style="font-size:11px;color:var(--muted)">${compType}</div>
-              </div>
-            </div>
-            ${companyNpsAvg !== null ? (() => {
-              const s = Math.max(0, Math.min(10, companyNpsAvg));
-              const cat = _npsCategory(s);
-              const fillColor = cat === 'promotor' ? '#2a9d6a' : cat === 'neutro' ? '#EF9F27' : '#E24B4A';
-              const trackBg = cat === 'promotor' ? '#EAF3DE' : cat === 'neutro' ? '#FAEEDA' : '#FCEBEB';
-              const numColor = cat === 'promotor' ? '#2a9d6a' : cat === 'neutro' ? '#b45309' : '#A32D2D';
-              const pct = (s / 10) * 100;
-              const numTxt = s.toFixed(1).replace('.', ',');
-              return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--border)">
-                <span style="font-family:var(--font);font-weight:900;font-size:18px;color:${numColor};line-height:1;min-width:34px">${numTxt}</span>
-                <span style="display:inline-block;flex:1;height:8px;border-radius:999px;background:${trackBg};overflow:hidden">
-                  <span style="display:block;height:100%;width:${pct}%;background:${fillColor};border-radius:999px"></span>
-                </span>
-                <span style="font-size:11px;color:var(--muted);font-weight:600">Recomendação</span>
-              </div>`;
-            })() : ''}
-            <a onclick="openCompanyProfile('${complaint.company_name}')" style="display:block;text-align:center;font-size:13px;color:var(--navy);font-weight:700;margin-top:6px;text-decoration:none;cursor:pointer">Ver perfil da empresa →</a>
-          </div>`;
-        })() : ''}
-
-        <div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px">
-          <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:none;letter-spacing:.3px;margin-bottom:8px">Detalhes do veículo</div>
-          ${(complaint.vehicle_brand || complaint.vehicle_model) ? `<div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy);margin-bottom:14px;line-height:1.3">${[complaint.vehicle_brand, complaint.vehicle_model, complaint.vehicle_year].filter(Boolean).join(' ')}</div>` : ''}
-          <div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
-            ${complaint.category ? `<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Categoria</span><span style="font-weight:600">${complaint.category}</span></div>` : ''}
-            ${complaint.km ? `<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Quilometragem</span><span style="font-weight:600">${Number(complaint.km).toLocaleString('pt-BR')} km</span></div>` : ''}
-            ${doxcore !== null ? (() => {
-              const dxColor = doxcore >= 4 ? '#2a9d6a' : doxcore >= 3 ? '#EF9F27' : '#E24B4A';
-              return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-                <span style="color:var(--muted)">Doxcore</span>
-                <span style="font-family:var(--font);font-weight:800;font-size:14px;color:${dxColor}">${doxcore.toFixed(1).replace('.',',')}</span>
-              </div>`;
-            })() : ''}
-            ${complaint.rating ? (() => {
-              const r = complaint.rating;
-              const label = r >= 5 ? 'Ótimo' : r >= 4 ? 'Bom' : r >= 3 ? 'Regular' : r >= 2 ? 'Ruim' : 'Péssimo';
-              const color = r >= 4 ? '#2a9d6a' : r >= 3 ? '#EF9F27' : '#E24B4A';
-              let mouth;
-              if (r === 1)      mouth = '<path d="M 13 27 Q 20 20 27 27" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
-              else if (r === 2) mouth = '<path d="M 13 26 Q 20 23 27 26" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
-              else if (r === 3) mouth = '<line x1="13" y1="25" x2="27" y2="25" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>';
-              else if (r === 4) mouth = '<path d="M 13 24 Q 20 27 27 24" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
-              else              mouth = '<path d="M 13 23 Q 20 29 27 23" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
-              const faceSvgColored = `<svg width="22" height="22" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="18" fill="${color}"/><circle cx="14" cy="16" r="1.8" fill="#fff"/><circle cx="26" cy="16" r="1.8" fill="#fff"/>${mouth}</svg>`;
-              return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-                <span style="color:var(--muted)">Nota do cliente</span>
-                <span style="display:inline-flex;align-items:center;gap:8px">
-                  ${faceSvgColored}
-                  <span style="font-family:var(--font);font-weight:700;font-size:13px;color:${color}">${label}</span>
-                </span>
-              </div>`;
-            })() : ''}
-            <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Publicado em</span><span style="font-weight:600">${date}</span></div>
-            <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Mensagens</span><span style="font-weight:600">${messages.length}</span></div>
-          </div>
-        </div>
-      </div>
-    </div>`;
-
-  // NPS em largura total abaixo do grid
-  if (complaint.status === 'resolved') {
-    if (nps) {
-      const s = Math.max(0, Math.min(10, parseFloat(nps.score)));
-      const cat = _npsCategory(s);
-      const npsColor   = cat === 'promotor' ? '#2a9d6a' : cat === 'neutro' ? '#EF9F27' : '#E24B4A';
-      // npsFill: cor INTERMEDIÁRIA da paleta V1 (decisão sessão 28/05 noite-29/05).
-      // Usada no fill da barra fina interna pra coerência com cards de marca (padrão V1a).
-      const npsFill    = cat === 'promotor' ? '#6BC093' : cat === 'neutro' ? '#F4B556' : '#E87575';
-      const npsBg      = cat === 'promotor' ? '#EAF3DE' : cat === 'neutro' ? '#FAEEDA' : '#FCEBEB';
-      const npsBorder  = cat === 'promotor' ? '#2a9d6a33' : cat === 'neutro' ? '#EF9F2733' : '#E24B4A33';
-      const npsTextDark= cat === 'promotor' ? '#2a9d6a' : cat === 'neutro' ? '#b45309' : '#A32D2D';
-      const npsLabel   = cat === 'promotor' ? 'Promotor' : cat === 'neutro' ? 'Neutro' : 'Detrator';
-      const npsDesc    = cat === 'promotor'
-        ? 'Cliente satisfeito e propenso a recomendar a empresa.'
-        : cat === 'detrator'
-        ? 'Cliente insatisfeito e pode prejudicar a imagem da empresa.'
-        : 'Cliente com experiência razoável, pode melhorar.';
-      const pct = (s / 10) * 100;
-      const numTxt = s.toFixed(1).replace('.', ',');
-      html += `<div style="background:${npsBg};border:1px solid ${npsBorder};border-radius:16px;padding:24px;margin-top:14px">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px">
-          ${_doxcareLabel({ size: 16 })}
-          <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;background:#fff;border:1px solid ${npsBorder};font-family:var(--font);font-weight:800;font-size:12px;color:${npsTextDark}">${npsLabel}</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
-          <div style="text-align:center;flex-shrink:0;min-width:80px">
-            <div style="font-family:var(--font);font-weight:900;font-size:52px;color:${npsColor};line-height:1">${numTxt}</div>
-            <div style="font-size:11px;color:var(--muted);font-weight:600;margin-top:4px">de 10</div>
-          </div>
-          <div style="flex:1;min-width:200px">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-              <span style="display:inline-block;flex:1;height:8px;border-radius:999px;background:#fff;border:1px solid ${npsColor};overflow:hidden;box-sizing:border-box">
-                <span style="display:block;height:100%;width:${pct}%;background:${npsFill};border-radius:999px"></span>
-              </span>
-            </div>
-            <div style="font-size:13px;color:var(--text2);line-height:1.5">${npsDesc}</div>
-            ${nps.comment ? `<div style="font-size:14px;color:var(--text2);background:#fff;border:1px solid ${npsBorder};border-radius:10px;padding:12px 14px;margin-top:12px;line-height:1.5">&ldquo;${nps.comment}&rdquo;</div>` : ''}
-          </div>
-        </div>
-      </div>`;
-    } else if (isClient) {
-      html += `
-      <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:24px">
-        <div style="font-family:var(--font);font-weight:900;font-size:16px;color:var(--navy);margin-bottom:6px;text-align:center">Como foi a experiência com ${complaint.company_name||'a empresa'}?</div>
-        <div style="font-size:13px;color:var(--muted);text-align:center;margin-bottom:20px">De 0 a 10, qual a chance de você voltar a fazer negócio com essa empresa?</div>
-        <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:16px">
-          ${[0,1,2,3,4,5,6,7,8,9,10].map(n=>`<button class="nps-btn" onclick="selectNPS(${n},this,'${complaint.id}')">${n}</button>`).join('')}
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:16px;padding:0 4px">
-          <span>Definitivamente não</span><span>Definitivamente sim</span>
-        </div>
-        <textarea id="nps-comment" placeholder="Comentário opcional…" style="width:100%;min-height:70px;border:1.5px solid var(--border2);border-radius:10px;padding:12px;font-family:var(--font-body);font-size:13px;resize:none;outline:none;box-sizing:border-box;margin-bottom:12px"></textarea>
-        <button onclick="submitNPS('${complaint.id}','${complaint.company_name||''}')" id="nps-submit-btn" disabled style="width:100%;background:var(--red);color:#fff;border:none;border-radius:10px;padding:12px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px;opacity:.5">Enviar avaliação</button>
-      </div>`;
-    }
-  }
-
-  el.innerHTML = html;
 }
 
 function selectNPS(score, btn, complaintId) {
@@ -7528,17 +7235,6 @@ function selectNPS(score, btn, complaintId) {
   else { btn.style.background='var(--navy)'; btn.style.color='#fff'; btn.style.borderColor='var(--navy)'; }
   const b = document.getElementById('nps-submit-btn');
   if (b) { b.disabled=false; b.style.opacity='1'; }
-}
-
-async function submitNPS(complaintId, companyName) {
-  if (npsScore === null) return;
-  const comment = document.getElementById('nps-comment')?.value.trim();
-  try {
-    await sb.from('nps_ratings').insert([{ complaint_id:complaintId, user_id:currentUser.id, score:npsScore, comment:comment||null, company_name:normalizeCompanyName(companyName) }]);
-    currentResolution.nps = { score:npsScore, comment };
-    currentResolution.complaint.status = 'resolved';
-    await renderResolutionPage();
-  } catch(e) { alert('Erro ao enviar avaliação.'); }
 }
 
 // ══════════════════════════════════════════
@@ -7585,21 +7281,15 @@ async function sendResolutionMessage(complaintId) {
   const input = document.getElementById('resolution-msg-input');
   const msg = input?.value.trim();
   if (!msg) { alert('Escreva uma mensagem antes de enviar.'); return; }
-  // Fonte de verdade do status/autor: currentResolution se existir, senão busca no banco.
-  // (A tela 'complaint' fundida não usa currentResolution, então não dependemos dele.)
-  let complaintRow = currentResolution?.complaint?.id === complaintId ? currentResolution.complaint : null;
-  if (!complaintRow) {
-    const { data } = await sb.from('complaints').select('id,user_id,status,company_name').eq('id', complaintId).maybeSingle();
-    complaintRow = data;
-  }
+  // Fonte de verdade do status/autor: busca direto no banco (tela única não usa estado global).
+  const { data: complaintRow } = await sb.from('complaints').select('id,user_id,status,company_name').eq('id', complaintId).maybeSingle();
   if (!complaintRow) { alert('Reclamação não encontrada.'); return; }
   const authorType = currentUser?.id === complaintRow.user_id ? 'client' : 'company';
   try {
-    const { data } = await sb.from('resolutions').insert([{
+    await sb.from('resolutions').insert([{
       complaint_id:complaintId, author_type:authorType,
       author_id:currentUser.id, author_name:currentUser.name, message:msg
     }]).select().single();
-    if (currentResolution?.complaint?.id === complaintId) currentResolution.messages.push(data);
     // Transições de status conforme spec de encerramento (Reclame Aqui):
     // - empresa responde reclamação 'open' → 'in_progress'
     // - cliente responde após empresa ('in_progress') → 'replied' (réplica)
@@ -7614,42 +7304,25 @@ async function sendResolutionMessage(complaintId) {
       if (stErr) {
         console.error('Falha ao atualizar status:', stErr);
         alert('Mensagem enviada, mas houve erro ao atualizar o status. Recarregue a página.');
-      } else {
-        complaintRow.status = newStatus;
-        if (currentResolution?.complaint?.id === complaintId) currentResolution.complaint.status = newStatus;
       }
     }
-    // Re-renderiza a tela ativa: 'complaint' (fundida) ou 'resolution' (legado, até Fase D)
-    await _rerenderComplaintScreens(complaintId);
+    await openComplaintDetail(complaintId);
   } catch(e) { alert('Erro ao enviar mensagem.'); }
 }
 
-// Helper de transição: re-renderiza a tela de detalhe que estiver visível.
-// Durante a fusão (Fases A–C) ambas podem existir; este helper centraliza a decisão.
+// Helper de transição: re-renderiza a tela de detalhe (única, após a fusão).
+// Mantido como função porque submitNPSModal a chama; centraliza o re-render pós-ação.
 async function _rerenderComplaintScreens(complaintId) {
-  const compVisible = document.getElementById('page-complaint')?.style.display === 'block';
-  const resVisible  = document.getElementById('page-resolution')?.style.display === 'block';
-  if (compVisible) {
-    await openComplaintDetail(complaintId);
-  } else if (resVisible && typeof renderResolutionPage === 'function' && currentResolution) {
-    await renderResolutionPage();
-  } else {
-    // Nenhuma visível (ex: ação via modal) — abre a tela única
-    await openComplaintDetail(complaintId);
-  }
+  await openComplaintDetail(complaintId);
 }
 
 async function markResolved(complaintId) {
   // Busca company_name da reclamação pra mostrar no modal
   let companyName = '';
-  if (currentResolution && currentResolution.complaint?.id === complaintId) {
-    companyName = currentResolution.complaint.company_name || '';
-  } else {
-    try {
-      const { data } = await sb.from('complaints').select('company_name').eq('id', complaintId).maybeSingle();
-      companyName = data?.company_name || '';
-    } catch(e) { /* segue sem nome */ }
-  }
+  try {
+    const { data } = await sb.from('complaints').select('company_name').eq('id', complaintId).maybeSingle();
+    companyName = data?.company_name || '';
+  } catch(e) { /* segue sem nome */ }
   openNPSModal(complaintId, companyName);
 }
 
@@ -7704,12 +7377,7 @@ async function submitNPSModal(complaintId, companyName) {
     // INSERT NPS
     await sb.from('nps_ratings').insert([{ complaint_id:complaintId, user_id:currentUser.id, score:scoreToSend, comment:comment, company_name:normalizeCompanyName(companyName) }]);
     closeNPSModal();
-    // Sincroniza estado do legado se estiver na tela resolution
-    if (currentResolution && currentResolution.complaint?.id === complaintId) {
-      currentResolution.complaint.status = finalStatus;
-      currentResolution.nps = { score:scoreToSend, comment };
-    }
-    // Re-renderiza a tela ativa (complaint fundida ou resolution legado)
+    // Re-renderiza a tela de detalhe (única)
     await _rerenderComplaintScreens(complaintId);
   } catch(e) { alert('Erro ao concluir. Tente novamente.'); }
 }
