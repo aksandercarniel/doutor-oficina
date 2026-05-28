@@ -1638,6 +1638,41 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
   <div id="all-complaints-loadmore-wrap" style="margin-top:24px;text-align:center"></div>
 </div>
 
+<!-- Página: TODAS AS OPINIÕES (relatos sobre veículos, sem empresa/ciclo) -->
+<div id="page-opinioes" style="display:none;max-width:1100px;margin:0 auto;padding:32px 24px">
+  <div style="margin-bottom:24px">
+    <h2 style="font-family:var(--font);font-size:26px;font-weight:900;color:var(--navy);margin:0 0 6px">Todas as <span style="color:#ea580c">opiniões</span></h2>
+    <p id="all-opinioes-subtitle" style="color:var(--muted);font-size:14px;margin:0">Carregando…</p>
+  </div>
+
+  <button class="filters-toggle" id="all-op-filters-toggle" onclick="toggleAllOpFiltersMobile()" type="button">
+    <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>Filtros<span class="filters-toggle-badge" id="all-op-filters-toggle-badge" style="display:none"></span></span>
+    <svg class="filters-toggle-arrow" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 4.5 6 7.5 9 4.5"/></svg>
+  </button>
+
+  <div class="filters-bar" id="all-op-filters-bar">
+    <span class="filter-label">Filtrar:</span>
+    <select class="filter-select" id="all-op-filter-brand" onchange="applyAllOpFilters()">
+      <option value="">Todas as marcas</option>
+      <option>Hyundai</option><option>Chevrolet</option><option>Jeep</option>
+      <option>Honda</option><option>Toyota</option><option>Volkswagen</option>
+      <option>Fiat</option><option>Yamaha</option>
+      <option>Mercedes-Benz</option><option>Scania</option><option>Volvo</option><option>DAF</option>
+    </select>
+    <select class="filter-select" id="all-op-filter-sort" onchange="applyAllOpFilters()" style="min-width:180px">
+      <option value="recent">Mais recentes</option>
+      <option value="votes">Mais votadas</option>
+    </select>
+    <button class="filter-clear" onclick="clearAllOpFilters()">✕ Limpar filtros</button>
+  </div>
+
+  <div class="complaints-list" id="all-opinioes-list">
+    <div style="text-align:center;padding:40px;color:var(--muted)">Carregando…</div>
+  </div>
+
+  <div id="all-opinioes-loadmore-wrap" style="margin-top:24px;text-align:center"></div>
+</div>
+
 <!-- Página Resolução Direta -->
 <div id="page-company-profile" style="display:none;width:100%;max-width:1100px;margin:0 auto;padding:32px 24px">
   <div id="company-profile-content"></div>
@@ -1759,7 +1794,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
     <div class="section-inner">
       <div class="section-header">
         <h2 class="section-title">Opiniões <span class="accent">recentes</span></h2>
-        <a href="#" class="see-all" onclick="event.preventDefault();showPage('complaints');return false;">Ver todas →</a>
+        <a href="#" class="see-all" onclick="event.preventDefault();showPage('opinioes');return false;">Ver todas →</a>
       </div>
       <div class="complaints-list" id="opinioes-list"></div>
     </div>
@@ -2496,6 +2531,22 @@ async function sbLoadAllComplaints(filters = {}, sort = 'recent', offset = 0, li
   if (filters.brand)  q = q.eq('vehicle_brand', filters.brand);
   if (filters.state)  q = q.eq('state', filters.state);
   if (filters.model)  q = q.eq('vehicle_model', filters.model);
+  q = q.range(offset, offset + limit - 1);
+  const { data, error } = await q;
+  if (error) { console.error(error); return { items: [], totalCount: 0 }; }
+  return { items: (data || []).map(mapComplaint), totalCount: count || 0 };
+}
+
+// Carrega APENAS opiniões (type='opiniao'). Espelha sbLoadAllComplaints mas sem
+// status/estado (opinião não tem ciclo de vida nem empresa). Filtro: marca. Ordena: recente|votadas.
+async function sbLoadAllOpinioes(filters = {}, sort = 'recent', offset = 0, limit = 20) {
+  let countQ = sb.from('complaints').select('*', { count: 'exact', head: true }).eq('type', 'opiniao');
+  if (filters.brand) countQ = countQ.eq('vehicle_brand', filters.brand);
+  const { count } = await countQ;
+  let q = sb.from('complaints').select('*').eq('type', 'opiniao');
+  if (sort === 'votes') q = q.order('votes_count', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false });
+  else                  q = q.order('created_at', { ascending: false });
+  if (filters.brand) q = q.eq('vehicle_brand', filters.brand);
   q = q.range(offset, offset + limit - 1);
   const { data, error } = await q;
   if (error) { console.error(error); return { items: [], totalCount: 0 }; }
@@ -5487,7 +5538,7 @@ function showPage(page, params={}){
       sbSelectType('carros', {keepClosed: true});
     }
   }
-  ['home','vehicle','profile','compare','search','admin','lawyers','resolution','company','ranking-companies','complaint','company-profile','mediation','lawyer-panel','mediation-channel','complaints','vehicles'].forEach(p=>{
+  ['home','vehicle','profile','compare','search','admin','lawyers','resolution','company','ranking-companies','complaint','company-profile','mediation','lawyer-panel','mediation-channel','complaints','opinioes','vehicles'].forEach(p=>{
     const el=document.getElementById('page-'+p);
     if(el) el.style.display=p===page?'block':'none';
   });
@@ -5500,6 +5551,7 @@ function showPage(page, params={}){
   if(page==='ranking-companies') loadCompanyRanking();
   if(page==='lawyer-panel') loadLawyerPanel();
   if(page==='complaints') loadAllComplaintsPage(params);
+  if(page==='opinioes') loadAllOpinioesPage(params);
   if(page==='vehicles') loadAllVehiclesPage(params);
   // Salva estado na URL para sobreviver ao Cmd+R
   const hashParams = new URLSearchParams(params).toString();
@@ -10361,7 +10413,99 @@ function updateAllFiltersBadge() {
   else { badge.style.display = 'none'; }
 }
 
-// ══ PÁGINA: TODOS OS VEÍCULOS ══
+// ══ PÁGINA: TODAS AS OPINIÕES (paginada) ══
+// Espelha a página de reclamações, porém enxuta: opinião não tem status/empresa/estado.
+// Filtro único: marca. Ordenação: recente | votadas. Cards reusam _renderComplaintCards.
+let _allOpinioesState = { filters: {}, sort: 'recent', offset: 0, limit: 20, items: [], totalCount: 0, loading: false };
+
+async function loadAllOpinioesPage(params = {}) {
+  _allOpinioesState = { filters: {}, sort: 'recent', offset: 0, limit: 20, items: [], totalCount: 0, loading: false };
+  // Pré-aplica marca vinda por URL (ex: futuro "ver todas as opiniões deste veículo")
+  if (params.brand) {
+    _allOpinioesState.filters.brand = params.brand;
+    const brandSel = document.getElementById('all-op-filter-brand');
+    if (brandSel) brandSel.value = params.brand;
+  }
+  const sortSel = document.getElementById('all-op-filter-sort');
+  if (sortSel) sortSel.value = 'recent';
+  await fetchAndRenderAllOpinioes(true);
+  updateAllOpFiltersBadge();
+}
+
+async function fetchAndRenderAllOpinioes(reset = false) {
+  if (_allOpinioesState.loading) return;
+  _allOpinioesState.loading = true;
+  const listEl = document.getElementById('all-opinioes-list');
+  const moreEl = document.getElementById('all-opinioes-loadmore-wrap');
+  if (reset) {
+    _allOpinioesState.offset = 0;
+    _allOpinioesState.items = [];
+    if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Carregando…</div>';
+    if (moreEl) moreEl.innerHTML = '';
+  }
+  const { filters, sort, offset, limit } = _allOpinioesState;
+  const { items, totalCount } = await sbLoadAllOpinioes(filters, sort, offset, limit);
+  _allOpinioesState.totalCount = totalCount;
+  _allOpinioesState.items = reset ? items : _allOpinioesState.items.concat(items);
+  _allOpinioesState.offset = _allOpinioesState.items.length;
+  const sub = document.getElementById('all-opinioes-subtitle');
+  if (sub) {
+    const filtered = Object.values(filters).filter(Boolean).length > 0;
+    sub.textContent = filtered
+      ? `${totalCount} ${totalCount === 1 ? 'opinião encontrada' : 'opiniões encontradas'}`
+      : `${totalCount} ${totalCount === 1 ? 'opinião no total' : 'opiniões no total'}`;
+  }
+  if (listEl) {
+    if (_allOpinioesState.items.length === 0) {
+      listEl.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--muted);background:var(--white);border:1.5px solid var(--border);border-radius:12px">Nenhuma opinião encontrada.</div>';
+    } else {
+      // Reusa o mesmo render dos cards de opinião da home (badge "💬 Opinião")
+      _renderComplaintCards('all-opinioes-list', _allOpinioesState.items, { isOpiniao: true });
+    }
+  }
+  if (moreEl) {
+    if (_allOpinioesState.items.length < totalCount) {
+      moreEl.innerHTML = `<button onclick="fetchAndRenderAllOpinioes(false)" style="background:var(--white);border:1.5px solid var(--border2);color:var(--navy);border-radius:10px;padding:12px 28px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;transition:border-color .2s" onmouseover="this.style.borderColor='var(--navy)'" onmouseout="this.style.borderColor='var(--border2)'">Carregar mais (${totalCount - _allOpinioesState.items.length} restantes)</button>`;
+    } else {
+      moreEl.innerHTML = '';
+    }
+  }
+  _allOpinioesState.loading = false;
+}
+
+async function applyAllOpFilters() {
+  _allOpinioesState.filters.brand = document.getElementById('all-op-filter-brand').value;
+  _allOpinioesState.sort          = document.getElementById('all-op-filter-sort').value;
+  await fetchAndRenderAllOpinioes(true);
+  updateAllOpFiltersBadge();
+}
+
+function clearAllOpFilters() {
+  const b = document.getElementById('all-op-filter-brand'); if (b) b.value = '';
+  const s = document.getElementById('all-op-filter-sort'); if (s) s.value = 'recent';
+  _allOpinioesState.filters = {};
+  _allOpinioesState.sort = 'recent';
+  fetchAndRenderAllOpinioes(true);
+  updateAllOpFiltersBadge();
+}
+
+function toggleAllOpFiltersMobile() {
+  const bar = document.getElementById('all-op-filters-bar');
+  const tgl = document.getElementById('all-op-filters-toggle');
+  if (!bar || !tgl) return;
+  bar.classList.toggle('expanded');
+  tgl.classList.toggle('expanded');
+}
+
+function updateAllOpFiltersBadge() {
+  const brand = document.getElementById('all-op-filter-brand')?.value;
+  const count = [brand].filter(Boolean).length; // sort não conta como filtro
+  const badge = document.getElementById('all-op-filters-toggle-badge');
+  if (!badge) return;
+  if (count > 0) { badge.textContent = count; badge.style.display = 'inline-flex'; }
+  else { badge.style.display = 'none'; }
+}
+
 // Estratégia: busca tudo uma vez (são poucos modelos), filtra/ordena no client.
 // Evita ida extra ao banco a cada toggle de filtro.
 let _allVehiclesState = { all: [], filters: { brand:'', type:'' }, sort: 'most_issues' };
@@ -10607,6 +10751,12 @@ async function restoreFromHash() {
   const simplePages = ['profile','compare','admin','lawyers','ranking-companies','company','lawyer-panel'];
   if (simplePages.includes(page)) {
     showPage(page);
+    return;
+  }
+  // Páginas paginadas que aceitam params por URL (ex: ?brand=Fiat)
+  const paramPages = ['complaints','opinioes','vehicles'];
+  if (paramPages.includes(page)) {
+    showPage(page, params);
     return;
   }
   if (page === 'complaint' && params.id) {
