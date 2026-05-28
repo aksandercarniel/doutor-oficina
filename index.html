@@ -3800,7 +3800,9 @@ async function showVehicleProfileByBrandModel(brand, model) {
 //   - Identidade vem do código FIPE (não brand+model genéricos)
 //   - Reclamações são filtradas por fipe_code exato
 //   - Score do header usa calculateFipeScore (estados 2 e 3 ativos)
-//   - Botão "Ver Raio-X completo do [modelo]" no rodapé (Decisão #22)
+//   - Genérico do modelo aparece embutido (bloco Raio-X genérico abaixo do
+//     específico + card Doxcore geral na coluna direita). Antes existia um
+//     botão "Ver Raio-X completo do [modelo]" — removido em 28/05/2026.
 async function showVehicleProfileByFipe(fipeCode, hint) {
   if (!fipeCode) {
     alert('Código FIPE ausente.');
@@ -3844,19 +3846,22 @@ async function loadVehicleProfileDataByFipe(v) {
   const brand = v.brand || '';
   const model = v.name || '';
 
-  // Busca em paralelo (4 fontes)
-  const [knownIssues, complaints, fipePrice, scoreData] = await Promise.all([
+  // Busca em paralelo (5 fontes)
+  // modelScoreData: score agregado do modelo inteiro (todas as FIPEs).
+  // Usado no novo card "Doxcore do [modelo] geral" na coluna direita.
+  const [knownIssues, complaints, fipePrice, scoreData, modelScoreData] = await Promise.all([
     loadKnownIssues(brand, model),
     sbLoadComplaintsByFipe(fipeCode),
     loadFipePriceForVehicle(v),
-    calculateFipeScore(fipeCode)
+    calculateFipeScore(fipeCode),
+    calculateModelScore(brand, model)
   ]);
 
   // Calcula stats das reclamações
   const stats = calcVehicleStats(complaints);
 
-  // Renderiza passando scoreData (novo parâmetro opcional)
-  renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, scoreData);
+  // Renderiza passando scoreData + modelScoreData (genérico do modelo)
+  renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, scoreData, modelScoreData);
 }
 
 // Busca reclamações filtradas por código FIPE exato.
@@ -4366,13 +4371,21 @@ async function renderManufacturerChip(brand, containerId, vehicleType, fipeBrand
 }
 
 // Renderiza a página completa com dados reais
-function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, scoreData) {
+function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, scoreData, modelScoreData) {
   _currentVehicle = v; // rastreia veículo atual para o botão Reclamar
   const el = document.getElementById('vehicle-profile-content');
   if (!el) return;
 
   // -- Extrai resumo curado
+  // `summary` (legacy): primeiro summary encontrado, sem distinção.
+  // Mantido pra retrocompatibilidade — usado em header, verdict, strengths/weaknesses.
+  // `summarySpecific` / `summaryGeneric`: separados por nível (decisão 28/05/2026).
+  // Usados no bloco visual da Curadoria pra honestidade da fonte.
   const summary = knownIssues.find(i => i.is_summary);
+  const summarySpecific = v.fipe_code
+    ? knownIssues.find(i => i.is_summary && i.fipe_code === v.fipe_code)
+    : null;
+  const summaryGeneric = knownIssues.find(i => i.is_summary && !i.fipe_code);
   const issues = knownIssues.filter(i => !i.is_summary);
 
   // -- Calcula stats de reclamações reais
@@ -4712,13 +4725,23 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + '<div class="profile-card">'
     + '<div class="pc-title"><span class="pc-emoji">👨‍🔧</span> Raio-X</div>'
 
-    // ── Sub-bloco 1: Curadoria ──
-    + '<div class="raiox-subtitle">Curadoria</div>'
-    + (summary
-      ? '<div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px;padding:12px 14px;background:' + summaryColors.bg + ';border-radius:10px;border:1px solid ' + summaryColors.border + '">' + summary.issue_description
-        + (summary.source ? '<div style="margin-top:8px;font-size:10px;font-weight:600;color:var(--muted);text-align:right">Análise: ' + summary.source + '</div>' : '')
-        + '</div>'
-      : '')
+    // ── Sub-bloco 1: Curadoria desta versão ──
+    // Na página FIPE-específica: mostra summarySpecific (curadoria da versão).
+    //   Se vazio, mostra etiqueta didática apontando pro bloco geral abaixo.
+    // Na página genérica (sem fipeCodeForVote): mantém comportamento legado
+    //   (usa `summary` — primeiro summary encontrado, igual antes).
+    + '<div class="raiox-subtitle">Curadoria' + (fipeCodeForVote ? ' desta versão' : '') + '</div>'
+    + (fipeCodeForVote
+      ? (summarySpecific
+        ? '<div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px;padding:12px 14px;background:' + summaryColors.bg + ';border-radius:10px;border:1px solid ' + summaryColors.border + '">' + summarySpecific.issue_description
+          + (summarySpecific.source ? '<div style="margin-top:8px;font-size:10px;font-weight:600;color:var(--muted);text-align:right">Análise: ' + summarySpecific.source + '</div>' : '')
+          + '</div>'
+        : '<div style="font-size:12px;color:var(--muted);font-style:italic;line-height:1.55;margin-bottom:14px;padding:10px 12px;background:var(--bg2);border-radius:10px;border:1px dashed var(--border2)">Esta versão ainda não tem análise específica. Veja a análise geral do modelo abaixo.</div>')
+      : (summary
+        ? '<div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px;padding:12px 14px;background:' + summaryColors.bg + ';border-radius:10px;border:1px solid ' + summaryColors.border + '">' + summary.issue_description
+          + (summary.source ? '<div style="margin-top:8px;font-size:10px;font-weight:600;color:var(--muted);text-align:right">Análise: ' + summary.source + '</div>' : '')
+          + '</div>'
+        : ''))
     + raioXCards
 
     // ── Divisor ──
@@ -4731,6 +4754,22 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + complaintCards
     + (complaints.length > 3 ? '<button onclick="showPage(\'complaints\',{brand:\'' + v.brand.replace(/'/g,"\\'") + '\',model:\'' + v.name.replace(/'/g,"\\'") + '\'})" style="width:100%;background:none;border:1.5px solid var(--border2);border-radius:8px;padding:10px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;color:var(--navy);margin-top:6px">Confira todos os relatos da comunidade →</button>' : '')
     + '</div>' // fecha .profile-card (Raio-X)
+
+    // ═══ Bloco Raio-X · [modelo] (todas as versões) — só na página FIPE-específica ═══
+    // Visual discreto (bg secundário, fonte menor): é contexto agregado, não a
+    // análise principal — a análise principal é a do bloco Raio-X acima.
+    + (fipeCodeForVote
+      ? '<div class="profile-card" style="background:var(--bg2);border-color:var(--border)">'
+        + '<div style="font-family:var(--font);font-weight:700;font-size:13px;color:var(--text2);margin-bottom:10px;display:flex;align-items:center;gap:6px"><span style="font-size:16px">👨‍🔧</span>Raio-X · ' + v.name + ' (todas as versões)</div>'
+        + (summaryGeneric
+          ? '<div style="font-family:var(--font);font-weight:700;font-size:10px;color:var(--muted2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Análise do modelo</div>'
+            + '<div style="font-size:12px;color:var(--text2);line-height:1.55;padding:10px 12px;background:var(--white);border-radius:8px;border:1px solid var(--border)">' + summaryGeneric.issue_description
+            + (summaryGeneric.source ? '<div style="margin-top:6px;font-size:10px;font-weight:600;color:var(--muted);text-align:right">Análise: ' + summaryGeneric.source + '</div>' : '')
+            + '</div>'
+          : '<div style="font-size:12px;color:var(--muted);font-style:italic;line-height:1.55;padding:10px 12px;background:var(--white);border-radius:8px;border:1px dashed var(--border2)">Este modelo ainda não tem análise geral cadastrada.</div>')
+        + '</div>'
+      : '')
+
     + '</div>' // fecha coluna esquerda
 
     // Coluna direita
@@ -4751,6 +4790,23 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + (distTotal === 0 ? '<div style="font-size:12px;color:var(--muted);margin-top:8px;text-align:center">Baseado em ' + totalComplaints + ' ' + (totalComplaints === 1 ? 'relato' : 'relatos') + ' — avalie após registrar sua reclamação</div>' : '')
     + '</div>'
 
+    // Card "Doxcore do [Modelo] geral" — resumo agregado de TODAS as versões
+    // Só aparece em página FIPE-específica (Decisão 28/05/2026).
+    // Visual discreto (bg secundário, fonte menor): é contexto, não a métrica
+    // principal — a métrica principal da página é o Doxcore desta FIPE no header.
+    + (fipeCodeForVote
+      ? '<div class="profile-card" style="background:var(--bg2);border-color:var(--border)">'
+        + '<div style="font-family:var(--font);font-weight:700;font-size:11px;color:var(--muted2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Doxcore do ' + v.name + ' (geral)</div>'
+        + (modelScoreData && modelScoreData.score != null
+          ? '<div style="display:flex;align-items:baseline;gap:6px">'
+            + '<span style="font-size:22px;font-weight:700;color:var(--text2)">' + modelScoreData.score.toFixed(1) + '</span>'
+            + '<span style="font-size:12px;color:var(--muted)">/ 5</span>'
+            + '<span style="font-size:11px;color:var(--muted);margin-left:auto">' + modelScoreData.votos + ' ' + (modelScoreData.votos === 1 ? 'voto' : 'votos') + ' · todas versões</span>'
+            + '</div>'
+          : '<div style="font-size:12px;color:var(--muted);font-style:italic">Sem dados agregados ainda do ' + v.name + ' geral.</div>')
+      + '</div>'
+      : '')
+
     // Card FIPE comparativo
     + '<div class="profile-card">'
     + '<div class="pc-title"><span class="dot"></span>Comparar preço FIPE</div>'
@@ -4769,17 +4825,9 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + '</div>' // fim coluna direita
     + '</div>'; // fim profile-grid
 
-  // Botão "Ver Raio-X completo do [modelo]" — só na página FIPE-exata
-  // Conecta visão granular (FIPE-exata) à visão agregada (modelo-genérico)
-  if (fipeCodeForVote && v.brand && v.name) {
-    const safeBrand = v.brand.replace(/'/g, "\\'");
-    const safeModel = v.name.replace(/'/g, "\\'");
-    el.innerHTML += '<div class="btn-raiox-full-wrap">'
-      + '<button class="btn-raiox-full" onclick="showVehicleProfileByBrandModel(\'' + safeBrand + '\',\'' + safeModel + '\')">'
-      + 'Ver Raio-X completo do ' + v.name
-      + ' →</button>'
-      + '</div>';
-  }
+  // Botão "Ver Raio-X completo do [modelo]" removido em 28/05/2026:
+  // genérico agora aparece embutido na própria página FIPE-específica
+  // (bloco Raio-X genérico abaixo + card Doxcore geral na coluna direita).
 
   loadFipeBrandsInto('cmp-brand', 'carros');
 
