@@ -51,7 +51,6 @@ svg.ico{color:var(--navy)}
 .nav-link svg.ico{color:rgba(255,255,255,.55)}
 .nav-link:hover svg.ico{color:#fff}
 .back-btn svg.ico{color:var(--muted)}
-.how-icon svg.ico{width:34px;height:34px;color:var(--navy)}
 .cat-icon svg.ico{width:22px;height:22px;color:var(--navy)}
 .cat-btn.active svg.ico{color:#fff}
 .success-icon svg.ico{width:56px;height:56px;color:var(--green)}
@@ -671,9 +670,6 @@ header{
 .rank-brand{color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase}
 .rank-score{font-family:var(--font);font-weight:900;font-size:17px;color:var(--green);min-width:34px;text-align:right}
 
-/* ── HOW IT WORKS ── */
-.how-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
-
 /* ── PERFIL DE EMPRESA: grid de 2 colunas (identidade + NPS/reclamações) ── */
 .company-profile-grid{
   display:grid;
@@ -685,20 +681,6 @@ header{
 @media (max-width:720px){
   .company-profile-grid{grid-template-columns:1fr}
 }
-.how-card{
-  background:var(--white);border:1.5px solid var(--border);border-radius:14px;
-  padding:28px 22px;text-align:center;transition:border-color .2s,box-shadow .2s;
-}
-.how-card:hover{border-color:var(--navy);box-shadow:var(--shadow)}
-.how-num{
-  width:48px;height:48px;border-radius:50%;
-  background:var(--red-light);border:2px solid var(--red-light2);
-  color:var(--red);font-family:var(--font);font-weight:900;font-size:20px;
-  display:flex;align-items:center;justify-content:center;margin:0 auto 14px;
-}
-.how-icon{font-size:26px;margin-bottom:10px}
-.how-title{font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy);margin-bottom:7px}
-.how-text{color:var(--muted);font-size:13px;line-height:1.55;font-family:var(--font-body)}
 
 /* ── FOOTER ── */
 footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;margin-top:auto}
@@ -5488,16 +5470,13 @@ async function submitLawyerRegistration() {
 }
 
 // ══ HISTÓRICO DE NAVEGAÇÃO ══
-const pageHistory = [];
-
+// Fonte única: o histórico do navegador (populado por showPage via location.hash
+// + restoreFromHash no hashchange). O antigo pageHistory (array paralelo que só
+// se enchia e nunca era lido) foi aposentado em 28/05 — era código morto, ninguém
+// chamava goBack(). goBack() segue disponível pra qualquer "Voltar" interno, agora
+// delegando ao histórico real do navegador (mesmo motor do botão voltar nativo).
 function goBack() {
-  if (pageHistory.length > 1) {
-    pageHistory.pop(); // remove página atual
-    const prev = pageHistory.pop(); // pega a anterior
-    showPage(prev);
-  } else {
-    showPage('home');
-  }
+  history.back();
 }
 
 function showPage(page, params={}){
@@ -5519,7 +5498,6 @@ function showPage(page, params={}){
     const el=document.getElementById('page-'+p);
     if(el) el.style.display=p===page?'block':'none';
   });
-  pageHistory.push(page);
   window.scrollTo({top:0,behavior:'smooth'});
   if(page==='profile') renderProfile();
   if(page==='compare') initCompare();
@@ -10530,11 +10508,9 @@ async function restoreFromHash() {
   // restoreFromHash → showPage reescreve o MESMO hash (set idempotente não
   // redispara hashchange), portanto não há loop.
   //
-  // FRONTEIRA CONSCIENTE restante (dívida registrada, não furo):
-  //   pageHistory + goBack() seguem vivos em paralelo ao histórico do navegador
-  //   (segundo balde). Unificar (goBack → history.back) ficou pra Opção 1.
-  // RESOLVIDO nesta sessão: voltar PARA um veículo — as 3 portas agora gravam
-  // identidade no hash (?fipe / ?brand&model / ?id) e restoreFromHash re-despacha.
+  // RESOLVIDO nesta sessão (28/05): voltar PARA um veículo (as 3 portas gravam
+  // identidade no hash) E o balde paralelo pageHistory (era código morto, removido;
+  // goBack agora delega a history.back). Fonte única = histórico do navegador.
   // Registrado só após o restore inicial pra não disparar durante o bootstrap.
   window.addEventListener('hashchange', () => {
     restoreFromHash();
