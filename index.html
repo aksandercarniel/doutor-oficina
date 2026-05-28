@@ -1194,7 +1194,8 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .nps-capsule-track-neutro{background:#FAEEDA;border-color:#EF9F27}
 .nps-capsule-track-detrator{background:#FCEBEB;border-color:#E24B4A}
 .nps-capsule-track-empty{background:#fff;border-color:#e5e7eb}
-/* Preenchimento: cor forte + flex pra alinhar a carinha à direita (fim do preenchimento) */
+/* Preenchimento: cor forte + flex pra alinhar a carinha à direita (fim do preenchimento).
+   padding-right:1px deixa 1px de margem entre a carinha e a borda direita do trilho. */
 .nps-capsule-fill{position:absolute;left:0;top:0;height:100%;border-radius:13px;animation:nps-cap-grow .9s cubic-bezier(.34,1.36,.64,1) both .15s;transform-origin:left center;display:flex;align-items:center;justify-content:flex-end;padding-right:1px;box-sizing:border-box}
 .nps-capsule-fill-promotor{background:#2a9d6a}
 .nps-capsule-fill-neutro{background:#EF9F27}
@@ -6720,8 +6721,10 @@ function renderNpsCapsule(score, opts) {
   const numTxt = hasScore ? s.toFixed(1).replace('.', ',') : '—';
   const bigCls = 'nps-capsule-bignum nps-capsule-bignum-' + cat;
   // V1a: carinha BRANCA com traços coloridos, dentro do trilho, encostada no fim do preenchimento.
-  // Anatomia compatível com _npsFace mas com cores invertidas (fundo branco, traços na cor da categoria).
-  const faceInside = hasScore ? _doxcareFaceInverted(cat, opts.compact ? 14 : 18) : '';
+  // Tamanhos calculados pra deixar 1px de margem em cima/embaixo/direita:
+  //   - Não-compact: trilho 22px - borda 2px = 20px útil → carinha 18px
+  //   - Compact: trilho 20px - borda 2px = 18px útil → carinha 16px
+  const faceInside = hasScore ? _doxcareFaceInverted(cat, opts.compact ? 16 : 18) : '';
   const trackInner = hasScore
     ? '<div class="nps-capsule-fill nps-capsule-fill-' + cat + '" style="width:' + pct + '%">' + faceInside + '</div>'
     : '<div class="nps-capsule-edu"><div class="nps-capsule-edu-r"></div><div class="nps-capsule-edu-y"></div><div class="nps-capsule-edu-g"></div></div>';
