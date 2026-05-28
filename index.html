@@ -737,6 +737,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .step-indicator{display:flex;gap:8px;margin-bottom:24px}
 .step-dot{height:4px;border-radius:2px;flex:1;background:var(--border2);transition:background .3s}
 .step-dot.done{background:var(--red)}
+.modo-opiniao .step-dot.done{background:var(--orange)}
 
 /* FORM */
 .form-group{margin-bottom:18px}
@@ -798,6 +799,9 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
   box-shadow:0 4px 14px rgba(232,24,74,.25);
 }
 .btn-submit:hover{background:var(--red2);transform:translateY(-1px)}
+/* Modo opinião: botões de avanço/envio ficam laranja em vez de vermelho */
+.modo-opiniao .btn-submit{background:var(--orange);box-shadow:0 4px 14px rgba(239,159,39,.28)}
+.modo-opiniao .btn-submit:hover{background:#d98a1f}
 .btn-back{
   background:var(--bg);color:var(--muted);border:1.5px solid var(--border2);
   border-radius:10px;font-family:var(--font);font-weight:700;font-size:15px;
@@ -2218,11 +2222,11 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
           </div>
         </div>
         <div class="form-group" style="margin-top:4px">
-          <label class="form-label">Título da reclamação</label>
+          <label class="form-label" id="lbl-title">Título da reclamação</label>
           <input type="text" class="form-input" id="inp-title" placeholder="Ex: Motor superaquece em baixa velocidade"/>
         </div>
         <div class="form-group">
-          <label class="form-label">Descreva o problema</label>
+          <label class="form-label" id="lbl-desc">Descreva o problema</label>
           <textarea class="form-textarea" id="inp-desc" placeholder="Detalhe o problema: quando ocorre, se levou à oficina, quais foram os custos…"></textarea>
         </div>
         <div class="form-group">
@@ -5009,9 +5013,11 @@ async function openModal(vehicleContext, modoOpiniao){
   document.body.style.overflow='hidden';
   resetComplaintForm();
   _modoOpiniao = !!modoOpiniao;
+  const modalEl = document.getElementById('modal');
+  if (modalEl) modalEl.classList.toggle('modo-opiniao', _modoOpiniao);
   const titleEl = document.getElementById('modal-title-main');
   if (titleEl) titleEl.innerHTML = _modoOpiniao
-    ? 'Nova <span class="accent">opinião</span>'
+    ? 'Nova <span class="accent" style="color:var(--orange)">opinião</span>'
     : 'Nova <span class="accent">reclamação</span>';
   goStep(0);
   await loadBrands(vehicleContext?.type || 'carros');
@@ -5137,6 +5143,15 @@ function goStep(n){
   if (n===1) {
     // Popula as 5 carinhas no container (HTML estático foi removido — JS controla agora)
     renderFormFaces();
+    // Labels contextuais: opinião vs reclamação
+    const lblTitle = document.getElementById('lbl-title');
+    const lblDesc = document.getElementById('lbl-desc');
+    const inpDesc = document.getElementById('inp-desc');
+    if (lblTitle) lblTitle.textContent = _modoOpiniao ? 'Título da opinião' : 'Título da reclamação';
+    if (lblDesc) lblDesc.textContent = _modoOpiniao ? 'Sua opinião' : 'Descreva o problema';
+    if (inpDesc) inpDesc.placeholder = _modoOpiniao
+      ? 'Conte sua experiência com o veículo: pontos fortes, defeitos, manutenção…'
+      : 'Detalhe o problema: quando ocorre, se levou à oficina, quais foram os custos…';
   }
   if (n===2) {
     // No modo opinião, o step2 é o último: o botão envia direto (pula empresa + mediação).
@@ -5626,6 +5641,22 @@ function goStep1WithPlate() {
   if (!plateData) {
     // Aceita mesmo sem confirmação — usuário pode preencher manualmente
     plateData = { found: false, plate: plate.replace('-','') };
+  }
+  // Trava: exige marca + modelo (+ ano FIPE) antes de avançar. Vale pros dois modos.
+  const brandSel = document.getElementById('sel-brand');
+  const modelSel = document.getElementById('sel-model');
+  const getOptText = (sel) => {
+    if (!sel || !sel.value) return '';
+    const opt = sel.options[sel.selectedIndex];
+    return (opt && opt.text && !opt.text.toLowerCase().includes('selecione') && !opt.text.toLowerCase().includes('carregando')) ? opt.text.trim() : '';
+  };
+  const status = document.getElementById('plate-status');
+  if (!getOptText(brandSel) || !getOptText(modelSel)) {
+    if (status) {
+      status.className = 'plate-status error';
+      status.innerHTML = '❌ Selecione a marca e o modelo do veículo antes de continuar.';
+    }
+    return;
   }
   goStep(1);
 }
