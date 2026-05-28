@@ -1194,12 +1194,13 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .nps-capsule-track-neutro{background:#FAEEDA;border-color:#EF9F27}
 .nps-capsule-track-detrator{background:#FCEBEB;border-color:#E24B4A}
 .nps-capsule-track-empty{background:#fff;border-color:#e5e7eb}
-/* Preenchimento: cor forte + flex pra alinhar a carinha à direita (fim do preenchimento).
+/* Preenchimento: cor INTERMEDIÁRIA (mais clara que a borda, mais escura que o trilho),
+   pra que o trilho/fill/borda tenham 3 níveis de profundidade visíveis.
    padding-right:1px deixa 1px de margem entre a carinha e a borda direita do trilho. */
 .nps-capsule-fill{position:absolute;left:0;top:0;height:100%;border-radius:13px;animation:nps-cap-grow .9s cubic-bezier(.34,1.36,.64,1) both .15s;transform-origin:left center;display:flex;align-items:center;justify-content:flex-end;padding-right:1px;box-sizing:border-box}
-.nps-capsule-fill-promotor{background:#2a9d6a}
-.nps-capsule-fill-neutro{background:#EF9F27}
-.nps-capsule-fill-detrator{background:#E24B4A}
+.nps-capsule-fill-promotor{background:#6BC093}
+.nps-capsule-fill-neutro{background:#F4B556}
+.nps-capsule-fill-detrator{background:#E87575}
 .nps-capsule-edu{position:absolute;inset:0;display:flex;border-radius:13px;overflow:hidden}
 .nps-capsule-edu-r{flex:70;background:#FCEBEB}
 .nps-capsule-edu-y{flex:20;background:#FAEEDA}
@@ -6736,19 +6737,20 @@ function renderNpsCapsule(score, opts) {
     + '</div>';
 }
 
-// Carinha "invertida" pro padrão V1a: fundo branco, olhos+boca na cor forte da categoria.
+// Carinha "invertida" pro padrão V1a: fundo branco, olhos+boca na cor INTERMEDIÁRIA do fill.
 // Usada dentro do trilho do Doxcare, encostada no fim do preenchimento.
+// As cores batem com .nps-capsule-fill-* pra coerência visual (carinha = mesma cor do fill atrás).
 function _doxcareFaceInverted(cat, size) {
   size = size || 16;
   let stroke, mouth;
   if (cat === 'promotor') {
-    stroke = '#2a9d6a';
+    stroke = '#6BC093';
     mouth = '<path d="M 13 23 Q 20 29 27 23" stroke="' + stroke + '" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
   } else if (cat === 'neutro') {
-    stroke = '#EF9F27';
+    stroke = '#F4B556';
     mouth = '<line x1="13" y1="25" x2="27" y2="25" stroke="' + stroke + '" stroke-width="2.5" stroke-linecap="round"/>';
   } else {
-    stroke = '#E24B4A';
+    stroke = '#E87575';
     mouth = '<path d="M 13 28 Q 20 22 27 28" stroke="' + stroke + '" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
   }
   return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 40 40" style="flex-shrink:0;display:block">'
