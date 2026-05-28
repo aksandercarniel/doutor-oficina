@@ -4386,6 +4386,13 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     ? knownIssues.find(i => i.is_summary && i.fipe_code === v.fipe_code)
     : null;
   const summaryGeneric = knownIssues.find(i => i.is_summary && !i.fipe_code);
+  // effectiveSummary: o que o HEADER da página realmente deve usar.
+  // - Página FIPE-específica → SÓ usa curadoria específica desta versão.
+  //   Se não existe (caso comum hoje), header fica vazio — não vaza dado do
+  //   genérico fingindo ser desta versão. Quando chegar dado orgânico ou
+  //   curadoria específica, o header se enche naturalmente.
+  // - Página genérica do modelo → usa summary legacy (comportamento original).
+  const effectiveSummary = v.fipe_code ? summarySpecific : summary;
   const issues = knownIssues.filter(i => !i.is_summary);
 
   // -- Calcula stats de reclamações reais
@@ -4398,11 +4405,12 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
   // -- Nota: prioridade
   //    1. Se scoreData veio (página FIPE-exata) e tem score calculado, usa ele
   //       (já considera 60% curadoria + 40% comunidade quando há ≥5 votos)
-  //    2. Senão, usa reliability_score do summary curado
+  //    2. Senão, usa reliability_score do effectiveSummary
+  //       (específico na FIPE-página, legacy/genérico na página do modelo)
   //    3. Senão, fallback para média de stars das reclamações
   const avgRating = (scoreData && scoreData.score != null)
     ? scoreData.score
-    : (summary?.reliability_score
+    : (effectiveSummary?.reliability_score
         || (stats?.avg_rating ? parseFloat(stats.avg_rating).toFixed(1) : null));
   const displayRating = avgRating ? parseFloat(avgRating) : null;
 
@@ -4416,7 +4424,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
   const badge = getBadge(displayRating);
 
   // -- Doxcore (texto curado da curadoria; renderizado no header)
-  const verdictText = summary?.verdict || null;
+  const verdictText = effectiveSummary?.verdict || null;
 
   // -- Distribuição de notas reais
   //    Fonte primária: scoreData.dist (o "balde" do calculateFipeScore — as 3
@@ -4449,11 +4457,11 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
 
   // -- Tags de pontos fortes (verdes) e fracos (vermelhos) do curado
   // Equilibra a percepção: o usuário vê o bom E o ruim do veículo
-  const strengthTags = summary?.strengths
-    ? summary.strengths.slice(0, 2).map(s => '<span class="ptag badge-green">' + s + '</span>').join('')
+  const strengthTags = effectiveSummary?.strengths
+    ? effectiveSummary.strengths.slice(0, 2).map(s => '<span class="ptag badge-green">' + s + '</span>').join('')
     : '';
-  const weaknessTags = summary?.weaknesses
-    ? summary.weaknesses.slice(0, 3).map(w => '<span class="ptag">' + w + '</span>').join('')
+  const weaknessTags = effectiveSummary?.weaknesses
+    ? effectiveSummary.weaknesses.slice(0, 3).map(w => '<span class="ptag">' + w + '</span>').join('')
     : '';
 
   // ─────────────────────────────────────────────────────────────
@@ -4472,7 +4480,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
   // calculateFipeScore) é passado — caso da página FIPE-exata.
   // Páginas que não passam scoreData mantêm comportamento antigo
   // (apenas estados 1 e 4).
-  const hasCurated = !!summary?.reliability_score;
+  const hasCurated = !!effectiveSummary?.reliability_score;
   const hasCommunity = scoreData && scoreData.hasMinimum && scoreData.votos > 0;
   const fipeCodeForVote = v.fipe_code || null;
   // CTA antigo (mantido pra página modelo-genérico, que não tem fipe_code)
@@ -4555,10 +4563,10 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
   });
 
   // Pontos positivos: prioriza positiveIssues da tabela (têm descrição completa)
-  // Fallback: summary.strengths (só títulos) — compatibilidade com lotes antigos
+  // Fallback: effectiveSummary.strengths (só títulos) — compatibilidade com lotes antigos
   const positivesPool = positiveIssues.length > 0
     ? positiveIssues.map(p => ({ isTableRow: true, data: p }))
-    : (summary?.strengths || []).map(t => ({ isTableRow: false, data: t }));
+    : (effectiveSummary?.strengths || []).map(t => ({ isTableRow: false, data: t }));
 
   // Seleciona problemas e positivos conforme o rating
   let selectedIssues, selectedStrengths;
