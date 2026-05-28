@@ -3341,16 +3341,20 @@ async function submitComplaint() {
   const modelName = parts[0] || fullModelText;
   const modelVersion = parts.slice(1).join(' ') || null;
 
-  // Empresa é opcional — reclamação pode ser sobre o veículo sem empresa específica
+  // Tipo da reclamação: COM empresa = 'reclamacao' (tem ciclo de resolução),
+  // SEM empresa = 'opiniao' (relato sobre o veículo, não entra em ciclo nem mediação).
   const compName = document.getElementById('comp-name')?.value.trim() || null;
+  const isOpiniao = !compName;
 
-  if (wantsMediation) {
+  // Opinião não pede mediação (não há empresa pra mediar). Só valida WhatsApp se for reclamação com mediação.
+  if (!isOpiniao && wantsMediation) {
     const whatsapp = document.getElementById('med-whatsapp').value.trim();
     if (!whatsapp) { alert('Informe seu WhatsApp para a mediação.'); return; }
   }
 
   const complaint = {
     user_id: currentUser.id,
+    type:      isOpiniao ? 'opiniao' : 'reclamacao',
     fipe_code: _currentFipeCode, // Sprint 1 FIPE-first
     vehicle_brand: brandText,
     vehicle_model: modelName,
@@ -3359,20 +3363,21 @@ async function submitComplaint() {
     vehicle_type:  typeBtn?.getAttribute('onclick')?.includes('motos') ? 'moto' : typeBtn?.getAttribute('onclick')?.includes('caminhoes') ? 'caminhao' : 'carro',
     plate_hash:    plateData?.plate ? btoa(plateData.plate.replace('-','').toUpperCase()) : null,
     category:  selectedCatVal || 'Outro',
-    title:     document.getElementById('inp-title').value || 'Reclamação',
+    title:     document.getElementById('inp-title').value || (isOpiniao ? 'Opinião' : 'Reclamação'),
     description: document.getElementById('inp-desc').value || '',
     rating:    selectedRating || 3,
     state:     currentUser?.state || null,
     km:        document.getElementById('inp-km').value || null,
-    status:    'open',
-    wants_mediation: wantsMediation,
-    company_name:    normalizeCompanyName(document.getElementById('comp-name').value),
-    company_cnpj:    document.getElementById('comp-cnpj').value.trim() || null,
-    company_email:   document.getElementById('comp-email').value.trim() || null,
-    company_phone:   document.getElementById('comp-phone').value.trim() || null,
-    company_address: document.getElementById('comp-address').value.trim() || null,
+    // Opinião não tem ciclo de resolução → status null. Reclamação nasce 'open'.
+    status:    isOpiniao ? null : 'open',
+    wants_mediation: isOpiniao ? false : wantsMediation,
+    company_name:    compName ? normalizeCompanyName(compName) : null,
+    company_cnpj:    isOpiniao ? null : (document.getElementById('comp-cnpj').value.trim() || null),
+    company_email:   isOpiniao ? null : (document.getElementById('comp-email').value.trim() || null),
+    company_phone:   isOpiniao ? null : (document.getElementById('comp-phone').value.trim() || null),
+    company_address: isOpiniao ? null : (document.getElementById('comp-address').value.trim() || null),
     city:            currentUser?.city || null,
-    client_whatsapp: wantsMediation ? document.getElementById('med-whatsapp').value.trim() : null,
+    client_whatsapp: (!isOpiniao && wantsMediation) ? document.getElementById('med-whatsapp').value.trim() : null,
   };
 
   try {
@@ -3394,8 +3399,10 @@ async function submitComplaint() {
       document.querySelectorAll('.modal-step').forEach(s => s.classList.remove('active'));
       document.getElementById('step-success').classList.add('active');
       document.getElementById('success-icon').textContent = '🎉';
-      document.getElementById('success-title').textContent = 'Reclamação enviada!';
-      document.getElementById('success-text').innerHTML = 'Obrigado por contribuir com a comunidade.<br>Sua reclamação já está visível e vai ajudar outros motoristas.';
+      document.getElementById('success-title').textContent = isOpiniao ? 'Opinião enviada!' : 'Reclamação enviada!';
+      document.getElementById('success-text').innerHTML = isOpiniao
+        ? 'Obrigado por contribuir com a comunidade.<br>Sua opinião sobre o veículo já está visível e vai ajudar outros motoristas.'
+        : 'Obrigado por contribuir com a comunidade.<br>Sua reclamação já está visível e vai ajudar outros motoristas.';
     }
   } catch(e) {
     console.error(e);
@@ -6446,7 +6453,7 @@ async function openComplaintDetail(complaintId) {
     if (!complaint) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Reclamação não encontrada.</div>'; return; }
     const { data: messages } = await sb.from('resolutions').select('*').eq('complaint_id', complaintId).order('created_at', { ascending: true });
     // Busca NPS de encerramento (só existe se reclamação foi encerrada via modal de avaliação)
-    const { data: npsData } = await sb.from('nps_ratings').select('score').eq('complaint_id', complaintId).maybeSingle();
+    const { data: npsData } = await sb.from('nps_ratings').select('score, comment').eq('complaint_id', complaintId).maybeSingle();
     const npsScore = npsData?.score;
     const hasNps = npsScore != null && !isNaN(npsScore);
     // Busca dados da empresa (chip estilo Montadora: avatar, selo verificado, NPS médio)
@@ -6638,6 +6645,47 @@ async function openComplaintDetail(complaintId) {
           </div>
         </div>
       </div>`;
+
+    // Balão grande do Doxcare em largura total (portado de renderResolutionPage — paridade entre as duas telas de reclamação)
+    if (complaint.status === 'resolved' && hasNps) {
+      const s = Math.max(0, Math.min(10, parseFloat(npsData.score)));
+      const cat = _npsCategory(s);
+      const npsColor   = cat === 'promotor' ? '#2a9d6a' : cat === 'neutro' ? '#EF9F27' : '#E24B4A';
+      // npsFill: cor INTERMEDIÁRIA da paleta V1 (padrão V1a, coerência com cards de marca)
+      const npsFill    = cat === 'promotor' ? '#6BC093' : cat === 'neutro' ? '#F4B556' : '#E87575';
+      const npsBg      = cat === 'promotor' ? '#EAF3DE' : cat === 'neutro' ? '#FAEEDA' : '#FCEBEB';
+      const npsBorder  = cat === 'promotor' ? '#2a9d6a33' : cat === 'neutro' ? '#EF9F2733' : '#E24B4A33';
+      const npsTextDark= cat === 'promotor' ? '#2a9d6a' : cat === 'neutro' ? '#b45309' : '#A32D2D';
+      const npsLabel   = cat === 'promotor' ? 'Promotor' : cat === 'neutro' ? 'Neutro' : 'Detrator';
+      const npsDesc    = cat === 'promotor'
+        ? 'Cliente satisfeito e propenso a recomendar a empresa.'
+        : cat === 'detrator'
+        ? 'Cliente insatisfeito e pode prejudicar a imagem da empresa.'
+        : 'Cliente com experiência razoável, pode melhorar.';
+      const pct = (s / 10) * 100;
+      const numTxt = s.toFixed(1).replace('.', ',');
+      html += `<div style="background:${npsBg};border:1px solid ${npsBorder};border-radius:16px;padding:24px;margin-top:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px">
+          ${_doxcareLabel({ size: 16 })}
+          <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;background:#fff;border:1px solid ${npsBorder};font-family:var(--font);font-weight:800;font-size:12px;color:${npsTextDark}">${npsLabel}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+          <div style="text-align:center;flex-shrink:0;min-width:80px">
+            <div style="font-family:var(--font);font-weight:900;font-size:52px;color:${npsColor};line-height:1">${numTxt}</div>
+            <div style="font-size:11px;color:var(--muted);font-weight:600;margin-top:4px">de 10</div>
+          </div>
+          <div style="flex:1;min-width:200px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+              <span style="display:inline-block;flex:1;height:8px;border-radius:999px;background:#fff;border:1px solid ${npsColor};overflow:hidden;box-sizing:border-box">
+                <span style="display:block;height:100%;width:${pct}%;background:${npsFill};border-radius:999px"></span>
+              </span>
+            </div>
+            <div style="font-size:13px;color:var(--text2);line-height:1.5">${npsDesc}</div>
+            ${npsData.comment ? `<div style="font-size:14px;color:var(--text2);background:#fff;border:1px solid ${npsBorder};border-radius:10px;padding:12px 14px;margin-top:12px;line-height:1.5">&ldquo;${npsData.comment}&rdquo;</div>` : ''}
+          </div>
+        </div>
+      </div>`;
+    }
 
     el.innerHTML = html;
   } catch(e) {
