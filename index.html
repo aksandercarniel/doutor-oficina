@@ -1738,6 +1738,18 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
     </div>
   </section>
 
+  <!-- OPINIÕES RECENTES — relatos sobre veículos (sem empresa, sem ciclo de resolução)
+       Esconde quando não há opiniões. -->
+  <section class="section" id="opinioes-section" style="display:none">
+    <div class="section-inner">
+      <div class="section-header">
+        <h2 class="section-title">Opiniões <span class="accent">recentes</span></h2>
+        <a href="#" class="see-all" onclick="event.preventDefault();showPage('complaints');return false;">Ver todas →</a>
+      </div>
+      <div class="complaints-list" id="opinioes-list"></div>
+    </div>
+  </section>
+
   <!-- COMO FUNCIONA -->
   <section class="section">
     <div class="section-inner">
@@ -2503,6 +2515,7 @@ function mapComplaint(c) {
   const dateStr = diff === 0 ? 'hoje' : diff === 1 ? 'há 1 dia' : `há ${diff} dias`;
   return {
     id: c.id,
+    type: c.type || 'reclamacao',
     emoji: typeEmoji[c.vehicle_type] || '🚗',
     brand: c.vehicle_brand,
     model: `${c.vehicle_model} ${c.vehicle_year || ''}`.trim(),
@@ -3389,7 +3402,7 @@ async function submitComplaint() {
     // Reset
     wantsMediation = false;
     // Home mostra apenas 5 — "Ver todas →" leva à página completa
-    sbLoadComplaints().then(data => { if (data.length) renderComplaintsList(data.slice(0, 3)); });
+    sbLoadComplaints().then(data => { if (data.length) renderComplaintsList(data); });
 
     if (saved?.id && complaint.wants_mediation) {
       // Fecha o modal e abre direto a escolha de advogado
@@ -5655,8 +5668,7 @@ async function applySearchWithFilter(query, filter) {
     type: typeMap[filter] || ''
   };
   const results = await sbLoadComplaints(filters);
-  // Home mostra apenas 5 — "Ver todas →" leva à página completa
-  renderComplaintsList(results.slice(0, 3));
+  renderComplaintsList(results);
   document.getElementById('complaints-list')?.scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
@@ -10066,19 +10078,43 @@ function requireAuthForCurrentVehicle() {
 // ══ PERFIL ══
 
 function renderComplaintsList(list) {
-  // Card estilo Reclame Aqui adaptado às cores Doutor Oficina
-  // Layout: avatar do veículo | título + (empresa? · veículo) + texto truncado em 2 linhas | rodapé com status·tempo·local·vote
-  document.getElementById('complaints-list').innerHTML = list.map((c,i) => {
+  // Separa reclamações (com ciclo) de opiniões (relatos do veículo, sem ciclo).
+  // Cada uma vai pro seu bloco; opiniões não aparecem misturadas com badge de status.
+  const reclamacoes = (list || []).filter(c => c.type !== 'opiniao').slice(0, 3);
+  const opinioes    = (list || []).filter(c => c.type === 'opiniao').slice(0, 3);
+  _renderComplaintCards('complaints-list', reclamacoes);
+  renderOpinioesList(opinioes);
+}
+
+// Renderiza o bloco "Opiniões recentes" e mostra/esconde a seção conforme houver dados.
+function renderOpinioesList(opinioes) {
+  const section = document.getElementById('opinioes-section');
+  if (!opinioes || opinioes.length === 0) {
+    if (section) section.style.display = 'none';
+    return;
+  }
+  if (section) section.style.display = '';
+  _renderComplaintCards('opinioes-list', opinioes, { isOpiniao: true });
+}
+
+// Render genérico dos cards estilo Reclame Aqui. opts.isOpiniao troca badge de status
+// pelo selo neutro de opinião.
+function _renderComplaintCards(targetId, list, opts = {}) {
+  const target = document.getElementById(targetId);
+  if (!target) return;
+  const isOpiniao = !!opts.isOpiniao;
+  target.innerHTML = (list || []).map((c,i) => {
     const id = c.id || i;
-    // Subtítulo: empresa (se houver) + veículo
     const subParts = [];
     if (c.companyName) subParts.push(`<span class="cra-sub-company">🏢 ${c.companyName}</span>`);
     subParts.push(`<span>${c.model}</span>`);
     const sub = subParts.join('<span class="cra-sub-sep">·</span>');
-    // Localização: cidade + UF, ou só UF, ou nada
     const loc = c.city && c.state ? `${c.city}, ${c.state}` : (c.state || '');
     const locHtml = loc ? `<span class="cra-foot-sep">·</span><span class="cra-foot-item">📍 ${loc}</span>` : '';
     const voted = votedIds.includes(id) ? 'voted' : '';
+    const badgeHtml = isOpiniao
+      ? `<span style="font-size:11px;font-weight:700;padding:3px 12px;border-radius:20px;background:#eef2f7;color:var(--navy);display:inline-flex;align-items:center;gap:4px">💬 Opinião</span>`
+      : `<span style="font-size:11px;font-weight:700;padding:3px 12px 3px 4px;border-radius:20px;background:${({'s-open':'#fef2f2','s-progress':'#eff6ff','s-replied':'#fef3c7','s-resolved':'#f0fdf4','s-unresolved':'#fff7ed'}[c.status]||'#fef2f2')};color:${({'s-open':'#dc2626','s-progress':'#2563eb','s-replied':'#d97706','s-resolved':'#16a34a','s-unresolved':'#ea580c'}[c.status]||'#dc2626')};display:inline-flex;align-items:center;gap:4px">${statusFace(c.status,16)}${c.statusLabel}</span>`;
     return `
     <div class="complaint-card-ra" onclick="openComplaintDetail('${id}')">
       <div class="cra-avatar">${vehicleIcon(c.emoji, c.model)}</div>
@@ -10086,7 +10122,7 @@ function renderComplaintsList(list) {
       <div class="cra-sub">${sub}</div>
       <div class="cra-text">${c.text}</div>
       <div class="cra-footer">
-        <span style="font-size:11px;font-weight:700;padding:3px 12px 3px 4px;border-radius:20px;background:${({'s-open':'#fef2f2','s-progress':'#eff6ff','s-replied':'#fef3c7','s-resolved':'#f0fdf4','s-unresolved':'#fff7ed'}[c.status]||'#fef2f2')};color:${({'s-open':'#dc2626','s-progress':'#2563eb','s-replied':'#d97706','s-resolved':'#16a34a','s-unresolved':'#ea580c'}[c.status]||'#dc2626')};display:inline-flex;align-items:center;gap:4px">${statusFace(c.status,16)}${c.statusLabel}</span>
+        ${badgeHtml}
         <span class="cra-foot-sep">·</span>
         <span class="cra-foot-item">⏱ ${c.date}</span>
         ${locHtml}
@@ -10505,8 +10541,8 @@ async function restoreFromHash() {
   // Tenta carregar reclamações reais, cai no mock se falhar
   try {
     const realComplaints = await sbLoadComplaints();
-    // Home mostra apenas 5 — "Ver todas →" leva à página completa
-    renderComplaintsList(realComplaints.slice(0, 3));
+    // renderComplaintsList separa e fatia cada bloco (reclamações + opiniões) internamente.
+    renderComplaintsList(realComplaints);
   } catch(e) {
     renderComplaintsList([]);
   }
