@@ -1183,25 +1183,26 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .nps-capsule-bignum-neutro{color:#b45309}
 .nps-capsule-bignum-detrator{color:#A32D2D}
 .nps-capsule-bignum-empty{color:var(--muted)}
-.nps-capsule{display:inline-flex;align-items:center;gap:8px;padding:3px 10px 3px 3px;border-radius:16px;background:#FCEBEB;box-sizing:border-box;width:100%}
+.nps-capsule{display:inline-flex;align-items:center;padding:3px;border-radius:16px;background:#FCEBEB;box-sizing:border-box;width:100%}
 .nps-capsule-promotor{background:#EAF3DE}
 .nps-capsule-neutro{background:#FAEEDA}
 .nps-capsule-detrator{background:#FCEBEB}
 .nps-capsule-empty{background:#f3f4f6}
-.nps-capsule-track{position:relative;flex:1;min-width:0;height:22px;border-radius:14px;background:#fff;overflow:hidden}
-.nps-capsule-fill{position:absolute;left:0;top:0;height:100%;border-radius:14px;animation:nps-cap-grow .9s cubic-bezier(.34,1.36,.64,1) both .15s;transform-origin:left center}
+/* V1a: trilho usa mesma cor pastel da pílula + borda 1px na cor forte da categoria */
+.nps-capsule-track{position:relative;flex:1;min-width:0;height:22px;border-radius:14px;overflow:hidden;box-sizing:border-box;border:1px solid transparent}
+.nps-capsule-track-promotor{background:#EAF3DE;border-color:#2a9d6a}
+.nps-capsule-track-neutro{background:#FAEEDA;border-color:#EF9F27}
+.nps-capsule-track-detrator{background:#FCEBEB;border-color:#E24B4A}
+.nps-capsule-track-empty{background:#fff;border-color:#e5e7eb}
+/* Preenchimento: cor forte + flex pra alinhar a carinha à direita (fim do preenchimento) */
+.nps-capsule-fill{position:absolute;left:0;top:0;height:100%;border-radius:13px;animation:nps-cap-grow .9s cubic-bezier(.34,1.36,.64,1) both .15s;transform-origin:left center;display:flex;align-items:center;justify-content:flex-end;padding-right:1px;box-sizing:border-box}
 .nps-capsule-fill-promotor{background:#2a9d6a}
 .nps-capsule-fill-neutro{background:#EF9F27}
 .nps-capsule-fill-detrator{background:#E24B4A}
-.nps-capsule-edu{position:absolute;inset:0;display:flex;border-radius:14px;overflow:hidden}
+.nps-capsule-edu{position:absolute;inset:0;display:flex;border-radius:13px;overflow:hidden}
 .nps-capsule-edu-r{flex:70;background:#FCEBEB}
 .nps-capsule-edu-y{flex:20;background:#FAEEDA}
 .nps-capsule-edu-g{flex:10;background:#EAF3DE}
-.nps-capsule-num{font-size:13px;font-weight:700;line-height:1;font-family:var(--font);flex-shrink:0}
-.nps-capsule-num-promotor{color:#2a9d6a}
-.nps-capsule-num-neutro{color:#b45309}
-.nps-capsule-num-detrator{color:#A32D2D}
-.nps-capsule-num-empty{color:var(--muted)}
 .nps-capsule-compact{width:100%}
 .nps-capsule-compact .nps-capsule-track{height:20px}
 @keyframes nps-cap-grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
@@ -1529,7 +1530,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 <div id="page-ranking-companies" style="display:none;max-width:1280px;margin:0 auto;padding:32px 24px">
   <div style="margin-bottom:28px">
     <h2 style="font-family:var(--font);font-size:26px;font-weight:900;color:var(--navy);margin:0 0 8px">🏆 Ranking de Empresas</h2>
-    <p style="color:var(--muted);font-size:14px;margin:0">Baseado no NPS real dos clientes — "Voltaria a fazer negócio com essa empresa?"</p>
+    <p style="color:var(--muted);font-size:14px;margin:0">Baseado no Doxcare — a nota de cuidado e atendimento dada pelos clientes após cada reclamação.</p>
   </div>
   <div id="company-ranking-list" style="display:flex;flex-direction:column;gap:14px">
     <div style="text-align:center;padding:40px;color:var(--muted)">Carregando ranking…</div>
@@ -3622,14 +3623,12 @@ function setMarcasMode(mode){
 
 // Cor + label semafóricos pra um NPS (escala 0-10). Mesma escala usada
 // na função loadCompanyRanking (página dedicada de empresas).
-function _npsBadge(score) {
-  const s = parseFloat(score) || 0;
-  if (s >= 8.1)      return { color:'#16a34a', bg:'#f0fdf4', label:'Ótimo' };
-  if (s >= 6.1)      return { color:'#2563eb', bg:'#eff6ff', label:'Bom' };
-  if (s >= 4.1)      return { color:'#d97706', bg:'#fffbeb', label:'Regular' };
-  if (s >= 2.1)      return { color:'#ea580c', bg:'#fff7ed', label:'Ruim' };
-  return                    { color:'#dc2626', bg:'#fef2f2', label:'Péssimo' };
-}
+// ─────────────────────────────────────────────────────────────────
+// MARCAS NA HOME — funções de carga e render
+// ─────────────────────────────────────────────────────────────────
+// (função _npsBadge removida — não tinha uso ativo. Rótulos "Promotor/Neutro/Detrator"
+//  foram descartados no novo padrão visual Doxcare, que comunica categoria
+//  via cor da pílula + carinha dentro do trilho, sem texto.)
 
 // Carrega NPS agregado por montadora cadastrada (segment='carro', is_claimed=true)
 // com ≥5 votos. Também busca reclamações e % respondidas pra exibir no card.
@@ -3696,7 +3695,6 @@ async function renderMarcas() {
   const list = [...all].sort((a, b) => ascending ? a.nps - b.nps : b.nps - a.nps).slice(0, 4);
 
   grid.innerHTML = list.map(c => {
-    const badge = _npsBadge(c.nps);
     const initial = (c.name || '?')[0].toUpperCase();
     const verified = c.is_claimed
       ? '<span class="mfr-chip-verified" title="Conta verificada">✓</span>'
@@ -6693,9 +6691,24 @@ function _npsFace(cat, size) {
     + '</svg>';
 }
 
-// Renderiza a pílula Doxcore: label "Doxcore" + trilho + barra colorida + número.
+// Helper: retorna HTML da palavra "Doxcare" com tipografia assimétrica oficial.
+// "Dox" peso 400 navy + "care" peso 800 azul. Pra usar em labels e títulos.
+// opts.size: font-size em px (default 13). Mantém proporção da assimetria.
+function _doxcareLabel(opts) {
+  opts = opts || {};
+  const size = opts.size || 13;
+  return '<span style="font-family:var(--font);font-size:' + size + 'px;line-height:1;letter-spacing:0">'
+    + '<span style="font-weight:400;color:var(--navy)">Dox</span>'
+    + '<span style="font-weight:800;color:#185fa5">care</span>'
+    + '</span>';
+}
+
+// Renderiza a pílula Doxcare (antes "NPS"): trilho pastel categórico + borda forte + carinha dentro do trilho.
+// Padrão V1a (decisão 28/05): trilho usa o mesmo pastel da pílula (preenchimento "flutua"),
+// borda 1px na cor forte da categoria desenha o perímetro da escala, carinha branca encostada
+// no fim do preenchimento — combina indicação de posição + emoção num só elemento.
 // opts.compact: true → versão menor (cards na home); false → versão grande (perfil empresa).
-// opts.showNumInside: parâmetro legado, ignorado (número agora sempre fica ao lado, não dentro).
+// opts.showNumInside: parâmetro legado, ignorado.
 // opts.empty: true → trilho com régua educativa (3 zonas pasteis), número "—".
 function renderNpsCapsule(score, opts) {
   opts = opts || {};
@@ -6704,22 +6717,43 @@ function renderNpsCapsule(score, opts) {
   const cat = hasScore ? _npsCategory(s) : 'empty';
   const pct = hasScore ? (s / 10) * 100 : 0;
   const pillCls = 'nps-capsule nps-capsule-' + cat + (opts.compact ? ' nps-capsule-compact' : '');
-  const numCls = 'nps-capsule-num nps-capsule-num-' + cat;
   const numTxt = hasScore ? s.toFixed(1).replace('.', ',') : '—';
-  const trackInner = hasScore
-    ? '<div class="nps-capsule-fill nps-capsule-fill-' + cat + '" style="width:' + pct + '%"></div>'
-    : '<div class="nps-capsule-edu"><div class="nps-capsule-edu-r"></div><div class="nps-capsule-edu-y"></div><div class="nps-capsule-edu-g"></div></div>';
   const bigCls = 'nps-capsule-bignum nps-capsule-bignum-' + cat;
-  const sideEl = hasScore
-    ? _npsFace(cat, 18)
-    : '<span class="' + numCls + '">—</span>';
+  // V1a: carinha BRANCA com traços coloridos, dentro do trilho, encostada no fim do preenchimento.
+  // Anatomia compatível com _npsFace mas com cores invertidas (fundo branco, traços na cor da categoria).
+  const faceInside = hasScore ? _doxcareFaceInverted(cat, opts.compact ? 14 : 18) : '';
+  const trackInner = hasScore
+    ? '<div class="nps-capsule-fill nps-capsule-fill-' + cat + '" style="width:' + pct + '%">' + faceInside + '</div>'
+    : '<div class="nps-capsule-edu"><div class="nps-capsule-edu-r"></div><div class="nps-capsule-edu-y"></div><div class="nps-capsule-edu-g"></div></div>';
   return '<div class="nps-capsule-wrap">'
     + '<div class="' + bigCls + '">' + numTxt + '</div>'
     + '<div class="' + pillCls + '">'
-    + '<div class="nps-capsule-track">' + trackInner + '</div>'
-    + sideEl
+    + '<div class="nps-capsule-track nps-capsule-track-' + cat + '">' + trackInner + '</div>'
     + '</div>'
     + '</div>';
+}
+
+// Carinha "invertida" pro padrão V1a: fundo branco, olhos+boca na cor forte da categoria.
+// Usada dentro do trilho do Doxcare, encostada no fim do preenchimento.
+function _doxcareFaceInverted(cat, size) {
+  size = size || 16;
+  let stroke, mouth;
+  if (cat === 'promotor') {
+    stroke = '#2a9d6a';
+    mouth = '<path d="M 13 23 Q 20 29 27 23" stroke="' + stroke + '" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
+  } else if (cat === 'neutro') {
+    stroke = '#EF9F27';
+    mouth = '<line x1="13" y1="25" x2="27" y2="25" stroke="' + stroke + '" stroke-width="2.5" stroke-linecap="round"/>';
+  } else {
+    stroke = '#E24B4A';
+    mouth = '<path d="M 13 28 Q 20 22 27 28" stroke="' + stroke + '" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
+  }
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 40 40" style="flex-shrink:0;display:block">'
+    + '<circle cx="20" cy="20" r="18" fill="#fff"/>'
+    + '<circle cx="14" cy="16" r="1.8" fill="' + stroke + '"/>'
+    + '<circle cx="26" cy="16" r="1.8" fill="' + stroke + '"/>'
+    + mouth
+    + '</svg>';
 }
 
 // Versão compacta: usada nos cards de marca da home e no bloco unificado do perfil de empresa.
@@ -6821,7 +6855,7 @@ async function openCompanyProfile(companyName) {
         <div style="display:flex;flex-direction:column;gap:16px">
           <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:20px">
             <div style="margin-bottom:10px">
-              <span style="font-size:13px;color:var(--muted);font-weight:600">Recomendação</span>
+              ${_doxcareLabel({ size: 13 })}
             </div>
             <div style="max-width:180px;width:100%;margin:0 auto">
               ${renderNpsBar(npsAvg, true)}
@@ -7274,7 +7308,7 @@ async function renderResolutionPage() {
       const numTxt = s.toFixed(1).replace('.', ',');
       html += `<div style="background:${npsBg};border:1px solid ${npsBorder};border-radius:16px;padding:24px;margin-top:14px">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px">
-          <div style="font-family:var(--font);font-weight:900;font-size:15px;color:var(--navy)">Avaliação do cliente</div>
+          ${_doxcareLabel({ size: 16 })}
           <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;background:#fff;border:1px solid ${npsBorder};font-family:var(--font);font-weight:800;font-size:12px;color:${npsTextDark}">${npsLabel}</span>
         </div>
         <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
