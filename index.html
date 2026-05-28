@@ -1097,6 +1097,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
   .profile-rating:has(.doxcore-velocimetro-wrap) > .doxcore-velocimetro-wrap{grid-row:auto;justify-self:center}
 }
 .doxcore-badge{display:inline-flex;align-items:center;background:var(--blue-light);color:var(--navy);font-family:var(--font);font-size:12px;font-weight:800;letter-spacing:0.3px;padding:3px 10px;border-radius:20px}
+.doxcore-badge .dox-sub{font-weight:500}
 .doxcore-text{flex-basis:100%;font-size:13.5px;color:var(--text2);line-height:1.5;font-family:var(--font-body);margin:2px 0 4px;padding-left:46px}
 .doxcore-text strong{color:var(--navy);font-family:var(--font);font-weight:700}
 .doxcore-composition{flex-basis:100%;color:var(--muted);font-size:12px;font-weight:500;margin-bottom:10px;line-height:1.4;padding-left:46px}
@@ -4664,8 +4665,8 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
         //   - scoreData.score != null  → dado per-FIPE      → "Doxcore desta versão"
         //   - senão, summary curado    → fallback modelo     → "Doxcore de todas as versões"
         //   - nenhum dos dois          → sem análise         → "Doxcore"
-        if (scoreData && scoreData.score != null) return 'Doxcore desta versão';
-        if (summary && summary.reliability_score != null) return 'Doxcore de todas as versões';
+        if (scoreData && scoreData.score != null) return 'Doxcore<span class="dox-sub"> desta versão</span>';
+        if (summary && summary.reliability_score != null) return 'Doxcore<span class="dox-sub"> de todas as versões</span>';
         return 'Doxcore';
       })() + '</span>'
     + (displayRating ? ('<span class="doxcore-velocimetro-wrap">' + renderDoxcoreVelocimetro(displayRating, 'large') + '</span>') : '')
