@@ -2118,7 +2118,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 <div class="modal-overlay" id="modal">
   <div class="modal">
     <div class="modal-header">
-      <h2 class="modal-title">Nova <span class="accent">reclamação</span></h2>
+      <h2 class="modal-title" id="modal-title-main">Nova <span class="accent">reclamação</span></h2>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div class="modal-body">
@@ -5009,6 +5009,10 @@ async function openModal(vehicleContext, modoOpiniao){
   document.body.style.overflow='hidden';
   resetComplaintForm();
   _modoOpiniao = !!modoOpiniao;
+  const titleEl = document.getElementById('modal-title-main');
+  if (titleEl) titleEl.innerHTML = _modoOpiniao
+    ? 'Nova <span class="accent">opinião</span>'
+    : 'Nova <span class="accent">reclamação</span>';
   goStep(0);
   await loadBrands(vehicleContext?.type || 'carros');
   // Se recebeu contexto de veículo, pré-popula marca/modelo
