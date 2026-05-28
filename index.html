@@ -1177,7 +1177,9 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 
 .dist-bars{display:flex;flex-direction:column;gap:8px}
 .dist-row{display:flex;align-items:center;gap:10px}
-.dist-label{font-family:var(--font);font-weight:700;font-size:12px;color:var(--muted);min-width:20px;text-align:right}
+.dist-label{display:inline-flex;align-items:center;justify-content:flex-end;min-width:22px}
+.dist-face{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:5px;flex-shrink:0}
+.dist-face svg{display:block;width:13px;height:13px}
 .dist-bar-bg{flex:1;height:7px;background:var(--bg2);border-radius:4px;overflow:hidden}
 .dist-bar{height:100%;border-radius:4px;background:var(--yellow)}
 .dist-count{font-size:12px;color:var(--muted);min-width:30px;font-weight:600}
@@ -4425,20 +4427,29 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
   // -- Doxcore (texto curado da curadoria; renderizado no header)
   const verdictText = summary?.verdict || null;
 
-  // -- Distribuição de notas reais (do Supabase)
-  const distRaw = stats ? [
-    { s: 5, v: stats.stars_5 || 0 },
-    { s: 4, v: stats.stars_4 || 0 },
-    { s: 3, v: stats.stars_3 || 0 },
-    { s: 2, v: stats.stars_2 || 0 },
-    { s: 1, v: stats.stars_1 || 0 }
-  ] : [];
+  // -- Distribuição de notas reais
+  //    Fonte primária: scoreData.dist (o "balde" do calculateFipeScore — as 3
+  //    fontes de carinha unificadas, mesma contagem do Doxcore). Fallback: stats
+  //    (stub legado) pra páginas que não passam scoreData.
+  const FACE_COLORS = { 1: '#E24B4A', 2: '#EF9F27', 3: '#FAC775', 4: '#97C459', 5: '#639922' };
+  const distSrc = (scoreData && scoreData.dist) ? scoreData.dist : null;
+  const distRaw = distSrc
+    ? [5, 4, 3, 2, 1].map(s => ({ s, v: distSrc[s] || 0 }))
+    : (stats ? [
+        { s: 5, v: stats.stars_5 || 0 },
+        { s: 4, v: stats.stars_4 || 0 },
+        { s: 3, v: stats.stars_3 || 0 },
+        { s: 2, v: stats.stars_2 || 0 },
+        { s: 1, v: stats.stars_1 || 0 }
+      ] : []);
   const distTotal = distRaw.reduce((a, b) => a + b.v, 0);
   const distBars = distTotal > 0
     ? distRaw.map(d => {
         const pct = Math.round((d.v / distTotal) * 100);
+        // Carinha (faceSvg é branca) sobre quadradinho com a cor da nota.
+        const faceChip = '<span class="dist-face" style="background:' + FACE_COLORS[d.s] + '">' + faceSvg(d.s, true) + '</span>';
         return '<div class="dist-row">'
-          + '<span class="dist-label">' + d.s + '★</span>'
+          + '<span class="dist-label">' + faceChip + '</span>'
           + '<div class="dist-bar-bg"><div class="dist-bar" style="width:' + pct + '%"></div></div>'
           + '<span class="dist-count">' + pct + '%</span>'
           + '</div>';
@@ -9206,10 +9217,11 @@ function normalizeRating(rating, scale) {
 // Score de uma FIPE específica
 // Retorna { score, raioX, comunidade, votos, hasMinimum }
 async function calculateFipeScore(fipeCode) {
-  if (!fipeCode) return { score: null, raioX: null, comunidade: null, votos: 0, hasMinimum: false };
+  if (!fipeCode) return { score: null, raioX: null, comunidade: null, votos: 0, hasMinimum: false, dist: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } };
   if (_scoreCache.fipe[fipeCode]) return _scoreCache.fipe[fipeCode];
 
   let raioX = null, comunidade = null, votos = 0;
+  const dist = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };  // distribuição por carinha
 
   // 1. Busca curadoria (reliability_score do summary com fipe_code exato)
   try {
@@ -9251,6 +9263,13 @@ async function calculateFipeScore(fipeCode) {
     }
     votos = normedAll.length;
     if (votos > 0) comunidade = normedAll.reduce((a, b) => a + b, 0) / votos;
+    // Distribuição por carinha (1-5): bucketiza cada nota normalizada (0-5) na
+    // carinha mais próxima. MESMA fonte do score (normedAll) — distribuição e
+    // Doxcore contam exatamente as mesmas notas (single source of truth).
+    normedAll.forEach(v => {
+      const bucket = Math.min(5, Math.max(1, Math.round(v)));
+      dist[bucket] = (dist[bucket] || 0) + 1;
+    });
   } catch (e) { /* comunidade opcional */ }
 
   const hasMinimum = votos >= RAIOX_MIN_VOTES;
@@ -9263,7 +9282,7 @@ async function calculateFipeScore(fipeCode) {
     score = comunidade;                  // Estado 3: só comunidade
   }                                      // Estado 4: tudo null
 
-  const result = { score, raioX, comunidade, votos, hasMinimum };
+  const result = { score, raioX, comunidade, votos, hasMinimum, dist };
   _scoreCache.fipe[fipeCode] = result;
   return result;
 }
