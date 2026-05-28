@@ -10453,7 +10453,12 @@ if (window.innerWidth <= 640) {
 // Lê o hash da URL e restaura a página após reload
 async function restoreFromHash() {
   const hash = window.location.hash.slice(1); // remove o #
-  if (!hash || hash === 'home') return;
+  // Voltar PARA a home é navegação real: precisa chamar showPage('home') pra
+  // esconder a tela anterior (showPage roda o loop que oculta as outras páginas).
+  // O early-return antigo só servia ao bootstrap (carregar já em #home = estado
+  // default do HTML), mas como roteador de hashchange ele deixava a tela anterior
+  // sobreposta à home. showPage('home') é idempotente, seguro no bootstrap também.
+  if (!hash || hash === 'home') { showPage('home'); return; }
 
   const [page, paramStr] = hash.split('?');
   const params = paramStr ? Object.fromEntries(new URLSearchParams(paramStr)) : {};
