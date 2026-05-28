@@ -6586,6 +6586,58 @@ async function openComplaintDetail(complaintId) {
     const isResolved = complaint.status === 'resolved';
     const isOpiniao = complaint.type === 'opiniao';
 
+    // ── Fase A da fusão: interação embutida (réplica do cliente / resposta da empresa / NPS) ──
+    // Lógica portada de renderResolutionPage. Decide o que mostrar na área de ação por status + papel.
+    let formHtml = '';
+    const isFinal = st === 'resolved' || st === 'unresolved';
+    if (!isOpiniao && !isFinal) {
+      if (isAuthor) {
+        const podeAvaliar = await canEvaluate(complaint, currentUser);
+        const textareaHtml = `<textarea id="resolution-msg-input" placeholder="Descreva o andamento ou replique a resposta da empresa…" style="width:100%;min-height:100px;border:1.5px solid var(--border2);border-radius:10px;padding:12px;font-family:var(--font-body);font-size:14px;resize:vertical;outline:none;box-sizing:border-box;transition:border-color .2s" onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='var(--border2)'"></textarea>`;
+        if (st === 'open' && !podeAvaliar) {
+          const daysSince = Math.floor((Date.now() - new Date(complaint.created_at).getTime()) / 86400000);
+          formHtml = `
+            <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px;text-align:center;color:var(--muted);font-size:13px">
+              ⏳ Aguardando resposta da empresa (há ${daysSince === 0 ? 'menos de 1 dia' : daysSince === 1 ? '1 dia' : daysSince + ' dias'})
+            </div>`;
+        } else if (st === 'open' && podeAvaliar) {
+          formHtml = `
+            <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px">
+              <div style="background:#fef3c7;color:#92400e;border:1px solid #fbbf24;border-radius:10px;padding:12px;font-size:13px;margin-bottom:12px">
+                ⚠️ A empresa ainda não respondeu. Você pode avaliar o atendimento agora — sua avaliação ficará pública.
+              </div>
+              <button onclick="markResolved('${complaint.id}')" style="width:100%;background:var(--navy);color:#fff;border:none;border-radius:8px;padding:12px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px">Avaliar atendimento</button>
+            </div>`;
+        } else if (st === 'in_progress') {
+          formHtml = `
+            <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px">
+              <div style="font-family:var(--font);font-weight:700;font-size:13px;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">✍️ Sua réplica (opcional)</div>
+              ${textareaHtml}
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;flex-wrap:wrap;gap:10px">
+                <button onclick="markResolved('${complaint.id}')" style="background:var(--navy);color:#fff;border:none;border-radius:8px;padding:10px 16px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">Avaliar atendimento</button>
+                <button onclick="sendResolutionMessage('${complaint.id}')" style="background:var(--white);color:var(--navy);border:1.5px solid var(--navy);border-radius:8px;padding:10px 16px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">Enviar →</button>
+              </div>
+            </div>`;
+        } else if (st === 'replied') {
+          formHtml = `
+            <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px;text-align:center;color:var(--muted);font-size:13px">
+              ⏳ Aguardando nova resposta da empresa
+            </div>`;
+        }
+      } else if (isCompany) {
+        formHtml = `
+          <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px">
+            <div style="font-family:var(--font);font-weight:700;font-size:13px;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">🏢 Resposta da empresa</div>
+            <textarea id="resolution-msg-input" placeholder="Responda a reclamação do cliente…"
+              style="width:100%;min-height:100px;border:1.5px solid var(--border2);border-radius:10px;padding:12px;font-family:var(--font-body);font-size:14px;resize:vertical;outline:none;box-sizing:border-box;transition:border-color .2s"
+              onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='var(--border2)'"></textarea>
+            <div style="display:flex;justify-content:flex-end;margin-top:12px">
+              <button onclick="sendResolutionMessage('${complaint.id}')" style="background:var(--navy);color:#fff;border:none;border-radius:8px;padding:10px 24px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px">Enviar →</button>
+            </div>
+          </div>`;
+      }
+    }
+
     let html = `
       
 
@@ -6623,10 +6675,13 @@ async function openComplaintDetail(complaintId) {
             <div style="font-size:15px;color:var(--text2);line-height:1.8;white-space:pre-wrap">${complaint.description||''}</div>
           </div>
 
-          <!-- Acompanhamento -->
-          ${messages && messages.length > 0 ? `
+          <!-- Acompanhamento (com interação embutida — Fase A da fusão) -->
+          ${!isOpiniao ? `
           <div style="margin-top:14px">
             ${(() => {
+              if (!messages || messages.length === 0) {
+                return `<div style="text-align:center;padding:32px;color:var(--muted);background:var(--bg);border-radius:12px;font-size:14px">Aguardando resposta da empresa…</div>`;
+              }
               let firstCompanySeen = false;
               // Cor do balão da empresa depende do status final da reclamação:
               // resolved = verde claro (sucesso final), unresolved = vermelho claro (falha final),
@@ -6642,6 +6697,8 @@ async function openComplaintDetail(complaintId) {
                 let label;
                 if (isFromAuthor) {
                   label = 'Consumidor';
+                } else if (m.author_type === 'mediator') {
+                  label = 'Mediador';
                 } else {
                   if (!firstCompanySeen) { label = 'Resposta da empresa'; firstCompanySeen = true; }
                   else { label = 'Empresa'; }
@@ -6652,6 +6709,7 @@ async function openComplaintDetail(complaintId) {
                 </div>`;
               }).join('');
             })()}
+            ${formHtml}
           </div>` : ''}
         </div>
 
@@ -6694,18 +6752,11 @@ async function openComplaintDetail(complaintId) {
             </div>`;
           })() : ''}
 
-          ${!isOpiniao && isAuthor ? `
+          ${!isOpiniao && isAuthor && !isFinal ? `
           <div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:10px">
             <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Ações</div>
-            <button onclick="showResolution('${complaint.id}')" style="width:100%;background:var(--navy);color:#fff;border:none;border-radius:8px;padding:10px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">💬 Ver canal de resolução</button>
-            ${!isResolved ? `<button onclick="markResolved('${complaint.id}')" style="width:100%;background:var(--green);color:#fff;border:none;border-radius:8px;padding:10px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">✅ Marcar como resolvido</button>` : ''}
-            ${!isResolved ? `<button onclick="openMediationFlow('${complaint.id}')" id="btn-mediation-${complaint.id}" style="width:100%;background:var(--orange);color:#fff;border:none;border-radius:8px;padding:10px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">⚖️ Solicitar mediação</button>` : ''}
-          </div>` : ''}
-
-          ${!isOpiniao && isCompany && !isResolved ? `
-          <div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px">
-            <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Ações</div>
-            <button onclick="showResolution('${complaint.id}')" style="width:100%;background:var(--navy);color:#fff;border:none;border-radius:8px;padding:10px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">💬 Responder reclamação</button>
+            <button onclick="markResolved('${complaint.id}')" style="width:100%;background:var(--green);color:#fff;border:none;border-radius:8px;padding:10px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">✅ Marcar como resolvido</button>
+            <button onclick="openMediationFlow('${complaint.id}')" id="btn-mediation-${complaint.id}" style="width:100%;background:var(--orange);color:#fff;border:none;border-radius:8px;padding:10px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">⚖️ Solicitar mediação</button>
           </div>` : ''}
 
           <div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px">
@@ -7573,18 +7624,26 @@ async function sendResolutionMessage(complaintId) {
   const input = document.getElementById('resolution-msg-input');
   const msg = input?.value.trim();
   if (!msg) { alert('Escreva uma mensagem antes de enviar.'); return; }
-  const authorType = currentUser?.id === currentResolution.complaint.user_id ? 'client' : 'company';
+  // Fonte de verdade do status/autor: currentResolution se existir, senão busca no banco.
+  // (A tela 'complaint' fundida não usa currentResolution, então não dependemos dele.)
+  let complaintRow = currentResolution?.complaint?.id === complaintId ? currentResolution.complaint : null;
+  if (!complaintRow) {
+    const { data } = await sb.from('complaints').select('id,user_id,status,company_name').eq('id', complaintId).maybeSingle();
+    complaintRow = data;
+  }
+  if (!complaintRow) { alert('Reclamação não encontrada.'); return; }
+  const authorType = currentUser?.id === complaintRow.user_id ? 'client' : 'company';
   try {
     const { data } = await sb.from('resolutions').insert([{
       complaint_id:complaintId, author_type:authorType,
       author_id:currentUser.id, author_name:currentUser.name, message:msg
     }]).select().single();
-    currentResolution.messages.push(data);
+    if (currentResolution?.complaint?.id === complaintId) currentResolution.messages.push(data);
     // Transições de status conforme spec de encerramento (Reclame Aqui):
     // - empresa responde reclamação 'open' → 'in_progress'
     // - cliente responde após empresa ('in_progress') → 'replied' (réplica)
     // - empresa responde réplica ('replied') → 'in_progress'
-    const curStatus = currentResolution.complaint.status;
+    const curStatus = complaintRow.status;
     let newStatus = null;
     if (authorType === 'company' && curStatus === 'open') newStatus = 'in_progress';
     else if (authorType === 'client'  && curStatus === 'in_progress') newStatus = 'replied';
@@ -7595,11 +7654,28 @@ async function sendResolutionMessage(complaintId) {
         console.error('Falha ao atualizar status:', stErr);
         alert('Mensagem enviada, mas houve erro ao atualizar o status. Recarregue a página.');
       } else {
-        currentResolution.complaint.status = newStatus;
+        complaintRow.status = newStatus;
+        if (currentResolution?.complaint?.id === complaintId) currentResolution.complaint.status = newStatus;
       }
     }
-    await renderResolutionPage();
+    // Re-renderiza a tela ativa: 'complaint' (fundida) ou 'resolution' (legado, até Fase D)
+    await _rerenderComplaintScreens(complaintId);
   } catch(e) { alert('Erro ao enviar mensagem.'); }
+}
+
+// Helper de transição: re-renderiza a tela de detalhe que estiver visível.
+// Durante a fusão (Fases A–C) ambas podem existir; este helper centraliza a decisão.
+async function _rerenderComplaintScreens(complaintId) {
+  const compVisible = document.getElementById('page-complaint')?.style.display === 'block';
+  const resVisible  = document.getElementById('page-resolution')?.style.display === 'block';
+  if (compVisible) {
+    await openComplaintDetail(complaintId);
+  } else if (resVisible && typeof renderResolutionPage === 'function' && currentResolution) {
+    await renderResolutionPage();
+  } else {
+    // Nenhuma visível (ex: ação via modal) — abre a tela única
+    await openComplaintDetail(complaintId);
+  }
 }
 
 async function markResolved(complaintId) {
@@ -7667,15 +7743,13 @@ async function submitNPSModal(complaintId, companyName) {
     // INSERT NPS
     await sb.from('nps_ratings').insert([{ complaint_id:complaintId, user_id:currentUser.id, score:scoreToSend, comment:comment, company_name:normalizeCompanyName(companyName) }]);
     closeNPSModal();
-    // Atualiza estado local se estamos na página resolution
+    // Sincroniza estado do legado se estiver na tela resolution
     if (currentResolution && currentResolution.complaint?.id === complaintId) {
       currentResolution.complaint.status = finalStatus;
       currentResolution.nps = { score:scoreToSend, comment };
-      await renderResolutionPage();
-    } else {
-      // Vindo da página complaint, navega pra resolution pra ver o resultado
-      showResolution(complaintId);
     }
+    // Re-renderiza a tela ativa (complaint fundida ou resolution legado)
+    await _rerenderComplaintScreens(complaintId);
   } catch(e) { alert('Erro ao concluir. Tente novamente.'); }
 }
 
