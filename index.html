@@ -10501,6 +10501,26 @@ async function restoreFromHash() {
   }
   // Restaura página do hash (após sessão estar pronta)
   await restoreFromHash();
+
+  // ══ BOTÃO VOLTAR/AVANÇAR DO NAVEGADOR ══
+  // Opção 2 (sessão 28/05): o histórico do navegador já era populado por showPage
+  // (escreve location.hash a cada navegação), mas faltava QUEM escutasse a troca
+  // de hash no voltar/avançar — então a URL voltava e a tela ficava parada.
+  // Este listener fecha o ciclo: ao mudar o hash, re-roteia via restoreFromHash.
+  // restoreFromHash → showPage reescreve o MESMO hash (set idempotente não
+  // redispara hashchange), portanto não há loop.
+  //
+  // FRONTEIRAS CONSCIENTES (dívida registrada, não furo — decisão do usuário):
+  //   1. Página 'vehicle' tem hash SEM identidade (showPage('vehicle') sem params),
+  //      então voltar PRA um veículo não o reabre de forma confiável (depende de
+  //      _currentVehicle em memória). Resolver exigiria dar identidade ao hash do
+  //      veículo (Opção 1, adiada).
+  //   2. pageHistory + goBack() seguem vivos em paralelo ao histórico do navegador
+  //      (segundo balde). Unificar (goBack → history.back) também ficou pra Opção 1.
+  // Registrado só após o restore inicial pra não disparar durante o bootstrap.
+  window.addEventListener('hashchange', () => {
+    restoreFromHash();
+  });
 })();
 
 function togglePassword(inputId, btn) {
