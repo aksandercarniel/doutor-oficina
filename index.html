@@ -6488,6 +6488,7 @@ async function openComplaintDetail(complaintId) {
     const statusCol = { open:'#dc2626', in_progress:'#2563eb', replied:'#d97706', resolved:'#16a34a', unresolved:'#ea580c' };
     const st = complaint.status || 'open';
     const isResolved = complaint.status === 'resolved';
+    const isOpiniao = complaint.type === 'opiniao';
 
     let html = `
       
@@ -6503,8 +6504,10 @@ async function openComplaintDetail(complaintId) {
               <span style="font-size:13px;color:var(--muted)">📅 ${date}</span>
             </div>
             <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
-              <span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;background:${statusBg[st]};color:${statusCol[st]};white-space:nowrap">${statusMap[st]||'🔴 Não respondida'}</span>
-              ${(st === 'resolved' || st === 'unresolved') && hasNps ? (() => {
+              ${isOpiniao
+                ? `<span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;background:#eef2f7;color:var(--navy);white-space:nowrap">💬 Opinião sobre o veículo</span>`
+                : `<span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;background:${statusBg[st]};color:${statusCol[st]};white-space:nowrap">${statusMap[st]||'🔴 Não respondida'}</span>`}
+              ${!isOpiniao && (st === 'resolved' || st === 'unresolved') && hasNps ? (() => {
                 const s = Math.max(0, Math.min(10, parseFloat(npsScore)));
                 const cat = _npsCategory(s);
                 const pct = (s / 10) * 100;
@@ -6595,7 +6598,7 @@ async function openComplaintDetail(complaintId) {
             </div>`;
           })() : ''}
 
-          ${isAuthor ? `
+          ${!isOpiniao && isAuthor ? `
           <div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:10px">
             <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px">Ações</div>
             <button onclick="showResolution('${complaint.id}')" style="width:100%;background:var(--navy);color:#fff;border:none;border-radius:8px;padding:10px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">💬 Ver canal de resolução</button>
@@ -6603,7 +6606,7 @@ async function openComplaintDetail(complaintId) {
             ${!isResolved ? `<button onclick="openMediationFlow('${complaint.id}')" id="btn-mediation-${complaint.id}" style="width:100%;background:var(--orange);color:#fff;border:none;border-radius:8px;padding:10px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">⚖️ Solicitar mediação</button>` : ''}
           </div>` : ''}
 
-          ${isCompany && !isResolved ? `
+          ${!isOpiniao && isCompany && !isResolved ? `
           <div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px">
             <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Ações</div>
             <button onclick="showResolution('${complaint.id}')" style="width:100%;background:var(--navy);color:#fff;border:none;border-radius:8px;padding:10px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">💬 Responder reclamação</button>
@@ -7130,11 +7133,12 @@ async function renderResolutionPage() {
   const statusBg   = { open:'#fef2f2', in_progress:'#eff6ff', replied:'#fef3c7', resolved:'#f0fdf4', unresolved:'#fff7ed' };
   const statusCol  = { open:'#dc2626', in_progress:'#2563eb', replied:'#d97706', resolved:'#16a34a', unresolved:'#ea580c' };
   const st = complaint.status || 'open';
+  const isOpiniao = complaint.type === 'opiniao';
 
   // F4: decide o que mostrar na área de ação (form/botões/mensagens) baseado em status + papel + canEvaluate
   let formHtml = '';
   const isFinal = st === 'resolved' || st === 'unresolved';
-  if (!isFinal) {
+  if (!isOpiniao && !isFinal) {
     if (isClient) {
       // Cliente: variantes por status
       const podeAvaliar = await canEvaluate(complaint, currentUser);
@@ -7239,8 +7243,10 @@ async function renderResolutionPage() {
             <span style="font-size:13px;color:var(--muted)">📅 ${date}</span>
           </div>
           <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
-            <span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;background:${statusBg[st]};color:${statusCol[st]};white-space:nowrap">${statusMap[st]||'🔴 Não respondida'}</span>
-            ${(st === 'resolved' || st === 'unresolved') && hasNps ? (() => {
+            ${isOpiniao
+              ? `<span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;background:#eef2f7;color:var(--navy);white-space:nowrap">💬 Opinião sobre o veículo</span>`
+              : `<span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;background:${statusBg[st]};color:${statusCol[st]};white-space:nowrap">${statusMap[st]||'🔴 Não respondida'}</span>`}
+            ${!isOpiniao && (st === 'resolved' || st === 'unresolved') && hasNps ? (() => {
               const s = Math.max(0, Math.min(10, parseFloat(nps.score)));
               const cat = _npsCategory(s);
               const pillBg    = cat === 'promotor' ? '#EAF3DE' : cat === 'neutro' ? '#FAEEDA' : '#FCEBEB';
