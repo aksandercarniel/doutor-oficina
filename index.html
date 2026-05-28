@@ -6680,7 +6680,9 @@ async function openComplaintDetail(complaintId) {
           <div style="margin-top:14px">
             ${(() => {
               if (!messages || messages.length === 0) {
-                return `<div style="text-align:center;padding:32px;color:var(--muted);background:var(--bg);border-radius:12px;font-size:14px">Aguardando resposta da empresa…</div>`;
+                // Sem mensagens: só mostra o placeholder genérico se o formHtml não tiver
+                // nenhum aviso contextual (evita "Aguardando resposta" duplicado).
+                return formHtml ? '' : `<div style="text-align:center;padding:32px;color:var(--muted);background:var(--bg);border-radius:12px;font-size:14px">Aguardando resposta da empresa…</div>`;
               }
               let firstCompanySeen = false;
               // Cor do balão da empresa depende do status final da reclamação:
