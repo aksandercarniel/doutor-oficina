@@ -1522,6 +1522,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
     <button class="qf-btn qf-btn-status-unresolved" onclick="companyFilterComplaints(this,'unresolved')"><span class="face-slot" data-status="unresolved"></span> <span class="qf-btn-label">Não resolvidas</span></button>
     <button class="qf-btn active" onclick="companyFilterComplaints(this,'all')">Todas</button>
     <button class="qf-btn" id="btn-brand-mentions" onclick="companyFilterComplaints(this,'brand')" style="border-color:var(--orange);color:var(--orange)">⚠️ Menções à marca</button>
+    <button class="qf-btn" id="btn-opinioes" onclick="companyFilterComplaints(this,'opiniao')" style="border-color:var(--navy);color:var(--navy)">💬 Opiniões sobre o produto</button>
   </div>
   <div id="company-complaints-list" style="display:flex;flex-direction:column;gap:14px">
     <div style="text-align:center;padding:40px;color:var(--muted)">Carregando reclamações…</div>
@@ -7600,17 +7601,26 @@ async function loadCompanyComplaints(status='open') {
     let data, error;
 
     if (status === 'brand') {
-      // Busca reclamações pela marca FIPE — sem mencionar a empresa diretamente
+      // Menções à marca: RECLAMAÇÕES (com ciclo) sobre a marca, mas sem empresa vinculada.
+      // Filtra type='reclamacao' pra NÃO trazer opiniões (essas têm aba própria).
       const brandName = currentUser.company_name || '';
-      // Busca reclamações onde vehicle_brand bate com o nome da empresa
-      // mas company_name está vazio ou diferente
       const res = await sb.from('complaints')
         .select('*')
         .ilike('vehicle_brand', `%${brandName.split(' ')[0]}%`)
         .order('created_at', { ascending: false });
       data = (res.data || []).filter(c =>
-        !c.company_name || c.company_name.trim() === ''
+        (!c.company_name || c.company_name.trim() === '') && c.type !== 'opiniao'
       );
+      error = res.error;
+    } else if (status === 'opiniao') {
+      // Opiniões sobre o produto: relatos do veículo da marca, sem empresa e sem ciclo (read-only).
+      const brandName = currentUser.company_name || '';
+      const res = await sb.from('complaints')
+        .select('*')
+        .ilike('vehicle_brand', `%${brandName.split(' ')[0]}%`)
+        .eq('type', 'opiniao')
+        .order('created_at', { ascending: false });
+      data = res.data;
       error = res.error;
     } else {
       // Usa ilike para busca case-insensitive e tolerante a variações de nome
@@ -7633,29 +7643,33 @@ async function loadCompanyComplaints(status='open') {
     if (!data?.length) {
       const emptyMsg = status === 'brand'
         ? '✅ Nenhuma reclamação não vinculada encontrada para sua marca.'
+        : status === 'opiniao'
+        ? '💬 Nenhuma opinião sobre seus produtos ainda.'
         : 'Nenhuma reclamação encontrada.';
       list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">${emptyMsg}</div>`;
       return;
     }
 
     const isBrand = status === 'brand';
+    const isOpiniao = status === 'opiniao';
     const sBgMap = {open:'#fef2f2',in_progress:'#eff6ff',replied:'#fef3c7',resolved:'#e8f5e9',unresolved:'#fff7ed'};
     const sColMap = {open:'#dc2626',in_progress:'#2563eb',replied:'#d97706',resolved:'#16a34a',unresolved:'#ea580c'};
     const sLbl = {open:'Não respondida',in_progress:'Respondida',replied:'Em réplica',resolved:'Resolvido',unresolved:'Não resolvida'};
     list.innerHTML = data.map(c => `
-      <div style="background:var(--white);border:1.5px solid ${isBrand ? 'var(--orange)' : 'var(--border)'};border-radius:16px;padding:20px;cursor:pointer" onclick="showResolution('${c.id}')">
+      <div style="background:var(--white);border:1.5px solid ${isBrand ? 'var(--orange)' : isOpiniao ? 'var(--navy)' : 'var(--border)'};border-radius:16px;padding:20px;cursor:pointer" onclick="${isOpiniao ? `openComplaintDetail('${c.id}')` : `showResolution('${c.id}')`}">
         ${isBrand ? `<div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:8px;display:flex;align-items:center;gap:6px">⚠️ Reclamação não vinculada à sua empresa — cliente não informou o nome</div>` : ''}
+        ${isOpiniao ? `<div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px;display:flex;align-items:center;gap:6px">💬 Opinião sobre o produto — sem fluxo de resolução</div>` : ''}
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;flex-wrap:wrap;gap:8px">
           <div>
             <div style="font-size:12px;color:var(--muted);margin-bottom:4px">${c.vehicle_brand||''} ${c.vehicle_model||''} ${c.vehicle_year||''}</div>
             <div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy)">${c.title}</div>
           </div>
-          <span style="font-size:11px;font-weight:700;padding:3px 10px 3px 4px;border-radius:20px;background:${sBgMap[c.status]||'#fef2f2'};color:${sColMap[c.status]||'#dc2626'};display:inline-flex;align-items:center;gap:4px">${statusFace(c.status,16)}${sLbl[c.status]||'Não respondida'}</span>
+          ${isOpiniao ? '' : `<span style="font-size:11px;font-weight:700;padding:3px 10px 3px 4px;border-radius:20px;background:${sBgMap[c.status]||'#fef2f2'};color:${sColMap[c.status]||'#dc2626'};display:inline-flex;align-items:center;gap:4px">${statusFace(c.status,16)}${sLbl[c.status]||'Não respondida'}</span>`}
         </div>
         <div style="font-size:13px;color:var(--text2);line-height:1.5">${(c.description||'').slice(0,120)}…</div>
         <div style="font-size:12px;color:var(--muted);margin-top:8px;display:flex;justify-content:space-between">
           <span>${new Date(c.created_at).toLocaleDateString('pt-BR')}</span>
-          <span style="color:var(--navy);font-weight:700">Ver e responder →</span>
+          <span style="color:var(--navy);font-weight:700">${isOpiniao ? 'Ver opinião →' : 'Ver e responder →'}</span>
         </div>
       </div>`).join('');
   } catch(e) {
