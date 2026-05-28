@@ -4659,7 +4659,18 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + '<div class="profile-name"><span class="profile-emoji">' + vehicleIcon(v.emoji, v.name) + '</span>' + v.name + '</div>'
     + ((v.version || v.year) ? ('<div class="profile-sub">' + [v.version, v.year].filter(x => x && x !== '—').join(' · ') + '</div>') : '')
     + '<div class="profile-rating">'
-    + '<span class="doxcore-badge">Doxcore</span>'
+    + '<span class="doxcore-badge">' + (function(){
+        // Distingue a origem da nota exibida (mesma lógica do avgRating):
+        //   - scoreData.score != null  → dado per-FIPE  → "Doxcore desta versão"
+        //   - senão, summary curado    → fallback modelo → "Doxcore do {Modelo} geral"
+        //   - nenhum dos dois          → sem análise     → "Doxcore"
+        if (scoreData && scoreData.score != null) return 'Doxcore desta versão';
+        if (summary && summary.reliability_score != null) {
+          var m = (summary.vehicle_model || (v.name || '').split(' ')[0] || '').trim();
+          return m ? ('Doxcore do ' + m + ' geral') : 'Doxcore';
+        }
+        return 'Doxcore';
+      })() + '</span>'
     + (displayRating ? ('<span class="doxcore-velocimetro-wrap">' + renderDoxcoreVelocimetro(displayRating, 'large') + '</span>') : '')
     + (verdictText
       ? (function(){
