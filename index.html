@@ -3425,6 +3425,10 @@ async function submitComplaint() {
   try {
     const saved = await sbSaveComplaint(complaint);
 
+    // A nota (carinha) agora alimenta o Doxcore — invalida o cache do score
+    // pra que a nova nota reflita sem precisar recarregar a página.
+    if (typeof invalidateScoreCache === 'function') invalidateScoreCache();
+
     // Mediação será criada após o cliente escolher o advogado (openMediationFlow)
 
     // Reset
@@ -9218,16 +9222,35 @@ async function calculateFipeScore(fipeCode) {
     if (rx && rx.reliability_score != null) raioX = parseFloat(rx.reliability_score);
   } catch (e) { /* curadoria opcional */ }
 
-  // 2. Busca votos da comunidade
+  // 2. Busca votos da comunidade — UNIFICA 3 fontes (mesma nota, lugares diferentes):
+  //    a) vehicle_ratings: voto 1-clique (source='casual')
+  //    b) complaints.rating: carinha da reclamação E da opinião (ambas gravam em complaints)
+  //    Tabelas ficam SEPARADAS (preserva proveniência: dá pra saber de onde vêm os dados);
+  //    a unificação é só lógica, no cálculo. normalizeRating põe tudo na escala 0-5.
   try {
+    const normedAll = [];
+    // a) voto 1-clique
     const { data: ratings } = await sb.from('vehicle_ratings')
       .select('rating, scale')
       .eq('fipe_code', fipeCode);
     if (ratings && ratings.length) {
-      const normed = ratings.map(r => normalizeRating(r.rating, r.scale)).filter(v => v != null);
-      votos = normed.length;
-      if (votos > 0) comunidade = normed.reduce((a, b) => a + b, 0) / votos;
+      ratings.forEach(r => {
+        const v = normalizeRating(r.rating, r.scale);
+        if (v != null) normedAll.push(v);
+      });
     }
+    // b) carinhas de reclamação + opinião (complaints.rating, escala stars 1-5)
+    const { data: compRatings } = await sb.from('complaints')
+      .select('rating')
+      .eq('fipe_code', fipeCode);
+    if (compRatings && compRatings.length) {
+      compRatings.forEach(c => {
+        const v = normalizeRating(c.rating, 'stars');
+        if (v != null) normedAll.push(v);
+      });
+    }
+    votos = normedAll.length;
+    if (votos > 0) comunidade = normedAll.reduce((a, b) => a + b, 0) / votos;
   } catch (e) { /* comunidade opcional */ }
 
   const hasMinimum = votos >= RAIOX_MIN_VOTES;
