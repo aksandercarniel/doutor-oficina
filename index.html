@@ -1096,8 +1096,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
   .profile-rating:has(.doxcore-velocimetro-wrap) > .doxcore-composition{grid-column:1}
   .profile-rating:has(.doxcore-velocimetro-wrap) > .doxcore-velocimetro-wrap{grid-row:auto;justify-self:center}
 }
-.doxcore-badge{display:inline-flex;align-items:center;gap:4px;background:var(--blue-light);color:var(--navy);font-family:var(--font);font-size:12px;font-weight:800;letter-spacing:0.3px;padding:3px 10px;border-radius:20px}
-.doxcore-badge .dox-sub{font-weight:500}
+.doxcore-badge{display:inline-flex;align-items:center;background:var(--blue-light);color:var(--navy);font-family:var(--font);font-size:12px;font-weight:800;letter-spacing:0.3px;padding:3px 10px;border-radius:20px}
 .doxcore-text{flex-basis:100%;font-size:13.5px;color:var(--text2);line-height:1.5;font-family:var(--font-body);margin:2px 0 4px;padding-left:46px}
 .doxcore-text strong{color:var(--navy);font-family:var(--font);font-weight:700}
 .doxcore-composition{flex-basis:100%;color:var(--muted);font-size:12px;font-weight:500;margin-bottom:10px;line-height:1.4;padding-left:46px}
@@ -4026,32 +4025,67 @@ function calcVehicleStats(complaints) {
 
 // Busca raio-x curado no Supabase
 async function loadKnownIssues(brand, model) {
+  // BANCO 2.0: lê de duas tabelas separadas (vehicle_issues = balões,
+  // vehicle_summaries = nota + manchete) e devolve no formato antigo que
+  // renderVehicleProfileFull já espera: 1 objeto is_summary:true + N balões.
   try {
     // Extrai primeira palavra do modelo (ex: "Strada 1.3 mpi" vira "Strada")
     const modelKeyword = model.split(' ')[0];
-    
-    // Tenta busca exata primeiro
-    let { data, error } = await sb.from('vehicle_known_issues')
-      .select('*')
-      .ilike('vehicle_brand', brand)
-      .eq('vehicle_model', modelKeyword)
-      .order('is_summary', { ascending: false })
-      .order('severity', { ascending: true });
-    
-    // Se não encontrou, tenta busca parcial
-    if (!data || data.length === 0) {
-      const result = await sb.from('vehicle_known_issues')
+
+    // -- Balões (vehicle_issues): tenta exata, depois parcial
+    const fetchIssues = async () => {
+      let { data } = await sb.from('vehicle_issues')
         .select('*')
         .ilike('vehicle_brand', brand)
-        .ilike('vehicle_model', `%${modelKeyword}%`)
-        .order('is_summary', { ascending: false })
+        .eq('vehicle_model', modelKeyword)
         .order('severity', { ascending: true });
-      data = result.data;
-      error = result.error;
+      if (!data || data.length === 0) {
+        const r = await sb.from('vehicle_issues')
+          .select('*')
+          .ilike('vehicle_brand', brand)
+          .ilike('vehicle_model', `%${modelKeyword}%`)
+          .order('severity', { ascending: true });
+        data = r.data;
+      }
+      return data || [];
+    };
+
+    // -- Resumo (vehicle_summaries): nota + manchete. 1 linha.
+    const fetchSummary = async () => {
+      let { data } = await sb.from('vehicle_summaries')
+        .select('*')
+        .ilike('vehicle_brand', brand)
+        .eq('vehicle_model', modelKeyword)
+        .limit(1);
+      if (!data || data.length === 0) {
+        const r = await sb.from('vehicle_summaries')
+          .select('*')
+          .ilike('vehicle_brand', brand)
+          .ilike('vehicle_model', `%${modelKeyword}%`)
+          .limit(1);
+        data = r.data;
+      }
+      return (data && data[0]) || null;
+    };
+
+    const [issuesRaw, summaryRow] = await Promise.all([fetchIssues(), fetchSummary()]);
+
+    // Traduz os 2 nomes que mudaram do banco antigo pro 2.0:
+    //   issue.source  <- source_label   |   summary.verdict <- headline
+    const issues = issuesRaw.map(r => ({ ...r, is_summary: false, source: r.source_label || null }));
+
+    const out = [];
+    if (summaryRow) {
+      out.push({
+        is_summary: true,
+        reliability_score: summaryRow.reliability_score,
+        verdict: summaryRow.headline,
+        vehicle_brand: summaryRow.vehicle_brand,
+        vehicle_model: summaryRow.vehicle_model,
+        vehicle_type: summaryRow.vehicle_type
+      });
     }
-    
-    if (error) return [];
-    return data || [];
+    return out.concat(issues);
   } catch(e) { return []; }
 }
 
@@ -4660,15 +4694,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + '<div class="profile-name"><span class="profile-emoji">' + vehicleIcon(v.emoji, v.name) + '</span>' + v.name + '</div>'
     + ((v.version || v.year) ? ('<div class="profile-sub">' + [v.version, v.year].filter(x => x && x !== '—').join(' · ') + '</div>') : '')
     + '<div class="profile-rating">'
-    + '<span class="doxcore-badge">' + (function(){
-        // Distingue a origem da nota exibida (mesma lógica do avgRating):
-        //   - scoreData.score != null  → dado per-FIPE      → "Doxcore desta versão"
-        //   - senão, summary curado    → fallback modelo     → "Doxcore de todas as versões"
-        //   - nenhum dos dois          → sem análise         → "Doxcore"
-        if (scoreData && scoreData.score != null) return 'Doxcore<span class="dox-sub">desta versão</span>';
-        if (summary && summary.reliability_score != null) return 'Doxcore<span class="dox-sub">de todas as versões</span>';
-        return 'Doxcore';
-      })() + '</span>'
+    + '<span class="doxcore-badge">Doxcore</span>'
     + (displayRating ? ('<span class="doxcore-velocimetro-wrap">' + renderDoxcoreVelocimetro(displayRating, 'large') + '</span>') : '')
     + (verdictText
       ? (function(){
@@ -4722,10 +4748,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + '<div class="pc-title"><span class="pc-emoji">👨‍🔧</span> Raio-X</div>'
 
     // ── Sub-bloco 1: Curadoria ──
-    // Curadoria é SEMPRE de nível modelo (loadKnownIssues busca por marca+modelo,
-    // não por fipe_code). Granularidade por versão mora na comunidade, abaixo.
-    // Por isso o rótulo é fixo "de todas as versões" — nunca "desta versão".
-    + '<div class="raiox-subtitle">Curadoria de todas as versões</div>'
+    + '<div class="raiox-subtitle">Curadoria</div>'
     + (summary
       ? '<div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px;padding:12px 14px;background:' + summaryColors.bg + ';border-radius:10px;border:1px solid ' + summaryColors.border + '">' + summary.issue_description
         + (summary.source ? '<div style="margin-top:8px;font-size:10px;font-weight:600;color:var(--muted);text-align:right">Análise: ' + summary.source + '</div>' : '')
