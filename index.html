@@ -1782,6 +1782,10 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
   <div id="vehicle-profile-content"></div>
 </div>
 
+<div id="page-root" style="display:none;padding:16px 24px;max-width:1280px;margin:0 auto">
+  <div id="vehicle-root-content"></div>
+</div>
+
 <!-- ══ FOOTER ══ -->
 
 <!-- ══ AUTH MODAL ══ -->
@@ -3783,7 +3787,27 @@ async function showVehicleProfile(id){
 }
 
 // Abre perfil direto por marca+modelo (usado pelos cards da home)
+// ═════════════════════════════════════════════════════════════════
+// Passo 3 — Navegação de 3 níveis (raiz → geração → versão)
+// ═════════════════════════════════════════════════════════════════
+// PORTEIRO: ao clicar num modelo, primeiro perguntamos ao banco se existe
+// uma RAIZ editorial curada (vehicle_roots). Se existir → abre a página da
+// raiz (editorial + gerações). Se NÃO existir → comportamento de sempre
+// (página plana da versão), sem quebrar nenhum modelo sem curadoria.
 async function showVehicleProfileByBrandModel(brand, model) {
+  let root = null;
+  try { root = await loadVehicleRoot(brand, model); } catch(e) { root = null; }
+  if (root) {
+    showVehicleRoot(brand, model, root);
+  } else {
+    showVehicleVersionProfile(brand, model);
+  }
+}
+
+// Página PLANA da versão (nota + balões + FIPE). Era o corpo antigo de
+// showVehicleProfileByBrandModel — agora é o nível "versão" da hierarquia,
+// chamado pelo porteiro (modelo sem raiz) e pelos cliques de geração.
+async function showVehicleVersionProfile(brand, model) {
   const motoBrands = ['honda','yamaha','kawasaki','suzuki','triumph','bmw motorrad','harley-davidson','royal enfield'];
   const emoji = motoBrands.includes(brand.toLowerCase()) ? '🏍️' : '🚗';
   const id = 'direct-' + brand + '-' + model;
@@ -3800,6 +3824,120 @@ async function showVehicleProfileByBrandModel(brand, model) {
   showPage('vehicle', {brand, model});
   renderVehicleProfileSkeleton(v);
   await loadVehicleProfileData(v);
+}
+
+// ── Carrega a RAIZ editorial do modelo (vehicle_roots) ──
+// Usa a 1ª palavra do modelo ("Gol G5 1.0" → "Gol") porque a raiz é por modelo.
+async function loadVehicleRoot(brand, model) {
+  try {
+    const modelKeyword = (model || '').split(' ')[0];
+    if (!brand || !modelKeyword) return null;
+    const { data } = await sb.from('vehicle_roots')
+      .select('*')
+      .ilike('vehicle_brand', brand)
+      .ilike('vehicle_model', modelKeyword)
+      .limit(1);
+    return (data && data[0]) || null;
+  } catch(e) { return null; }
+}
+
+// ── Carrega as GERAÇÕES de uma raiz (vehicle_generations), mais antiga → mais nova ──
+async function loadGenerationsForRoot(rootId) {
+  try {
+    const { data } = await sb.from('vehicle_generations')
+      .select('*')
+      .eq('root_id', rootId)
+      .order('year_start', { ascending: true });
+    return data || [];
+  } catch(e) { return []; }
+}
+
+// ── Abre a página da RAIZ ──
+async function showVehicleRoot(brand, model, root) {
+  showPage('root', { brand, model });
+  renderVehicleRootSkeleton(root);
+  const generations = await loadGenerationsForRoot(root.id);
+  renderVehicleRoot(brand, model, root, generations);
+}
+
+// Skeleton enquanto as gerações carregam
+function renderVehicleRootSkeleton(root) {
+  const el = document.getElementById('vehicle-root-content');
+  if (!el) return;
+  el.innerHTML = `
+    <button class="back-btn" onclick="showPage('home')">← Voltar</button>
+    <div class="profile-hero">
+      <div class="profile-left">
+        <div class="profile-brand-label" style="padding-left:0">${(root.vehicle_brand||'').toUpperCase()}</div>
+        <div class="profile-name">${root.vehicle_model || ''}</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:20px 0;color:var(--muted);font-size:13px">
+      <span class="ai-spinner" style="border-color:rgba(13,31,60,.2);border-top-color:var(--navy)"></span>
+      Carregando gerações…
+    </div>`;
+}
+
+// Render completo da raiz: editorial (imagem + história) + seletor de gerações
+function renderVehicleRoot(brand, model, root, generations) {
+  const el = document.getElementById('vehicle-root-content');
+  if (!el) return;
+
+  const imgUrl = root.editorial_image_url || '';
+  const safeBrand = (brand || '').replace(/'/g, "\\'");
+  const safeModel = (model || '').replace(/'/g, "\\'");
+
+  // Bloco da imagem editorial (ou placeholder se ainda não houver)
+  const imageBlock = imgUrl
+    ? `<div style="flex:0 0 320px;max-width:320px"><img src="${imgUrl}" alt="${root.vehicle_model||''}" style="width:100%;border-radius:14px;display:block;border:1px solid var(--border)"/></div>`
+    : `<div style="flex:0 0 320px;max-width:320px;height:200px;border-radius:14px;background:var(--bg2);border:1px dashed var(--border2);display:flex;align-items:center;justify-content:center;color:var(--muted2);font-size:44px">🚗</div>`;
+
+  // História editorial (preserva quebras de linha)
+  const historyBlock = root.editorial_body
+    ? `<div style="color:var(--text2);font-size:15px;line-height:1.7;white-space:pre-line">${root.editorial_body}</div>`
+    : '';
+
+  // Seletor de gerações
+  let generationsBlock;
+  if (generations && generations.length) {
+    const cards = generations.map(g => {
+      const years = [g.year_start, g.year_end].filter(Boolean).join('–');
+      const label = g.generation_label || g.generation_name || 'Geração';
+      const sub = [ (g.generation_name && g.generation_name !== label) ? g.generation_name : '', years ].filter(Boolean).join(' · ');
+      return `
+        <button onclick="showVehicleVersionProfile('${safeBrand}','${safeModel}')" style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 20px;border:1.5px solid var(--border2);border-radius:14px;background:var(--white);cursor:pointer;text-align:left;transition:border-color .2s,box-shadow .2s;width:100%" onmouseover="this.style.borderColor='var(--navy)';this.style.boxShadow='var(--shadow)'" onmouseout="this.style.borderColor='var(--border2)';this.style.boxShadow='none'">
+          <span style="display:flex;flex-direction:column;align-items:flex-start;gap:4px">
+            <span style="font-family:var(--font);font-weight:800;font-size:17px;color:var(--navy)">${label}</span>
+            ${sub ? `<span style="font-size:13px;color:var(--muted)">${sub}</span>` : ''}
+          </span>
+          <span style="color:var(--muted2);font-size:22px;line-height:1">›</span>
+        </button>`;
+    }).join('');
+    generationsBlock = `
+      <div style="margin-top:6px">
+        <div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy);margin-bottom:12px">Escolha a geração</div>
+        <div style="display:flex;flex-direction:column;gap:10px;max-width:560px">${cards}</div>
+      </div>`;
+  } else {
+    // Modelo curto (sem geração curada) → atalho direto pra versão
+    generationsBlock = `
+      <div style="margin-top:6px">
+        <button class="btn-primary" style="justify-content:center" onclick="showVehicleVersionProfile('${safeBrand}','${safeModel}')">Ver análise do ${root.vehicle_model||model} →</button>
+      </div>`;
+  }
+
+  el.innerHTML = `
+    <button class="back-btn" onclick="showPage('home')">← Voltar</button>
+    <div class="profile-hero" style="align-items:flex-start">
+      ${imageBlock}
+      <div class="profile-left">
+        <div class="profile-brand-label" style="padding-left:0">${(root.vehicle_brand||'').toUpperCase()}</div>
+        <div class="profile-name">${root.vehicle_model || ''}</div>
+        ${root.editorial_title ? `<div style="font-family:var(--font);font-size:17px;font-weight:700;color:var(--text2);margin:8px 0 14px">${root.editorial_title}</div>` : ''}
+        ${historyBlock}
+      </div>
+    </div>
+    ${generationsBlock}`;
 }
 
 // ═════════════════════════════════════════════════════════════════
@@ -5504,7 +5642,7 @@ function showPage(page, params={}){
       sbSelectType('carros', {keepClosed: true});
     }
   }
-  ['home','vehicle','profile','compare','search','admin','lawyers','company','ranking-companies','complaint','company-profile','mediation','lawyer-panel','mediation-channel','complaints','opinioes','vehicles'].forEach(p=>{
+  ['home','vehicle','root','profile','compare','search','admin','lawyers','company','ranking-companies','complaint','company-profile','mediation','lawyer-panel','mediation-channel','complaints','opinioes','vehicles'].forEach(p=>{
     const el=document.getElementById('page-'+p);
     if(el) el.style.display=p===page?'block':'none';
   });
@@ -10471,6 +10609,11 @@ async function restoreFromHash() {
   // Reabrir é barato: getOrFetchFipeVehicle bate no cache fipe_vehicles.
   // Não muda granularidade (§2b) — só reabre o que já existia. showPage reescreve
   // o mesmo hash (idempotente), sem loop.
+  if (page === 'root' && params.brand && params.model) {
+    // Reabre a raiz: o porteiro re-detecta a raiz e renderiza de novo.
+    showVehicleProfileByBrandModel(params.brand, params.model);
+    return;
+  }
   if (page === 'vehicle') {
     if (params.fipe) { showVehicleProfileByFipe(params.fipe); return; }
     if (params.brand && params.model) { showVehicleProfileByBrandModel(params.brand, params.model); return; }
