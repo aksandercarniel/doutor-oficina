@@ -3504,6 +3504,28 @@ function setRankingMode(mode){
 // invalida updates de gerações anteriores.
 let _rankingRenderToken = 0;
 
+// BANCO 2.0: monta o array misto (summary + issues) que os rankings esperam,
+// lendo das duas tabelas novas e mantendo o formato antigo (is_summary, verdict, source).
+async function _loadVehiclesMixed(limit) {
+  try {
+    const [sumR, issR] = await Promise.all([
+      sb.from('vehicle_summaries').select('vehicle_brand, vehicle_model, vehicle_type, reliability_score, headline').limit(limit),
+      sb.from('vehicle_issues').select('vehicle_brand, vehicle_model, vehicle_type, issue_title, issue_description, severity, source_label, fix_exists').limit(limit)
+    ]);
+    const rows = [];
+    (sumR.data || []).forEach(s => rows.push({
+      vehicle_brand: s.vehicle_brand, vehicle_model: s.vehicle_model, vehicle_type: s.vehicle_type,
+      is_summary: true, reliability_score: s.reliability_score, verdict: s.headline
+    }));
+    (issR.data || []).forEach(i => rows.push({
+      vehicle_brand: i.vehicle_brand, vehicle_model: i.vehicle_model, vehicle_type: i.vehicle_type,
+      is_summary: false, issue_title: i.issue_title, issue_description: i.issue_description,
+      severity: i.severity, source: i.source_label, fix_exists: i.fix_exists
+    }));
+    return rows;
+  } catch(e) { console.error('Erro ao buscar veículos:', e); return []; }
+}
+
 async function renderRanking(){
   const grid = document.getElementById('ranking-grid');
   if (!grid) return;
@@ -3516,15 +3538,7 @@ async function renderRanking(){
 
   // Busca todos os registros (summary + issues) e agrupa por marca+modelo.
   // Mesma fonte do bloco antigo "Veículos mais avaliados" (que foi removido).
-  let allRows = [];
-  try {
-    const { data } = await sb.from('vehicle_known_issues')
-      .select('vehicle_brand, vehicle_model, vehicle_type, is_summary, reliability_score, verdict, weaknesses, issue_title, severity')
-      .order('is_summary', { ascending: false })
-      .order('severity', { ascending: true })
-      .limit(300);
-    allRows = data || [];
-  } catch(e) { console.error('Erro ao buscar veículos:', e); }
+  let allRows = await _loadVehiclesMixed(300);
 
   // Geração obsoleta? Aborta sem tocar no DOM.
   if (myToken !== _rankingRenderToken) return;
@@ -6258,9 +6272,8 @@ async function showSearchResults(val, fipeResults, complaintResults, mockResults
   // Busca quais modelos têm Raio-X cadastrado
   let modelsWithData = [];
   try {
-    const { data } = await sb.from('vehicle_known_issues')
-      .select('vehicle_brand, vehicle_model')
-      .eq('is_summary', true);
+    const { data } = await sb.from('vehicle_summaries')
+      .select('vehicle_brand, vehicle_model');
     modelsWithData = data || [];
   } catch(e) {}
 
@@ -6551,11 +6564,11 @@ async function openComplaintDetail(complaintId) {
     // Busca Doxcore do veículo (reliability_score do summary curado)
     let doxcore = null;
     if (complaint.vehicle_brand && complaint.vehicle_model) {
-      const { data: vk } = await sb.from('vehicle_known_issues')
+      const { data: vk } = await sb.from('vehicle_summaries')
         .select('reliability_score')
         .eq('vehicle_brand', complaint.vehicle_brand)
         .eq('vehicle_model', complaint.vehicle_model)
-        .eq('is_summary', true)
+        .limit(1)
         .maybeSingle();
       if (vk?.reliability_score != null) doxcore = parseFloat(vk.reliability_score);
     }
@@ -9199,10 +9212,9 @@ async function calculateFipeScore(fipeCode) {
 
   // 1. Busca curadoria (reliability_score do summary com fipe_code exato)
   try {
-    const { data: rx } = await sb.from('vehicle_known_issues')
+    const { data: rx } = await sb.from('vehicle_summaries')
       .select('reliability_score')
       .eq('fipe_code', fipeCode)
-      .eq('is_summary', true)
       .limit(1)
       .maybeSingle();
     if (rx && rx.reliability_score != null) raioX = parseFloat(rx.reliability_score);
@@ -9297,12 +9309,10 @@ async function calculateModelScore(brand, model) {
   // 2. Fallback: média de reliability_score dos summaries genéricos do modelo
   if (result.score == null) {
     try {
-      const { data: generic } = await sb.from('vehicle_known_issues')
+      const { data: generic } = await sb.from('vehicle_summaries')
         .select('reliability_score')
         .eq('vehicle_brand', brand)
-        .eq('vehicle_model', model)
-        .eq('is_summary', true)
-        .is('fipe_code', null);
+        .eq('vehicle_model', model);
       if (generic && generic.length) {
         const vals = generic.map(g => parseFloat(g.reliability_score)).filter(v => !isNaN(v));
         if (vals.length) result.score = vals.reduce((a, b) => a + b, 0) / vals.length;
@@ -10207,15 +10217,7 @@ async function loadAllVehiclesPage(params = {}) {
   if (sortSel) sortSel.value = 'most_issues';
 
   // Busca tudo do Supabase (mesma lógica do renderVehicles)
-  let allRows = [];
-  try {
-    const { data } = await sb.from('vehicle_known_issues')
-      .select('vehicle_brand, vehicle_model, vehicle_type, is_summary, reliability_score, verdict, weaknesses, issue_title, severity')
-      .order('is_summary', { ascending: false })
-      .order('severity', { ascending: true })
-      .limit(1000);
-    allRows = data || [];
-  } catch(e) { console.error('Erro ao buscar veículos:', e); }
+  let allRows = await _loadVehiclesMixed(1000);
 
   // Agrupa por marca+modelo
   const groups = {};
@@ -10397,9 +10399,8 @@ function renderComparison() {
 // À prova de falha: se a query der erro, o fallback "dezenas de" continua intacto.
 async function updateHeroStats(){
   try{
-    const { count } = await sb.from('vehicle_known_issues')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_summary', true);
+    const { count } = await sb.from('vehicle_summaries')
+      .select('*', { count: 'exact', head: true });
     const el = document.getElementById('hero-raiox-count');
     if(el && typeof count === 'number' && count >= 30) el.textContent = `${count}+`;
   }catch(e){ /* silencia: mantém fallback "dezenas de" */ }
