@@ -4749,7 +4749,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
 
     // ── Sub-bloco 1: Curadoria ──
     + '<div class="raiox-subtitle">Curadoria</div>'
-    + (summary
+    + (summary && summary.issue_description
       ? '<div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px;padding:12px 14px;background:' + summaryColors.bg + ';border-radius:10px;border:1px solid ' + summaryColors.border + '">' + summary.issue_description
         + (summary.source ? '<div style="margin-top:8px;font-size:10px;font-weight:600;color:var(--muted);text-align:right">Análise: ' + summary.source + '</div>' : '')
         + '</div>'
