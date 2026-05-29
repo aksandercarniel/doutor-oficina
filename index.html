@@ -5710,9 +5710,8 @@ let _topVehiclesCache = null;
 async function getTopVehiclesFromSupabase() {
   if (_topVehiclesCache) return _topVehiclesCache;
   try {
-    const { data } = await sb.from('vehicle_known_issues')
+    const { data } = await sb.from('vehicle_summaries')
       .select('vehicle_brand, vehicle_model, vehicle_type, reliability_score')
-      .eq('is_summary', true)
       .order('reliability_score', { ascending: false })
       .limit(30);
     const typeEmoji = (t) => t === 'moto' ? '🏍️' : t === 'caminhao' ? '🚚' : '🚗';
@@ -5844,8 +5843,8 @@ function showSmartSuggestions(val) {
     } else {
       html += `<div style="padding:10px 14px;color:var(--muted);font-size:12px">Carregando…</div>`;
       // Quando carregar, re-renderiza
-      getTopVehiclesFromSupabase().then(() => {
-        if (document.activeElement?.id === 'search-free-input' && !document.getElementById('search-free-input').value) {
+      getTopVehiclesFromSupabase().then((top) => {
+        if (top && top.length && document.activeElement?.id === 'search-free-input' && !document.getElementById('search-free-input').value) {
           showSmartSuggestions('');
         }
       });
