@@ -4561,46 +4561,23 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     summaryColors = { bg: 'var(--bg)', border: 'var(--border)' };
   }
 
-  // Filtra problemas conforme rating (usa só problemIssues, ignora positiveIssues aqui)
-  let filteredProblems = problemIssues;
-  if (summaryRating >= 4) {
-    filteredProblems = problemIssues.filter(i => i.severity !== 'grave');
-  } else if (summaryRating > 0 && summaryRating < 3) {
-    filteredProblems = problemIssues.filter(i => i.severity === 'grave');
-  }
-
-  // Desempate problemas: com solução primeiro, depois por gravidade
+  // PASSO 2: sem "humor". Mostra TODOS os balões, do mais grave ao mais leve,
+  // com os positivos no fim. Severidade manda; solução conhecida desempata.
   const severityOrder = { grave: 1, moderado: 2, leve: 3 };
-  const sortedProblems = [...filteredProblems].sort((a, b) => {
-    if (!!b.fix_exists !== !!a.fix_exists) return (b.fix_exists ? 1 : 0) - (a.fix_exists ? 1 : 0);
-    return (severityOrder[a.severity] || 99) - (severityOrder[b.severity] || 99);
+  const sortedProblems = [...problemIssues].sort((a, b) => {
+    const sev = (severityOrder[a.severity] || 99) - (severityOrder[b.severity] || 99);
+    if (sev !== 0) return sev;
+    return (b.fix_exists ? 1 : 0) - (a.fix_exists ? 1 : 0);
   });
 
-  // Pontos positivos: prioriza positiveIssues da tabela (têm descrição completa)
-  // Fallback: summary.strengths (só títulos) — compatibilidade com lotes antigos
+  // Pontos positivos: linhas da tabela (severity='positivo'); fallback antigo summary.strengths
   const positivesPool = positiveIssues.length > 0
     ? positiveIssues.map(p => ({ isTableRow: true, data: p }))
     : (summary?.strengths || []).map(t => ({ isTableRow: false, data: t }));
 
-  // Seleciona problemas e positivos conforme o rating
-  let selectedIssues, selectedStrengths;
-
-  if (summaryRating >= 4) {
-    // Bom: 1 problema (Atenção) + 2 positivos
-    selectedIssues = sortedProblems.slice(0, 1);
-    selectedStrengths = positivesPool.slice(0, 2);
-  } else if (summaryRating >= 3) {
-    // Médio: 2 problemas (1 atenção + 1 grave) + 1 positivo
-    // Atenção primeiro para combinar com o card-resumo amarelo
-    const atencao = sortedProblems.find(i => i.severity !== 'grave');
-    const grave = sortedProblems.find(i => i.severity === 'grave');
-    selectedIssues = [atencao, grave].filter(Boolean).slice(0, 2);
-    selectedStrengths = positivesPool.slice(0, 1);
-  } else {
-    // Ruim ou sem rating: 2 problemas (Críticos) + 1 positivo
-    selectedIssues = sortedProblems.slice(0, 2);
-    selectedStrengths = positivesPool.slice(0, 1);
-  }
+  // Sem filtro e sem corte: todos os problemas + todos os positivos
+  const selectedIssues = sortedProblems;
+  const selectedStrengths = positivesPool;
 
   // Renderiza card de problema
   const renderIssueCard = (issue) => {
@@ -4643,22 +4620,11 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
       + '</div>';
   };
 
-  // Monta a ordem dos cards conforme o "humor" do veículo
+  // PASSO 2: ordem fixa — problemas (grave→leve) e depois positivos. Sem reordenar por nota.
   let raioXCards = '';
   if (selectedIssues.length > 0 || selectedStrengths.length > 0) {
-    const cardsP = selectedIssues.map(renderIssueCard);
-    const cardsS = selectedStrengths.map(renderStrengthCard);
-
-    if (summaryRating >= 4) {
-      // Bom: Positivo → Positivo → Atenção (começa otimista, igual ao resumo verde)
-      raioXCards = (cardsS[0] || '') + (cardsS[1] || '') + (cardsP[0] || '');
-    } else if (summaryRating >= 3) {
-      // Médio: Atenção → Positivo → Crítico (começa amarelo, igual ao resumo amarelo)
-      raioXCards = (cardsP[0] || '') + (cardsS[0] || '') + (cardsP[1] || '');
-    } else {
-      // Ruim: Crítico → Crítico → Positivo (começa vermelho, igual ao resumo vermelho)
-      raioXCards = (cardsP[0] || '') + (cardsP[1] || '') + (cardsS[0] || '');
-    }
+    raioXCards = selectedIssues.map(renderIssueCard).join('')
+      + selectedStrengths.map(renderStrengthCard).join('');
   } else {
     raioXCards = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0">Nenhum problema crônico mapeado ainda para este modelo.</div>';
   }
