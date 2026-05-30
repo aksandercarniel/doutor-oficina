@@ -4114,7 +4114,7 @@ async function loadVehicleProfileDataByFipe(v) {
 
   // Busca em paralelo (4 fontes)
   const [knownIssues, complaints, fipePrice, scoreData] = await Promise.all([
-    loadKnownIssues(brand, model, fipeCode),
+    loadKnownIssues(brand, model, fipeCode, v.year),
     sbLoadComplaintsByFipe(fipeCode),
     loadFipePriceForVehicle(v),
     calculateFipeScore(fipeCode)
@@ -4292,7 +4292,7 @@ function calcVehicleStats(complaints) {
 }
 
 // Busca raio-x curado no Supabase
-async function loadKnownIssues(brand, model, fipeCode) {
+async function loadKnownIssues(brand, model, fipeCode, year) {
   // BANCO 2.0: lê de duas tabelas separadas (vehicle_issues = balões,
   // vehicle_summaries = nota + manchete) e devolve no formato antigo que
   // renderVehicleProfileFull já espera: 1 objeto is_summary:true + N balões.
@@ -4349,7 +4349,22 @@ async function loadKnownIssues(brand, model, fipeCode) {
 
     // Traduz os 2 nomes que mudaram do banco antigo pro 2.0:
     //   issue.source  <- source_label   |   summary.verdict <- headline
-    const issues = issuesRaw.map(r => ({ ...r, is_summary: false, source: r.source_label || null }));
+    // Filtro de ESCOPO (só no caminho por FIPE): balão do MODELO aparece sempre;
+    // da VERSÃO só se o fipe casar; do ANO só se o ano da versão cair no intervalo.
+    // Sem fipeCode (caminho antigo marca+modelo), não filtra nada.
+    const inScope = (r) => {
+      if (!fipeCode) return true;
+      const lvl = r.scope_level;
+      if (!lvl || lvl === 'modelo') return true;
+      if (lvl === 'versao') return (r.scope_fipe || r.fipe_code) === fipeCode;
+      if (lvl === 'ano') {
+        const y = parseInt(year), ys = parseInt(r.year_start), ye = parseInt(r.year_end);
+        if (!y || isNaN(ys) || isNaN(ye)) return true;
+        return y >= ys && y <= ye;
+      }
+      return true;
+    };
+    const issues = issuesRaw.filter(inScope).map(r => ({ ...r, is_summary: false, source: r.source_label || null }));
 
     const out = [];
     if (summaryRow) {
