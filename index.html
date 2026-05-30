@@ -4951,6 +4951,17 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
   const selectedIssues = sortedProblems;
   const selectedStrengths = positivesPool;
 
+  // Monta a linha "Fonte:". Se o balão tem source_url (link da fonte no banco),
+  // o nome da fonte vira um link clicável que abre em nova aba. Sem URL, fica texto puro.
+  const renderSourceLine = (label, url) => {
+    const name = label || 'Doutor Oficina';
+    const ok = url && /^https?:\/\//i.test(url);
+    const inner = ok
+      ? '<a href="' + url.replace(/"/g, '%22') + '" target="_blank" rel="noopener nofollow" style="color:var(--navy,#1e3a5f);text-decoration:underline">' + name + ' ↗</a>'
+      : name;
+    return '<div style="margin-top:8px;font-size:11px;color:var(--muted2)">Fonte: ' + inner + '</div>';
+  };
+
   // Renderiza card de problema
   const renderIssueCard = (issue) => {
     const cfg = severityConfig[issue.severity] || severityConfig.leve;
@@ -4963,7 +4974,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
       + (issue.affected_years ? '<div style="font-size:11px;color:var(--muted);margin-bottom:4px">📅 Anos afetados: <strong>' + issue.affected_years + '</strong></div>' : '')
       + (issue.fix_exists && issue.fix_description ? '<div style="font-size:12px;color:var(--green);background:var(--green-light);border-radius:8px;padding:8px 10px;border:1px solid rgba(0,168,120,.2)">✅ <strong>Solução conhecida:</strong> ' + issue.fix_description + '</div>' : '')
       + (!issue.fix_exists ? '<div style="font-size:12px;color:var(--muted);font-style:italic">⚠️ Sem solução definitiva conhecida até o momento.</div>' : '')
-      + '<div style="margin-top:8px;font-size:11px;color:var(--muted2)">Fonte: ' + (issue.source || 'Doutor Oficina') + '</div>'
+      + renderSourceLine(issue.source, issue.source_url)
       + '</div>';
   };
 
@@ -4981,7 +4992,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
         + '<span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;background:rgba(0,168,120,.13);color:var(--green);border:1px solid rgba(0,168,120,.3);white-space:nowrap;text-transform:uppercase">Positivo</span>'
         + '</div>'
         + (p.issue_description ? '<div style="font-size:13px;color:var(--text2);line-height:1.55">' + p.issue_description + '</div>' : '')
-        + (p.source ? '<div style="margin-top:8px;font-size:11px;color:var(--muted2)">Fonte: ' + p.source + '</div>' : '')
+        + (p.source ? renderSourceLine(p.source, p.source_url) : '')
         + '</div>';
     }
     // Modo COMPACTO: string simples vinda de summary.strengths (compatibilidade)
