@@ -3892,8 +3892,11 @@ function _rootVersionButtons(indices) {
   }
   return '<div style="display:flex;flex-direction:column;gap:10px">' + indices.map(i => {
     const s = _rootData.versions[i];
-    const nome = _rootEsc(s.version || s.vehicle_model);
-    const ano = s.model_year ? ' · ' + _rootEsc(s.model_year) : '';
+    const ver = s.version || s.vehicle_version || s.version_name || '';
+    const ano = s.model_year || s.year || s.ano || '';
+    // Rótulo: versão se houver; senão o nome do modelo. Sublinha ano OU fipe.
+    const nome = _rootEsc(ver || s.vehicle_model);
+    const sub = ano ? ' · ' + _rootEsc(ano) : (s.fipe_code ? ' · FIPE ' + _rootEsc(s.fipe_code) : '');
     const nota = (s.reliability_score != null && !isNaN(parseFloat(s.reliability_score)))
       ? '<span style="font-weight:700;color:var(--navy,#1e3a5f)">' + parseFloat(s.reliability_score).toFixed(1) + '</span><span style="color:var(--muted,#6b7280);font-size:12px"> Doxcore</span>'
       : '<span style="color:var(--muted,#6b7280);font-size:13px">sem nota</span>';
@@ -3901,7 +3904,7 @@ function _rootVersionButtons(indices) {
       'style="display:flex;justify-content:space-between;align-items:center;gap:12px;text-align:left;' +
       'padding:14px 16px;border:1px solid var(--line,#e5e7eb);border-radius:12px;background:var(--card,#fff);' +
       'cursor:pointer;font-size:15px;width:100%">' +
-      '<span>' + nome + ano + '</span><span>' + nota + '</span></button>';
+      '<span>' + nome + sub + '</span><span>' + nota + '</span></button>';
   }).join('') + '</div>';
 }
 
@@ -3956,27 +3959,37 @@ function showRootGeneration(i) {
   el.innerHTML = h;
 }
 
-// Clique numa versão → abre o perfil de versão (caminho já existente e provado).
-// Monta o objeto v com versão/ano/fipe reais; loadVehicleProfileData lê o
-// summary por marca+modelo (não depende do cache FIPE), então sempre funciona.
+// Clique numa versão → abre o perfil pelo caminho OFICIAL (vehicle?fipe),
+// que sobrevive ao reload. O hint leva o que o summary tiver; se faltar cache
+// FIPE, a getOrFetchFipeVehicle hidrata do próprio summary (fallback acima).
 function openRootVersion(i) {
   const s = _rootData.versions[i];
+  if (!s) return;
+  if (s.fipe_code) {
+    showVehicleProfileByFipe(s.fipe_code, {
+      brand: s.vehicle_brand, name: s.vehicle_model,
+      version: s.version || s.vehicle_version || '',
+      year: String(s.model_year || s.year || ''),
+      vehicleType: s.vehicle_type
+    });
+    return;
+  }
+  // Sem fipe_code (caso raro): cai no perfil por marca+modelo.
   const motoBrands = ['honda','yamaha','kawasaki','suzuki','triumph','bmw motorrad','harley-davidson','royal enfield'];
   const emoji = (s.vehicle_type === 'moto' || motoBrands.includes(String(s.vehicle_brand).toLowerCase())) ? '🏍️'
               : (s.vehicle_type === 'caminhao' ? '🚚' : '🚗');
-  const id = 'fipe-' + (s.fipe_code || (s.version + '-' + s.model_year));
+  const id = 'direct-' + s.vehicle_brand + '-' + s.vehicle_model;
   const v = {
     id, brand: s.vehicle_brand, name: s.vehicle_model,
-    version: s.version || '', year: String(s.model_year || '—'), model_year: s.model_year,
-    fipe_code: s.fipe_code || null, vehicleType: s.vehicle_type, emoji,
+    version: s.version || '', year: String(s.model_year || '—'),
+    vehicleType: s.vehicle_type, emoji,
     rating: parseFloat(s.reliability_score) || 0, count: 0, badge: '', badgeClass: '',
     problems: [], fipePrice: null
   };
   const ei = dynamicVehicles.findIndex(x => x.id === id);
   if (ei > -1) dynamicVehicles.splice(ei, 1);
   dynamicVehicles.push(v);
-  // Inclui o fipe no hash pra a versão sobreviver ao reload (e brand/model como reserva).
-  showPage('vehicle', s.fipe_code ? { fipe: s.fipe_code } : { brand: s.vehicle_brand, model: s.vehicle_model });
+  showPage('vehicle', { brand: s.vehicle_brand, model: s.vehicle_model });
   renderVehicleProfileSkeleton(v);
   loadVehicleProfileData(v);
 }
@@ -9984,6 +9997,37 @@ async function getOrFetchFipeVehicle(fipeCode, hint) {
     }
   } catch (e) {
     // Cache miss ou erro de leitura — segue pra tentar hint
+  }
+
+  // Fallback: veículo CURADO que ainda não passou pelo cache FIPE.
+  // Hidrata pelo vehicle_summaries (chave = fipe_code). Assim a versão abre
+  // pelo caminho oficial (vehicle?fipe) tanto no clique quanto no reload,
+  // mesmo sem cache e sem hint. Não inventa dado: usa só o que o summary tem.
+  try {
+    const { data: sum } = await sb.from('vehicle_summaries')
+      .select('*')
+      .eq('fipe_code', fipeCode)
+      .maybeSingle();
+    if (sum) {
+      const vtype = sum.vehicle_type || 'carro';
+      return {
+        success: true,
+        vehicle: {
+          fipe_code: sum.fipe_code,
+          brand: sum.vehicle_brand,
+          name: sum.vehicle_model,
+          version: sum.version || sum.vehicle_version || '',
+          year: String(sum.model_year || sum.year || ''),
+          model_year: sum.model_year || sum.year || null,
+          vehicleType: vtype,
+          fipeType: vtype === 'moto' ? 'motos' : vtype === 'caminhao' ? 'caminhoes' : 'carros',
+          emoji: vtype === 'moto' ? '🏍️' : vtype === 'caminhao' ? '🚚' : '🚗',
+          rating: parseFloat(sum.reliability_score) || 0
+        }
+      };
+    }
+  } catch (e) {
+    // Sem summary com esse fipe_code — segue pro hint.
   }
 
   // Sem cache: precisa do hint pra hidratar
