@@ -5025,7 +5025,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
       const p = item.data;
       return '<div style="border:1.5px solid #a8e0c8;border-radius:12px;padding:14px 16px;margin-bottom:10px;background:var(--green-light)">'
         + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">'
-        + '<div style="font-family:var(--font);font-weight:700;font-size:13.5px;color:var(--navy)">✅ ' + p.issue_title + '</div>'
+        + '<div style="font-family:var(--font);font-weight:700;font-size:13.5px;color:var(--navy)">' + faceSvgColored(5, 'var(--green)') + ' ' + p.issue_title + '</div>'
         + '<span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;background:rgba(0,168,120,.13);color:var(--green);border:1px solid rgba(0,168,120,.3);white-space:nowrap;text-transform:uppercase">Positivo</span>'
         + '</div>'
         + (p.issue_description ? '<div style="font-size:13px;color:var(--text2);line-height:1.55">' + p.issue_description + '</div>' : '')
@@ -5035,7 +5035,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     }
     // Modo COMPACTO: string simples vinda de summary.strengths (compatibilidade)
     return '<div style="border:1.5px solid #a8e0c8;border-radius:12px;padding:12px 16px;margin-bottom:10px;background:var(--green-light);display:flex;align-items:center;gap:10px">'
-      + '<span style="font-size:18px;flex-shrink:0">✅</span>'
+      + '<span style="flex-shrink:0;display:inline-flex">' + faceSvgColored(5, 'var(--green)') + '</span>'
       + '<div style="font-family:var(--font);font-weight:700;font-size:13.5px;color:var(--navy);flex:1">' + item.data + '</div>'
       + '<span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;background:rgba(0,168,120,.13);color:var(--green);border:1px solid rgba(0,168,120,.3);white-space:nowrap;text-transform:uppercase">Positivo</span>'
       + '</div>';
