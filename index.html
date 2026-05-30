@@ -3826,12 +3826,20 @@ async function loadRootData(brand, model) {
   const root = (rootRes.data && rootRes.data[0]) || null;
   const versions = sumsRes.data || [];
   let generations = [];
+  let catalog = null;
   if (root && root.id != null) {
-    const gr = await sb.from('vehicle_generations')
-      .select('*').eq('root_id', root.id).order('year_start', { ascending: true });
+    // Gerações e vitrine da marca em paralelo. A vitrine só vem se is_published=true
+    // (o portão da marca: nada aparece enquanto a fabricante não publica).
+    const [gr, catRes] = await Promise.all([
+      sb.from('vehicle_generations')
+        .select('*').eq('root_id', root.id).order('year_start', { ascending: true }),
+      sb.from('vehicle_brand_catalog')
+        .select('*').eq('root_id', root.id).eq('is_published', true).limit(1)
+    ]);
     generations = gr.data || [];
+    catalog = (catRes.data && catRes.data[0]) || null;
   }
-  return { brand, model, root, generations, versions };
+  return { brand, model, root, generations, versions, catalog };
 }
 
 // Quais versões pertencem a uma geração:
@@ -3868,9 +3876,10 @@ function _rootBody(txt) {
 
 // Cabeçalho editorial da raiz (imagem + marca/título + história).
 function _rootHeaderHtml() {
-  const { brand, model, root } = _rootData;
+  const { brand, model, root, catalog } = _rootData;
   const title = (root && root.editorial_title) || model;
-  const img = root && root.editorial_image_url;
+  // Foto oficial da marca (vitrine publicada) sobrepõe a imagem editorial da curadoria.
+  const img = (catalog && catalog.official_photo_url) || (root && root.editorial_image_url);
   let h = '<div style="margin-bottom:28px">';
   if (img) {
     h += '<img src="' + _rootEsc(img) + '" alt="' + _rootEsc(title) + '" ' +
@@ -3880,6 +3889,48 @@ function _rootHeaderHtml() {
   h += '<h1 style="margin:4px 0 14px;font-size:30px;line-height:1.2">' + _rootEsc(title) + '</h1>';
   if (root && root.editorial_body) {
     h += '<div style="color:var(--text,#1f2937);font-size:16px">' + _rootBody(root.editorial_body) + '</div>';
+  }
+  h += '</div>';
+  return h;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// App-2 — VITRINE DA MARCA (catálogo institucional da fabricante).
+// Coexiste com o dossiê da curadoria na MESMA raiz, mas SEPARADO por uma
+// divisória explícita e um selo "Conteúdo da fabricante". A marca controla
+// SÓ isto (foto/sobre/site/contato); nunca toca nota, balões, história,
+// geração ou versão. É o que impede a raiz virar publieditorial.
+// Só desenha se houver catálogo publicado (is_published=true, vindo do load).
+// ─────────────────────────────────────────────────────────────────
+function _rootBrandShowcaseHtml() {
+  const cat = _rootData && _rootData.catalog;
+  if (!cat) return '';
+  const about = cat.about_model;
+  const site = cat.brand_site;
+  const contact = cat.brand_contact;
+  // Sem nenhum conteúdo institucional, não desenha a vitrine.
+  if (!about && !site && !contact) return '';
+  const brand = (_rootData.root && _rootData.root.vehicle_brand) || _rootData.brand || '';
+
+  // Divisória explícita: daqui pra baixo é voz da marca, não da curadoria.
+  let h = '<hr style="border:none;border-top:1px solid var(--line,#e5e7eb);margin:36px 0 0">';
+  h += '<div style="margin-top:28px;padding:20px;border:1px solid var(--line,#e5e7eb);border-radius:14px;background:var(--card-soft,#f8fafc)">';
+  h += '<div style="font-size:12px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted,#6b7280);font-weight:700;margin-bottom:10px">Conteúdo da fabricante' + (brand ? ' · ' + _rootEsc(brand) : '') + '</div>';
+  h += '<h2 style="font-size:18px;margin:0 0 12px">Sobre o modelo</h2>';
+  if (about) {
+    h += '<div style="color:var(--text,#1f2937);font-size:15px">' + _rootBody(about) + '</div>';
+  }
+  // Links institucionais (site / contato), se houver.
+  const links = [];
+  if (site) {
+    const href = /^https?:\/\//i.test(site) ? site : 'https://' + site;
+    links.push('<a href="' + _rootEsc(href) + '" target="_blank" rel="noopener nofollow" style="color:var(--navy,#1e3a5f);text-decoration:underline">Site oficial</a>');
+  }
+  if (contact) {
+    links.push('<span style="color:var(--text,#1f2937)">' + _rootEsc(contact) + '</span>');
+  }
+  if (links.length) {
+    h += '<div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:16px;font-size:14px">' + links.join('') + '</div>';
   }
   h += '</div>';
   return h;
@@ -3941,6 +3992,8 @@ function renderRoot() {
     h += '<h2 style="font-size:18px;margin:8px 0 14px">Escolha a versão</h2>';
     h += _rootVersionButtons(versions.map((_, i) => i));
   }
+  // App-2: vitrine da marca no rodapé da raiz (só renderiza se publicada).
+  h += _rootBrandShowcaseHtml();
   el.innerHTML = h;
 }
 
