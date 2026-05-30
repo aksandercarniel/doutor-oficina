@@ -4957,7 +4957,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     const name = label || 'Doutor Oficina';
     const ok = url && /^https?:\/\//i.test(url);
     const inner = ok
-      ? '<a href="' + url.replace(/"/g, '%22') + '" target="_blank" rel="noopener nofollow" style="color:var(--navy,#1e3a5f);text-decoration:underline">' + name + ' ↗</a>'
+      ? '<a href="' + url.replace(/"/g, '%22') + '" target="_blank" rel="noopener nofollow" style="color:inherit;text-decoration:underline">' + name + ' ↗</a>'
       : name;
     return '<div style="margin-top:8px;font-size:11px;color:var(--muted2)">Fonte: ' + inner + '</div>';
   };
