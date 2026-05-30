@@ -1043,6 +1043,11 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .vote-btn.voted{border-color:var(--navy);background:var(--navy);color:#fff}
 .vote-btn.voted:hover{background:var(--navy2)}
 
+/* ── Validação por balão (Raio-X) — só visual por enquanto ── */
+button[data-side]:hover{border-color:var(--muted)!important;color:var(--text2)!important}
+button[data-side="yes"][data-on]{border-color:var(--green)!important;background:var(--green-light)!important;color:var(--green)!important}
+button[data-side="no"][data-on]{border-color:var(--red)!important;background:#fff0f3!important;color:var(--red)!important}
+
 .ai-spinner{width:16px;height:16px;border:2px solid rgba(37,99,235,.3);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
 @keyframes spin{to{transform:rotate(360deg)}}
 
@@ -4962,6 +4967,27 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     return '<div style="margin-top:8px;font-size:11px;color:var(--muted2)">Fonte: ' + inner + '</div>';
   };
 
+  // Botões de validação da comunidade — "Comigo também" / "Comigo não".
+  // DÍVIDA TÉCNICA: por enquanto é SÓ LAYOUT. Os números são fixos (exemplo) e o
+  // clique apenas acende a pílula no visual — não salva no banco nem soma de verdade.
+  // Quando virar real: criar tabela de validações + RLS, ler contagens e gravar o voto.
+  const renderValidationButtons = (issue) => {
+    const yes = (issue && issue.val_yes != null) ? issue.val_yes : 12; // exemplo
+    const no  = (issue && issue.val_no  != null) ? issue.val_no  : 3;  // exemplo
+    const pill = (side, icon, txt, count) =>
+      '<button type="button" onclick="this.parentNode.querySelectorAll(\'button\').forEach(function(b){b.removeAttribute(\'data-on\')});this.setAttribute(\'data-on\',\'1\')" '
+      + 'data-side="' + side + '" '
+      + 'style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;border:1px solid var(--border);background:transparent;'
+      + 'font-family:var(--font);font-size:11.5px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .12s">'
+      + '<span style="font-size:11px">' + icon + '</span>' + txt
+      + '<span style="opacity:.7;font-weight:700">' + count + '</span>'
+      + '</button>';
+    return '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">'
+      + pill('yes', '✓', 'Comigo também', yes)
+      + pill('no',  '✕', 'Comigo não', no)
+      + '</div>';
+  };
+
   // Renderiza card de problema
   const renderIssueCard = (issue) => {
     const cfg = severityConfig[issue.severity] || severityConfig.leve;
@@ -4975,6 +5001,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
       + (issue.fix_exists && issue.fix_description ? '<div style="font-size:12px;color:var(--green);background:var(--green-light);border-radius:8px;padding:8px 10px;border:1px solid rgba(0,168,120,.2)">✅ <strong>Solução conhecida:</strong> ' + issue.fix_description + '</div>' : '')
       + (!issue.fix_exists ? '<div style="font-size:12px;color:var(--muted);font-style:italic">⚠️ Sem solução definitiva conhecida até o momento.</div>' : '')
       + renderSourceLine(issue.source, issue.source_url)
+      + renderValidationButtons(issue)
       + '</div>';
   };
 
@@ -4993,6 +5020,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
         + '</div>'
         + (p.issue_description ? '<div style="font-size:13px;color:var(--text2);line-height:1.55">' + p.issue_description + '</div>' : '')
         + (p.source ? renderSourceLine(p.source, p.source_url) : '')
+        + renderValidationButtons(p)
         + '</div>';
     }
     // Modo COMPACTO: string simples vinda de summary.strengths (compatibilidade)
