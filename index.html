@@ -4152,14 +4152,16 @@ async function sbLoadComplaintsByFipe(fipeCode) {
 async function loadModelDoxcoreAvg(brand, model) {
   try {
     const modelKeyword = (model || '').split(' ')[0];
+    if (!modelKeyword) return null;
+    // Casa SÓ pelo nome do modelo (case-insensitive, via ilike). Sem filtro de
+    // marca: o nome vindo da FIPE ("VW - VolksWagen") nem sempre bate com o
+    // curado ("Volkswagen"); e o nome do modelo já é específico o bastante.
     let { data } = await sb.from('vehicle_summaries')
       .select('reliability_score')
-      .ilike('vehicle_brand', brand)
-      .eq('vehicle_model', modelKeyword);
+      .ilike('vehicle_model', modelKeyword);
     if (!data || data.length === 0) {
       const r = await sb.from('vehicle_summaries')
         .select('reliability_score')
-        .ilike('vehicle_brand', brand)
         .ilike('vehicle_model', `%${modelKeyword}%`);
       data = r.data;
     }
@@ -4275,17 +4277,18 @@ async function loadVehicleProfileData(v) {
   const brand = v.brand || '';
   const model = v.name || '';
 
-  // Busca em paralelo: raio-x curado + reclamações reais + fipe
-  const [knownIssues, complaints, fipePrice] = await Promise.all([
+  // Busca em paralelo: raio-x curado + reclamações reais + fipe + média do modelo
+  const [knownIssues, complaints, fipePrice, modelAvg] = await Promise.all([
     loadKnownIssues(brand, model),
     sbLoadVehicleComplaintsFull(brand, model),
-    loadFipePriceForVehicle(v)
+    loadFipePriceForVehicle(v),
+    loadModelDoxcoreAvg(brand, model)
   ]);
 
   // Calcula stats diretamente das complaints (não depende da view)
   const stats = calcVehicleStats(complaints);
 
-  renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice);
+  renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, null, modelAvg);
 }
 
 // Busca reclamações completas para calcular stats
