@@ -10285,7 +10285,8 @@ async function getOrFetchFipeVehicle(fipeCode, hint) {
           vehicleType: vtype,
           fipeType: vtype === 'moto' ? 'motos' : vtype === 'caminhao' ? 'caminhoes' : 'carros',
           emoji: vtype === 'moto' ? '🏍️' : vtype === 'caminhao' ? '🚚' : '🚗',
-          rating: parseFloat(sum.reliability_score) || 0
+          rating: parseFloat(sum.reliability_score) || 0,
+          fipeBrandCode: sum.fipe_brand_code || null
         }
       };
     }
