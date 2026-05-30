@@ -4950,11 +4950,23 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
       + '</div>';
   };
 
-  // PASSO 2: ordem fixa — problemas (grave→leve) e depois positivos. Sem reordenar por nota.
+  // PASSO 3: seções rotuladas, lideradas pela nota.
+  // Carro bom (nota ≥4) abre com "Pontos fortes"; senão abre com "Pontos de atenção".
+  // Dentro de cada seção a ordem já vem pronta (problemas grave→leve; positivos curados),
+  // então o CRÍTICO continua no topo da atenção e com destaque vermelho — nunca enterrado.
   let raioXCards = '';
   if (selectedIssues.length > 0 || selectedStrengths.length > 0) {
-    raioXCards = selectedIssues.map(renderIssueCard).join('')
-      + selectedStrengths.map(renderStrengthCard).join('');
+    const sectionHeader = (txt) =>
+      '<div style="font-family:var(--font);font-weight:800;font-size:12px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);margin:6px 0 10px">' + txt + '</div>';
+    const fortesBlock = selectedStrengths.length
+      ? sectionHeader('✅ Pontos fortes') + selectedStrengths.map(renderStrengthCard).join('')
+      : '';
+    const atencaoBlock = selectedIssues.length
+      ? sectionHeader('⚠️ Pontos de atenção') + selectedIssues.map(renderIssueCard).join('')
+      : '';
+    raioXCards = (summaryRating >= 4)
+      ? (fortesBlock + atencaoBlock)
+      : (atencaoBlock + fortesBlock);
   } else {
     raioXCards = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0">Nenhum problema crônico mapeado ainda para este modelo.</div>';
   }
