@@ -4967,24 +4967,34 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     return '<div style="margin-top:8px;font-size:11px;color:var(--muted2)">Fonte: ' + inner + '</div>';
   };
 
-  // Botões de validação da comunidade — "Comigo também" / "Comigo não".
-  // DÍVIDA TÉCNICA: por enquanto é SÓ LAYOUT. Os números são fixos (exemplo) e o
-  // clique apenas acende a pílula no visual — não salva no banco nem soma de verdade.
-  // Quando virar real: criar tabela de validações + RLS, ler contagens e gravar o voto.
+  // Botões de validação da comunidade — "Aconteceu comigo" / "Comigo não" +
+  // ação "Sugerir solução" (só nos balões de problema).
+  // DÍVIDA TÉCNICA: por enquanto é SÓ LAYOUT. Os números são fixos (exemplo), o
+  // clique nas pílulas só acende no visual e o "Sugerir solução" ainda não abre nada.
+  // Quando virar real: tabela de validações + RLS, ler contagens, gravar voto e
+  // abrir o formulário de sugestão.
   const renderValidationButtons = (issue) => {
     const yes = (issue && issue.val_yes != null) ? issue.val_yes : 12; // exemplo
     const no  = (issue && issue.val_no  != null) ? issue.val_no  : 3;  // exemplo
+    const isProblem = issue && issue.severity && issue.severity !== 'positivo';
     const pill = (side, icon, txt, count) =>
-      '<button type="button" onclick="this.parentNode.querySelectorAll(\'button\').forEach(function(b){b.removeAttribute(\'data-on\')});this.setAttribute(\'data-on\',\'1\')" '
+      '<button type="button" onclick="this.parentNode.querySelectorAll(\'button[data-side]\').forEach(function(b){b.removeAttribute(\'data-on\')});this.setAttribute(\'data-on\',\'1\')" '
       + 'data-side="' + side + '" '
       + 'style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;border:1px solid var(--border);background:transparent;'
       + 'font-family:var(--font);font-size:11.5px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .12s">'
       + '<span style="font-size:11px">' + icon + '</span>' + txt
       + '<span style="opacity:.7;font-weight:700">' + count + '</span>'
       + '</button>';
+    const suggestBtn =
+      '<button type="button" '
+      + 'style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;border:1px dashed var(--navy,#1e3a5f);background:transparent;'
+      + 'font-family:var(--font);font-size:11.5px;font-weight:600;color:var(--navy,#1e3a5f);cursor:pointer;transition:all .12s">'
+      + '<span style="font-size:11px">💡</span>Sugerir solução'
+      + '</button>';
     return '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">'
-      + pill('yes', '✓', 'Comigo também', yes)
+      + pill('yes', '✓', 'Aconteceu comigo', yes)
       + pill('no',  '✕', 'Comigo não', no)
+      + (isProblem ? suggestBtn : '')
       + '</div>';
   };
 
