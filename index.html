@@ -1778,12 +1778,12 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 </div>
 
 <!-- ══ PAGE VEHICLE PROFILE ══ -->
-<div id="page-vehicle" style="display:none;padding:16px 24px;max-width:1280px;margin:0 auto">
-  <div id="vehicle-profile-content"></div>
+<div id="page-root" style="display:none;padding:16px 24px;max-width:1100px;margin:0 auto">
+  <div id="root-content"></div>
 </div>
 
-<div id="page-root" style="display:none;padding:16px 24px;max-width:1280px;margin:0 auto">
-  <div id="vehicle-root-content"></div>
+<div id="page-vehicle" style="display:none;padding:16px 24px;max-width:1280px;margin:0 auto">
+  <div id="vehicle-profile-content"></div>
 </div>
 
 <!-- ══ FOOTER ══ -->
@@ -3787,157 +3787,198 @@ async function showVehicleProfile(id){
 }
 
 // Abre perfil direto por marca+modelo (usado pelos cards da home)
-// ═════════════════════════════════════════════════════════════════
-// Passo 3 — Navegação de 3 níveis (raiz → geração → versão)
-// ═════════════════════════════════════════════════════════════════
-// PORTEIRO: ao clicar num modelo, primeiro perguntamos ao banco se existe
-// uma RAIZ editorial curada (vehicle_roots). Se existir → abre a página da
-// raiz (editorial + gerações). Se NÃO existir → comportamento de sempre
-// (página plana da versão), sem quebrar nenhum modelo sem curadoria.
 async function showVehicleProfileByBrandModel(brand, model) {
-  let root = null;
-  try { root = await loadVehicleRoot(brand, model); } catch(e) { root = null; }
-  if (root) {
-    showVehicleRoot(brand, model, root);
-  } else {
-    showVehicleVersionProfile(brand, model);
-  }
+  // PASSO 3: o clique no MODELO agora abre a RAIZ editorial (o agrupador),
+  // não mais o perfil de versão plano. A versão é acessada pelo seletor da raiz.
+  await showRoot(brand, model);
 }
 
-// Página PLANA da versão (nota + balões + FIPE). Era o corpo antigo de
-// showVehicleProfileByBrandModel — agora é o nível "versão" da hierarquia,
-// chamado pelo porteiro (modelo sem raiz) e pelos cliques de geração.
-async function showVehicleVersionProfile(brand, model) {
-  const motoBrands = ['honda','yamaha','kawasaki','suzuki','triumph','bmw motorrad','harley-davidson','royal enfield'];
-  const emoji = motoBrands.includes(brand.toLowerCase()) ? '🏍️' : '🚗';
-  const id = 'direct-' + brand + '-' + model;
-  const v = { id, brand, name: model, version:'', year:'—', emoji, rating:0, count:0, badge:'', badgeClass:'', problems:[], fipePrice:null };
-  // Limpa eventuais entradas anteriores com mesmo id e adiciona
-  const existingIdx = dynamicVehicles.findIndex(x => x.id === id);
-  if (existingIdx > -1) dynamicVehicles.splice(existingIdx, 1);
-  dynamicVehicles.push(v);
-  // Auto-limpa após 5 minutos para não acumular
-  setTimeout(() => {
-    const idx = dynamicVehicles.findIndex(x => x.id === id);
-    if (idx > -1) dynamicVehicles.splice(idx, 1);
-  }, 300000);
-  showPage('vehicle', {brand, model});
-  renderVehicleProfileSkeleton(v);
-  await loadVehicleProfileData(v);
-}
+// ═════════════════════════════════════════════════════════════════
+// PASSO 3 — VIEW DA RAIZ (modelo): editorial + seletor de gerações
+// ─────────────────────────────────────────────────────────────────
+// A raiz é o AGRUPADOR do modelo. Mostra imagem + história editorial +
+// seletor. NÃO tem nota única, balões nem FIPE (isso é papel da versão).
+// Doxcore por geração = média CALCULADA na hora das notas das versões.
+// ═════════════════════════════════════════════════════════════════
 
-// ── Carrega a RAIZ editorial do modelo (vehicle_roots) ──
-// Usa a 1ª palavra do modelo ("Gol G5 1.0" → "Gol") porque a raiz é por modelo.
-async function loadVehicleRoot(brand, model) {
-  try {
-    const modelKeyword = (model || '').split(' ')[0];
-    if (!brand || !modelKeyword) return null;
-    const { data } = await sb.from('vehicle_roots')
-      .select('*')
-      .ilike('vehicle_brand', brand)
-      .ilike('vehicle_model', modelKeyword)
-      .limit(1);
-    return (data && data[0]) || null;
-  } catch(e) { return null; }
-}
+// Guarda os dados da raiz carregada, para os cliques (geração/versão)
+// não precisarem rebuscar no banco nem passar strings pelo onclick.
+let _rootData = null;
 
-// ── Carrega as GERAÇÕES de uma raiz (vehicle_generations), mais antiga → mais nova ──
-async function loadGenerationsForRoot(rootId) {
-  try {
-    const { data } = await sb.from('vehicle_generations')
-      .select('*')
-      .eq('root_id', rootId)
-      .order('year_start', { ascending: true });
-    return data || [];
-  } catch(e) { return []; }
-}
-
-// ── Abre a página da RAIZ ──
-async function showVehicleRoot(brand, model, root) {
+async function showRoot(brand, model) {
   showPage('root', { brand, model });
-  renderVehicleRootSkeleton(root);
-  const generations = await loadGenerationsForRoot(root.id);
-  renderVehicleRoot(brand, model, root, generations);
-}
-
-// Skeleton enquanto as gerações carregam
-function renderVehicleRootSkeleton(root) {
-  const el = document.getElementById('vehicle-root-content');
-  if (!el) return;
-  el.innerHTML = `
-    <button class="back-btn" onclick="showPage('home')">← Voltar</button>
-    <div class="profile-hero">
-      <div class="profile-left">
-        <div class="profile-brand-label" style="padding-left:0">${(root.vehicle_brand||'').toUpperCase()}</div>
-        <div class="profile-name">${root.vehicle_model || ''}</div>
-      </div>
-    </div>
-    <div style="display:flex;align-items:center;gap:10px;padding:20px 0;color:var(--muted);font-size:13px">
-      <span class="ai-spinner" style="border-color:rgba(13,31,60,.2);border-top-color:var(--navy)"></span>
-      Carregando gerações…
-    </div>`;
-}
-
-// Render completo da raiz: editorial (imagem + história) + seletor de gerações
-function renderVehicleRoot(brand, model, root, generations) {
-  const el = document.getElementById('vehicle-root-content');
-  if (!el) return;
-
-  const imgUrl = root.editorial_image_url || '';
-  const safeBrand = (brand || '').replace(/'/g, "\\'");
-  const safeModel = (model || '').replace(/'/g, "\\'");
-
-  // Bloco da imagem editorial (ou placeholder se ainda não houver)
-  const imageBlock = imgUrl
-    ? `<div style="flex:0 0 320px;max-width:320px"><img src="${imgUrl}" alt="${root.vehicle_model||''}" style="width:100%;border-radius:14px;display:block;border:1px solid var(--border)"/></div>`
-    : `<div style="flex:0 0 320px;max-width:320px;height:200px;border-radius:14px;background:var(--bg2);border:1px dashed var(--border2);display:flex;align-items:center;justify-content:center;color:var(--muted2);font-size:44px">🚗</div>`;
-
-  // História editorial (preserva quebras de linha)
-  const historyBlock = root.editorial_body
-    ? `<div style="color:var(--text2);font-size:15px;line-height:1.7;white-space:pre-line">${root.editorial_body}</div>`
-    : '';
-
-  // Seletor de gerações
-  let generationsBlock;
-  if (generations && generations.length) {
-    const cards = generations.map(g => {
-      const years = [g.year_start, g.year_end].filter(Boolean).join('–');
-      const label = g.generation_label || g.generation_name || 'Geração';
-      const sub = [ (g.generation_name && g.generation_name !== label) ? g.generation_name : '', years ].filter(Boolean).join(' · ');
-      return `
-        <button onclick="showVehicleVersionProfile('${safeBrand}','${safeModel}')" style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 20px;border:1.5px solid var(--border2);border-radius:14px;background:var(--white);cursor:pointer;text-align:left;transition:border-color .2s,box-shadow .2s;width:100%" onmouseover="this.style.borderColor='var(--navy)';this.style.boxShadow='var(--shadow)'" onmouseout="this.style.borderColor='var(--border2)';this.style.boxShadow='none'">
-          <span style="display:flex;flex-direction:column;align-items:flex-start;gap:4px">
-            <span style="font-family:var(--font);font-weight:800;font-size:17px;color:var(--navy)">${label}</span>
-            ${sub ? `<span style="font-size:13px;color:var(--muted)">${sub}</span>` : ''}
-          </span>
-          <span style="color:var(--muted2);font-size:22px;line-height:1">›</span>
-        </button>`;
-    }).join('');
-    generationsBlock = `
-      <div style="margin-top:6px">
-        <div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy);margin-bottom:12px">Escolha a geração</div>
-        <div style="display:flex;flex-direction:column;gap:10px;max-width:560px">${cards}</div>
-      </div>`;
-  } else {
-    // Modelo curto (sem geração curada) → atalho direto pra versão
-    generationsBlock = `
-      <div style="margin-top:6px">
-        <button class="btn-primary" style="justify-content:center" onclick="showVehicleVersionProfile('${safeBrand}','${safeModel}')">Ver análise do ${root.vehicle_model||model} →</button>
-      </div>`;
+  const el = document.getElementById('root-content');
+  if (el) el.innerHTML = '<div style="padding:48px;text-align:center;color:var(--muted,#6b7280)">Carregando…</div>';
+  try {
+    _rootData = await loadRootData(brand, model);
+    renderRoot();
+  } catch (e) {
+    if (el) el.innerHTML = '<div style="padding:48px;text-align:center;color:var(--muted,#6b7280)">Não foi possível carregar este modelo.</div>';
   }
+}
 
-  el.innerHTML = `
-    <button class="back-btn" onclick="showPage('home')">← Voltar</button>
-    <div class="profile-hero" style="align-items:flex-start">
-      ${imageBlock}
-      <div class="profile-left">
-        <div class="profile-brand-label" style="padding-left:0">${(root.vehicle_brand||'').toUpperCase()}</div>
-        <div class="profile-name">${root.vehicle_model || ''}</div>
-        ${root.editorial_title ? `<div style="font-family:var(--font);font-size:17px;font-weight:700;color:var(--text2);margin:8px 0 14px">${root.editorial_title}</div>` : ''}
-        ${historyBlock}
-      </div>
-    </div>
-    ${generationsBlock}`;
+// Busca a raiz editorial + as versões (summaries) e, em seguida, as gerações.
+async function loadRootData(brand, model) {
+  const [rootRes, sumsRes] = await Promise.all([
+    sb.from('vehicle_roots').select('*').ilike('vehicle_brand', brand).ilike('vehicle_model', model).limit(1),
+    sb.from('vehicle_summaries').select('*').ilike('vehicle_brand', brand).ilike('vehicle_model', model)
+  ]);
+  const root = (rootRes.data && rootRes.data[0]) || null;
+  const versions = sumsRes.data || [];
+  let generations = [];
+  if (root && root.id != null) {
+    const gr = await sb.from('vehicle_generations')
+      .select('*').eq('root_id', root.id).order('year_start', { ascending: true });
+    generations = gr.data || [];
+  }
+  return { brand, model, root, generations, versions };
+}
+
+// Quais versões pertencem a uma geração:
+//  - se ambos têm generation_id, casa por id;
+//  - senão, cai no ano: model_year dentro de [year_start, year_end].
+function _rootVersionsOfGen(gen, versions) {
+  return versions.filter(s => {
+    if (gen.id != null && s.generation_id != null) return s.generation_id === gen.id;
+    const y = parseInt(s.model_year);
+    if (!y) return false;
+    const a = parseInt(gen.year_start) || 0;
+    const b = parseInt(gen.year_end) || 9999;
+    return y >= a && y <= b;
+  });
+}
+
+// Doxcore da geração = média das notas das versões (null se não houver nota).
+function _rootDox(vers) {
+  const ns = vers.map(s => parseFloat(s.reliability_score)).filter(n => !isNaN(n));
+  if (!ns.length) return null;
+  return ns.reduce((a, b) => a + b, 0) / ns.length;
+}
+
+function _rootEsc(s) {
+  return (s == null ? '' : String(s)).replace(/[<>&"]/g, c =>
+    ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+}
+// Transforma o texto editorial em parágrafos (respeita linhas em branco).
+function _rootBody(txt) {
+  return String(txt || '').split(/\n\s*\n/).filter(p => p.trim())
+    .map(p => '<p style="margin:0 0 14px;line-height:1.65">' + _rootEsc(p.trim()).replace(/\n/g, '<br>') + '</p>')
+    .join('');
+}
+
+// Cabeçalho editorial da raiz (imagem + marca/título + história).
+function _rootHeaderHtml() {
+  const { brand, model, root } = _rootData;
+  const title = (root && root.editorial_title) || model;
+  const img = root && root.editorial_image_url;
+  let h = '<div style="margin-bottom:28px">';
+  if (img) {
+    h += '<img src="' + _rootEsc(img) + '" alt="' + _rootEsc(title) + '" ' +
+         'style="width:100%;max-height:340px;object-fit:cover;border-radius:14px;display:block;margin-bottom:18px">';
+  }
+  h += '<div style="font-size:13px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted,#6b7280);font-weight:600">' + _rootEsc(brand) + '</div>';
+  h += '<h1 style="margin:4px 0 14px;font-size:30px;line-height:1.2">' + _rootEsc(title) + '</h1>';
+  if (root && root.editorial_body) {
+    h += '<div style="color:var(--text,#1f2937);font-size:16px">' + _rootBody(root.editorial_body) + '</div>';
+  }
+  h += '</div>';
+  return h;
+}
+
+// Botões de versão (recebe os índices reais dentro de _rootData.versions).
+function _rootVersionButtons(indices) {
+  if (!indices.length) {
+    return '<div style="color:var(--muted,#6b7280);padding:8px 0">Nenhuma versão cadastrada ainda.</div>';
+  }
+  return '<div style="display:flex;flex-direction:column;gap:10px">' + indices.map(i => {
+    const s = _rootData.versions[i];
+    const nome = _rootEsc(s.version || s.vehicle_model);
+    const ano = s.model_year ? ' · ' + _rootEsc(s.model_year) : '';
+    const nota = (s.reliability_score != null && !isNaN(parseFloat(s.reliability_score)))
+      ? '<span style="font-weight:700;color:var(--navy,#1e3a5f)">' + parseFloat(s.reliability_score).toFixed(1) + '</span><span style="color:var(--muted,#6b7280);font-size:12px"> Doxcore</span>'
+      : '<span style="color:var(--muted,#6b7280);font-size:13px">sem nota</span>';
+    return '<button onclick="openRootVersion(' + i + ')" ' +
+      'style="display:flex;justify-content:space-between;align-items:center;gap:12px;text-align:left;' +
+      'padding:14px 16px;border:1px solid var(--line,#e5e7eb);border-radius:12px;background:var(--card,#fff);' +
+      'cursor:pointer;font-size:15px;width:100%">' +
+      '<span>' + nome + ano + '</span><span>' + nota + '</span></button>';
+  }).join('') + '</div>';
+}
+
+// Render principal: cabeçalho + seletor (gerações OU versões direto).
+function renderRoot() {
+  const el = document.getElementById('root-content');
+  if (!el || !_rootData) return;
+  const { generations, versions } = _rootData;
+  let h = _rootHeaderHtml();
+
+  if (generations && generations.length) {
+    // Modelo com gerações curadas → mostra gerações clicáveis (cada uma com Doxcore).
+    h += '<h2 style="font-size:18px;margin:8px 0 14px">Escolha a geração</h2>';
+    h += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">';
+    generations.forEach((g, i) => {
+      const vers = _rootVersionsOfGen(g, versions);
+      const dox = _rootDox(vers);
+      const label = _rootEsc(g.generation_label || g.generation_name || 'Geração');
+      const range = [g.year_start, g.year_end].filter(Boolean).join('–');
+      h += '<button onclick="showRootGeneration(' + i + ')" ' +
+        'style="text-align:left;padding:16px;border:1px solid var(--line,#e5e7eb);border-radius:14px;' +
+        'background:var(--card,#fff);cursor:pointer">' +
+        '<div style="font-weight:700;font-size:16px">' + label + '</div>' +
+        (range ? '<div style="color:var(--muted,#6b7280);font-size:13px;margin-top:2px">' + _rootEsc(range) + '</div>' : '') +
+        '<div style="margin-top:10px">' +
+          (dox != null
+            ? '<span style="font-size:22px;font-weight:800;color:var(--navy,#1e3a5f)">' + dox.toFixed(1) + '</span><span style="color:var(--muted,#6b7280);font-size:12px"> Doxcore</span>'
+            : '<span style="color:var(--muted,#6b7280);font-size:13px">sem nota ainda</span>') +
+        '</div></button>';
+    });
+    h += '</div>';
+  } else {
+    // Modelo curto (sem geração) → vai direto pras versões. Geração é caminho, não pedágio.
+    h += '<h2 style="font-size:18px;margin:8px 0 14px">Escolha a versão</h2>';
+    h += _rootVersionButtons(versions.map((_, i) => i));
+  }
+  el.innerHTML = h;
+}
+
+// Clique numa geração → lista as versões daquela geração (com "voltar").
+function showRootGeneration(i) {
+  const el = document.getElementById('root-content');
+  if (!el || !_rootData) return;
+  const g = _rootData.generations[i];
+  const vers = _rootVersionsOfGen(g, _rootData.versions);
+  const indices = vers.map(s => _rootData.versions.indexOf(s));
+  const label = _rootEsc(g.generation_label || g.generation_name || 'Geração');
+  let h = _rootHeaderHtml();
+  h += '<button onclick="renderRoot()" style="background:none;border:none;color:var(--navy,#1e3a5f);cursor:pointer;padding:0;margin-bottom:12px;font-size:14px">&larr; Voltar às gerações</button>';
+  h += '<h2 style="font-size:18px;margin:0 0 14px">' + label + ' — escolha a versão</h2>';
+  h += _rootVersionButtons(indices);
+  el.innerHTML = h;
+}
+
+// Clique numa versão → abre o perfil de versão (caminho já existente e provado).
+// Monta o objeto v com versão/ano/fipe reais; loadVehicleProfileData lê o
+// summary por marca+modelo (não depende do cache FIPE), então sempre funciona.
+function openRootVersion(i) {
+  const s = _rootData.versions[i];
+  const motoBrands = ['honda','yamaha','kawasaki','suzuki','triumph','bmw motorrad','harley-davidson','royal enfield'];
+  const emoji = (s.vehicle_type === 'moto' || motoBrands.includes(String(s.vehicle_brand).toLowerCase())) ? '🏍️'
+              : (s.vehicle_type === 'caminhao' ? '🚚' : '🚗');
+  const id = 'fipe-' + (s.fipe_code || (s.version + '-' + s.model_year));
+  const v = {
+    id, brand: s.vehicle_brand, name: s.vehicle_model,
+    version: s.version || '', year: String(s.model_year || '—'), model_year: s.model_year,
+    fipe_code: s.fipe_code || null, vehicleType: s.vehicle_type, emoji,
+    rating: parseFloat(s.reliability_score) || 0, count: 0, badge: '', badgeClass: '',
+    problems: [], fipePrice: null
+  };
+  const ei = dynamicVehicles.findIndex(x => x.id === id);
+  if (ei > -1) dynamicVehicles.splice(ei, 1);
+  dynamicVehicles.push(v);
+  // Inclui o fipe no hash pra a versão sobreviver ao reload (e brand/model como reserva).
+  showPage('vehicle', s.fipe_code ? { fipe: s.fipe_code } : { brand: s.vehicle_brand, model: s.vehicle_model });
+  renderVehicleProfileSkeleton(v);
+  loadVehicleProfileData(v);
 }
 
 // ═════════════════════════════════════════════════════════════════
@@ -5642,7 +5683,7 @@ function showPage(page, params={}){
       sbSelectType('carros', {keepClosed: true});
     }
   }
-  ['home','vehicle','root','profile','compare','search','admin','lawyers','company','ranking-companies','complaint','company-profile','mediation','lawyer-panel','mediation-channel','complaints','opinioes','vehicles'].forEach(p=>{
+  ['home','root','vehicle','profile','compare','search','admin','lawyers','company','ranking-companies','complaint','company-profile','mediation','lawyer-panel','mediation-channel','complaints','opinioes','vehicles'].forEach(p=>{
     const el=document.getElementById('page-'+p);
     if(el) el.style.display=p===page?'block':'none';
   });
@@ -10610,8 +10651,7 @@ async function restoreFromHash() {
   // Não muda granularidade (§2b) — só reabre o que já existia. showPage reescreve
   // o mesmo hash (idempotente), sem loop.
   if (page === 'root' && params.brand && params.model) {
-    // Reabre a raiz: o porteiro re-detecta a raiz e renderiza de novo.
-    showVehicleProfileByBrandModel(params.brand, params.model);
+    showRoot(params.brand, params.model);
     return;
   }
   if (page === 'vehicle') {
