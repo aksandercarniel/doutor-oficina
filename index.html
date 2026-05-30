@@ -4950,21 +4950,31 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
       + '</div>';
   };
 
-  // PASSO 3: seções rotuladas, lideradas pela nota.
-  // Carro bom (nota ≥4) abre com "Pontos fortes"; senão abre com "Pontos de atenção".
+  // PASSO 4: seções rotuladas + limite de 2 por seção com "Ver mais".
+  // Ordem por nota: Doxcore > 3.8 abre com "Pontos fortes"; ≤ 3.8 abre com "Pontos de atenção".
   // Dentro de cada seção a ordem já vem pronta (problemas grave→leve; positivos curados),
   // então o CRÍTICO continua no topo da atenção e com destaque vermelho — nunca enterrado.
   let raioXCards = '';
   if (selectedIssues.length > 0 || selectedStrengths.length > 0) {
+    const CAP = 2;
+    const safeId = (fipeCodeForVote || v.fipe_code || v.name || 'x').toString().replace(/[^a-zA-Z0-9]/g, '');
     const sectionHeader = (txt) =>
       '<div style="font-family:var(--font);font-weight:800;font-size:12px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);margin:6px 0 10px">' + txt + '</div>';
-    const fortesBlock = selectedStrengths.length
-      ? sectionHeader('✅ Pontos fortes') + selectedStrengths.map(renderStrengthCard).join('')
-      : '';
-    const atencaoBlock = selectedIssues.length
-      ? sectionHeader('⚠️ Pontos de atenção') + selectedIssues.map(renderIssueCard).join('')
-      : '';
-    raioXCards = (summaryRating >= 4)
+    // Monta uma seção: cabeçalho + 2 cards visíveis + "Ver mais (+N)" que revela o resto.
+    const renderSection = (titulo, cardsArr, key) => {
+      if (!cardsArr.length) return '';
+      let h = sectionHeader(titulo) + cardsArr.slice(0, CAP).join('');
+      if (cardsArr.length > CAP) {
+        const moreId = 'raiox-more-' + key + '-' + safeId;
+        h += '<div id="' + moreId + '" style="display:none">' + cardsArr.slice(CAP).join('') + '</div>'
+          + '<button onclick="var m=document.getElementById(\'' + moreId + '\');if(m){m.style.display=\'block\';}this.style.display=\'none\'" '
+          + 'style="background:none;border:none;color:var(--navy,#1e3a5f);cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;padding:2px 0 12px">Ver mais (+' + (cardsArr.length - CAP) + ')</button>';
+      }
+      return h;
+    };
+    const fortesBlock  = renderSection('✅ Pontos fortes', selectedStrengths.map(renderStrengthCard), 'fortes');
+    const atencaoBlock = renderSection('⚠️ Pontos de atenção', selectedIssues.map(renderIssueCard), 'atencao');
+    raioXCards = (summaryRating > 3.8)
       ? (fortesBlock + atencaoBlock)
       : (atencaoBlock + fortesBlock);
   } else {
