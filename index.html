@@ -4113,18 +4113,19 @@ async function loadVehicleProfileDataByFipe(v) {
   const model = v.name || '';
 
   // Busca em paralelo (4 fontes)
-  const [knownIssues, complaints, fipePrice, scoreData] = await Promise.all([
+  const [knownIssues, complaints, fipePrice, scoreData, modelAvg] = await Promise.all([
     loadKnownIssues(brand, model, fipeCode, v.year),
     sbLoadComplaintsByFipe(fipeCode),
     loadFipePriceForVehicle(v),
-    calculateFipeScore(fipeCode)
+    calculateFipeScore(fipeCode),
+    loadModelDoxcoreAvg(brand, model)
   ]);
 
   // Calcula stats das reclamações
   const stats = calcVehicleStats(complaints);
 
   // Renderiza passando scoreData (novo parâmetro opcional)
-  renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, scoreData);
+  renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, scoreData, modelAvg);
 }
 
 // Busca reclamações filtradas por código FIPE exato.
@@ -4143,6 +4144,31 @@ async function sbLoadComplaintsByFipe(fipeCode) {
     return (data || []).map(mapComplaint);
   } catch (e) {
     return [];
+  }
+}
+
+// Média do Doxcore do MODELO (todas as versões curadas), pra usar de fallback
+// quando a versão aberta não tem nota própria. Retorna { avg, count } ou null.
+async function loadModelDoxcoreAvg(brand, model) {
+  try {
+    const modelKeyword = (model || '').split(' ')[0];
+    let { data } = await sb.from('vehicle_summaries')
+      .select('reliability_score')
+      .ilike('vehicle_brand', brand)
+      .eq('vehicle_model', modelKeyword);
+    if (!data || data.length === 0) {
+      const r = await sb.from('vehicle_summaries')
+        .select('reliability_score')
+        .ilike('vehicle_brand', brand)
+        .ilike('vehicle_model', `%${modelKeyword}%`);
+      data = r.data;
+    }
+    const notas = (data || []).map(s => parseFloat(s.reliability_score)).filter(n => !isNaN(n));
+    if (!notas.length) return null;
+    const avg = notas.reduce((a, b) => a + b, 0) / notas.length;
+    return { avg: Math.round(avg * 10) / 10, count: notas.length };
+  } catch (e) {
+    return null;
   }
 }
 // ═════════════════════════════════════════════════════════════════
@@ -4731,7 +4757,7 @@ async function renderManufacturerChip(brand, containerId, vehicleType, fipeBrand
 }
 
 // Renderiza a página completa com dados reais
-function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, scoreData) {
+function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, scoreData, modelAvg) {
   _currentVehicle = v; // rastreia veículo atual para o botão Reclamar
   const el = document.getElementById('vehicle-profile-content');
   if (!el) return;
@@ -4758,6 +4784,13 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
         || (stats?.avg_rating ? parseFloat(stats.avg_rating).toFixed(1) : null));
   const displayRating = avgRating ? parseFloat(avgRating) : null;
 
+  // -- Fallback: versão SEM nota própria → mostra a MÉDIA DO MODELO (todas as
+  //    versões curadas), sempre identificada como geral, NÃO desta versão.
+  const hasOwnRating = displayRating != null;
+  const modelFallbackRating = (!hasOwnRating && modelAvg && modelAvg.count > 0) ? modelAvg.avg : null;
+  const isModelFallback = modelFallbackRating != null;
+  const shownRating = hasOwnRating ? displayRating : modelFallbackRating; // o que vai no velocímetro
+
   // -- Badge baseado na nota curada
   const getBadge = (r) => {
     if (!r) return { label: 'Sem avaliação', cls: 'badge-yellow' };
@@ -4765,10 +4798,13 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     if (r >= 3.0) return { label: 'Moderado', cls: 'badge-yellow' };
     return { label: 'Atenção', cls: 'badge-red' };
   };
-  const badge = getBadge(displayRating);
+  const badge = isModelFallback
+    ? { label: 'Média do modelo', cls: getBadge(shownRating).cls }
+    : getBadge(displayRating);
 
   // -- Doxcore (texto curado da curadoria; renderizado no header)
-  const verdictText = summary?.verdict || null;
+  const verdictText = summary?.verdict
+    || (isModelFallback ? 'Esta versão ainda não tem análise própria. A nota acima é a média das versões já avaliadas do modelo, não um veredito desta versão.' : null);
 
   // -- Distribuição de notas reais
   //    Fonte primária: scoreData.dist (o "balde" do calculateFipeScore — as 3
@@ -4848,6 +4884,9 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
   } else if (hasCurated) {
     // Estado 1: só curadoria (com ou sem votos < mínimo)
     raioxComposition = 'composto por: curadoria' + (showInlineCta ? ' · ' + ctaVote : '');
+  } else if (isModelFallback) {
+    // Versão sem nota própria: deixa explícito que é média do modelo.
+    raioxComposition = 'média do modelo · ' + modelAvg.count + (modelAvg.count > 1 ? ' versões' : ' versão') + ' · esta versão ainda não foi analisada';
   } else {
     // Estado 4: nada ainda
     raioxComposition = showInlineCta ? ('sem análise ainda · ' + ctaVote) : 'sem análise ainda';
@@ -4878,7 +4917,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
   const positiveIssues = issues.filter(i => i.severity === 'positivo');
   const problemIssues  = issues.filter(i => i.severity !== 'positivo');
 
-  const summaryRating = displayRating || 0;
+  const summaryRating = shownRating || 0;
   // Cor do card-resumo
   let summaryColors;
   if (summaryRating >= 4) {
@@ -5013,7 +5052,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + ((v.version || v.year) ? ('<div class="profile-sub">' + [v.version, v.year].filter(x => x && x !== '—').join(' · ') + '</div>') : '')
     + '<div class="profile-rating">'
     + '<span class="doxcore-badge">Doxcore</span>'
-    + (displayRating ? ('<span class="doxcore-velocimetro-wrap">' + renderDoxcoreVelocimetro(displayRating, 'large') + '</span>') : '')
+    + (shownRating ? ('<span class="doxcore-velocimetro-wrap">' + renderDoxcoreVelocimetro(shownRating, 'large') + '</span>') : '')
     + (verdictText
       ? (function(){
           // D71: limite editorial absoluto 240 chars
@@ -5029,7 +5068,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + '<span class="doxcore-composition">' + raioxComposition + '</span>'
     + '</div>'
     + '<div class="profile-tags">'
-    + (displayRating ? ('<span class="ptag ' + badge.cls + '">' + badge.label + '</span>') : '')
+    + (shownRating ? ('<span class="ptag ' + badge.cls + '">' + badge.label + '</span>') : '')
     + strengthTags
     + weaknessTags
     + '</div>'
