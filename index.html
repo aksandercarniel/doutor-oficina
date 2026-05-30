@@ -5103,7 +5103,17 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + '<div class="profile-name"><span class="profile-emoji">' + vehicleIcon(v.emoji, v.name) + '</span>' + v.name + '</div>'
     + ((v.version || v.year) ? ('<div class="profile-sub">' + [v.version, v.year].filter(x => x && x !== '—').join(' · ') + '</div>') : '')
     + '<div class="profile-rating">'
-    + '<span class="doxcore-badge">Doxcore</span>'
+    + (function(){
+        // Cor da pílula Doxcore pela nota: verde≥4 (bom), amarelo≥3 (moderado), vermelho<3 (ruim).
+        var r = shownRating;
+        var style = '';
+        if (r) {
+          var c = (r >= 4.0) ? 'var(--green)' : (r >= 3.0) ? 'var(--orange)' : 'var(--red)';
+          var bg = (r >= 4.0) ? 'var(--green-light)' : (r >= 3.0) ? '#fff7ed' : '#fff0f3';
+          style = ' style="background:' + bg + ';color:' + c + '"';
+        }
+        return '<span class="doxcore-badge"' + style + '>Doxcore</span>';
+      })()
     + (shownRating ? ('<span class="doxcore-velocimetro-wrap">' + renderDoxcoreVelocimetro(shownRating, 'large') + '</span>') : '')
     + (verdictText
       ? (function(){
