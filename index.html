@@ -4114,7 +4114,7 @@ async function loadVehicleProfileDataByFipe(v) {
 
   // Busca em paralelo (4 fontes)
   const [knownIssues, complaints, fipePrice, scoreData] = await Promise.all([
-    loadKnownIssues(brand, model),
+    loadKnownIssues(brand, model, fipeCode),
     sbLoadComplaintsByFipe(fipeCode),
     loadFipePriceForVehicle(v),
     calculateFipeScore(fipeCode)
@@ -4292,7 +4292,7 @@ function calcVehicleStats(complaints) {
 }
 
 // Busca raio-x curado no Supabase
-async function loadKnownIssues(brand, model) {
+async function loadKnownIssues(brand, model, fipeCode) {
   // BANCO 2.0: lê de duas tabelas separadas (vehicle_issues = balões,
   // vehicle_summaries = nota + manchete) e devolve no formato antigo que
   // renderVehicleProfileFull já espera: 1 objeto is_summary:true + N balões.
@@ -4319,7 +4319,16 @@ async function loadKnownIssues(brand, model) {
     };
 
     // -- Resumo (vehicle_summaries): nota + manchete. 1 linha.
+    // Se veio fipeCode (caminho por FIPE), busca a versão EXATA primeiro —
+    // senão, com 2+ versões do mesmo modelo, pegaria a manchete da 1ª linha.
     const fetchSummary = async () => {
+      if (fipeCode) {
+        const exact = await sb.from('vehicle_summaries')
+          .select('*')
+          .eq('fipe_code', fipeCode)
+          .limit(1);
+        if (exact.data && exact.data.length) return exact.data[0];
+      }
       let { data } = await sb.from('vehicle_summaries')
         .select('*')
         .ilike('vehicle_brand', brand)
