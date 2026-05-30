@@ -3892,8 +3892,8 @@ function _rootVersionButtons(indices) {
   }
   return '<div style="display:flex;flex-direction:column;gap:10px">' + indices.map(i => {
     const s = _rootData.versions[i];
-    const ver = s.version || s.vehicle_version || s.version_name || '';
-    const ano = s.model_year || s.year || s.ano || '';
+    const ver = s.version || '';
+    const ano = s.year_start || '';
     // Rótulo: versão se houver; senão o nome do modelo. Sublinha ano OU fipe.
     const nome = _rootEsc(ver || s.vehicle_model);
     const sub = ano ? ' · ' + _rootEsc(ano) : (s.fipe_code ? ' · FIPE ' + _rootEsc(s.fipe_code) : '');
@@ -3968,8 +3968,8 @@ function openRootVersion(i) {
   if (s.fipe_code) {
     showVehicleProfileByFipe(s.fipe_code, {
       brand: s.vehicle_brand, name: s.vehicle_model,
-      version: s.version || s.vehicle_version || '',
-      year: String(s.model_year || s.year || ''),
+      version: s.version || '',
+      year: String(s.year_start || ''),
       vehicleType: s.vehicle_type
     });
     return;
@@ -3981,7 +3981,7 @@ function openRootVersion(i) {
   const id = 'direct-' + s.vehicle_brand + '-' + s.vehicle_model;
   const v = {
     id, brand: s.vehicle_brand, name: s.vehicle_model,
-    version: s.version || '', year: String(s.model_year || '—'),
+    version: s.version || '', year: String(s.year_start || '—'),
     vehicleType: s.vehicle_type, emoji,
     rating: parseFloat(s.reliability_score) || 0, count: 0, badge: '', badgeClass: '',
     problems: [], fipePrice: null
@@ -4465,9 +4465,14 @@ async function loadFipePriceForVehicle(v, opts) {
       return { y, yNum, isZeroKm };
     }).filter(x => x.yNum > 0 && !x.isZeroKm && x.yNum <= currentYear + 1);
 
-    // Pega o mais recente (ano máximo)
+    // Prefere o ANO CURADO do veículo (ex.: 2010), se existir na FIPE.
+    // Só cai no ano mais recente quando não há ano curado ou ele não aparece na lista.
     let yearMatch;
-    if (yearsWithNum.length) {
+    const wantYear = parseInt(v.model_year || v.year) || 0;
+    const wanted = wantYear ? yearsWithNum.find(x => x.yNum === wantYear) : null;
+    if (wanted) {
+      yearMatch = wanted.y;
+    } else if (yearsWithNum.length) {
       const maxYear = Math.max(...yearsWithNum.map(x => x.yNum));
       yearMatch = yearsWithNum.find(x => x.yNum === maxYear).y;
     } else {
@@ -10016,9 +10021,9 @@ async function getOrFetchFipeVehicle(fipeCode, hint) {
           fipe_code: sum.fipe_code,
           brand: sum.vehicle_brand,
           name: sum.vehicle_model,
-          version: sum.version || sum.vehicle_version || '',
-          year: String(sum.model_year || sum.year || ''),
-          model_year: sum.model_year || sum.year || null,
+          version: sum.version || '',
+          year: String(sum.year_start || ''),
+          model_year: sum.year_start || null,
           vehicleType: vtype,
           fipeType: vtype === 'moto' ? 'motos' : vtype === 'caminhao' ? 'caminhoes' : 'carros',
           emoji: vtype === 'moto' ? '🏍️' : vtype === 'caminhao' ? '🚚' : '🚗',
