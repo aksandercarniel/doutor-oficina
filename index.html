@@ -4303,6 +4303,39 @@ async function loadFipePriceForVehicle(v, opts) {
 
   const fipeTypeMap = { carros: 'cars', motos: 'motorcycles', caminhoes: 'trucks' };
 
+  // ── Caminho EXATO pelo código FIPE (ex.: "005275-2") ───────────────
+  // O código aponta a versão certa na FIPE. Listamos os anos desse código
+  // e pegamos o ANO CURADO do veículo (ex.: 2010); se não houver, o mais
+  // recente daquele código. Dispara só quando NÃO temos os códigos internos
+  // (caso do veículo curado). Se a chamada falhar, cai nos caminhos abaixo.
+  if (v.fipe_code && !(v.fipeBrandCode && v.fipeModelCode)) {
+    try {
+      const t = fipeTypeMap[v.fipeType] || 'cars';
+      const yearsList = await fipeFetch(FIPE_V2 + '/' + t + '/' + v.fipe_code + '/years');
+      if (Array.isArray(yearsList) && yearsList.length) {
+        const wantYear = parseInt(v.model_year || v.year) || 0;
+        const parsed = yearsList.map(y => {
+          const yName = (y.name || y.nome || '');
+          const mm = yName.match(/\b(19|20)\d{2}\b/);
+          return { code: y.code || y.codigo, yNum: mm ? parseInt(mm[0]) : 0 };
+        }).filter(x => x.code && x.yNum > 0);
+        let pick = wantYear ? parsed.find(x => x.yNum === wantYear) : null;
+        if (!pick && parsed.length) pick = parsed.reduce((a, b) => (b.yNum > a.yNum ? b : a));
+        if (pick) {
+          const res = await fipeFetch(FIPE_V2 + '/' + t + '/' + v.fipe_code + '/years/' + pick.code);
+          if (res && (res.price || res.Valor)) {
+            return {
+              price: res.price || res.Valor,
+              year: res.modelYear || pick.yNum,
+              ref: res.referenceMonth || 'Referência atual',
+              isRange: false
+            };
+          }
+        }
+      }
+    } catch (e) { /* caminho exato falhou — segue pros caminhos por código/nome */ }
+  }
+
   // Tem códigos completos (brand + model + year)
   if (v.fipeBrandCode && v.fipeModelCode && v.fipeYearCode) {
     try {
