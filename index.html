@@ -3535,6 +3535,22 @@ async function _loadVehiclesMixed(limit) {
   } catch(e) { console.error('Erro ao buscar veículos:', e); return []; }
 }
 
+// Decide o destaque do card de veículo, condizente com o Doxcore (rating).
+// Carro bom (>=4) com ponto positivo cadastrado: mostra o que há de bom, em verde.
+// Senão: mostra o problema mais grave, com cor pela faixa da nota (>=3 laranja, <3 vermelho).
+// Cortes iguais aos que o app já usa em outros lugares (verde>=4, laranja>=3, vermelho<3).
+function cardHighlight(v, rating){
+  const sevOrder = { grave:1, moderado:2, leve:3 };
+  const positives = v.issues.filter(i => i.severity === 'positivo');
+  const problems  = v.issues.filter(i => i.severity && i.severity !== 'positivo');
+  if (rating >= 4 && positives.length){
+    return { icon:'👍', label:'Destaque', cls:'green', text: positives[0].issue_title };
+  }
+  const worst = [...problems].sort((a,b)=>(sevOrder[a.severity]||99)-(sevOrder[b.severity]||99))[0];
+  return { icon:'⚠️', label:'Mais relatado', cls:(rating < 3 ? 'red' : 'orange'),
+           text:(worst ? worst.issue_title : 'Verificar manual') };
+}
+
 async function renderRanking(){
   const grid = document.getElementById('ranking-grid');
   if (!grid) return;
@@ -3582,7 +3598,7 @@ async function renderRanking(){
   grid.innerHTML = vehicles.map(v => {
     const s = v.summary;
     const rating = parseFloat(s.reliability_score) || 0;
-    const topProblem = v.issues[0]?.issue_title || s.weaknesses?.[0] || 'Verificar manual';
+    const hl = cardHighlight(v, rating);
     const emoji = typeEmoji(v.type);
     const verdict = (s.verdict || '').slice(0, 70) + ((s.verdict||'').length > 70 ? '…' : '');
     const safeKey = `${v.brand}-${v.model}`.replace(/[^a-zA-Z0-9-]/g, '_');
@@ -3602,8 +3618,8 @@ async function renderRanking(){
       <div class="vc-divider"></div>
       <div class="vc-info-grid">
         <div class="vc-info-item" style="grid-column:1/-1">
-          <span class="vc-info-label">⚠️ Mais relatado</span>
-          <span class="vc-info-value red">${topProblem}</span>
+          <span class="vc-info-label">${hl.icon} ${hl.label}</span>
+          <span class="vc-info-value ${hl.cls}">${hl.text}</span>
         </div>
       </div>
       <div class="vc-price">
@@ -9579,19 +9595,26 @@ function openVotePrompt() {
 // ═════════════════════════════════════════════════════════════════
 // Sprint 2 — Helpers de score (etapa 2.1 do briefing)
 // ═════════════════════════════════════════════════════════════════
-// Composição do Raio-X (Decisões #10, #11, #30):
-//   - Curadoria (reliability_score) = 60% do score quando há votos suficientes
-//   - Comunidade (vehicle_ratings)  = 40% do score, mínimo 5 votos pra contar
+// Composição do Doxcore (Decisões #10, #11, #30):
+//   - Curadoria (reliability_score) = 65% do Doxcore quando há votos suficientes
+//   - Comunidade (vehicle_ratings)  = 35% do Doxcore, mínimo 5 votos pra contar
 //   - Voto casual e voto de reclamação têm peso 1 cada (Sprint 2 decisão)
 //   - Escala Doxcare (0-10) é normalizada pra Doxcore (0-5) dividindo por 2
 //
-// Níveis (Decisão #30): FIPE → Modelo → Marca, todos combinam 60/40.
+// ATENÇÃO: este 65/35 é o SEGUNDO 60/40-like do projeto e NÃO se confunde
+// com o da curadoria. São fórmulas e etapas diferentes:
+//   - Curadoria  = 60% opinião do dono + 40% nossa fórmula (pior defeito)
+//   - Doxcore    = 65% curadoria       + 35% votos da comunidade  (ESTE aqui)
+// Os pesos foram deixados DIFERENTES (60/40 vs 65/35) de propósito, pra que
+// bater o olho num número já diga de qual fórmula ele veio.
+//
+// Níveis (Decisão #30): FIPE → Modelo → Marca, todos combinam 65/35.
 //   - FIPE: score direto da FIPE específica
 //   - Modelo: média ponderada das FIPEs do modelo (peso = nº de votos)
 //   - Marca: média ponderada dos modelos da marca (peso = nº de votos)
 
-const RAIOX_WEIGHT_CURATED = 0.6;
-const RAIOX_WEIGHT_COMMUNITY = 0.4;
+const RAIOX_WEIGHT_CURATED = 0.65;
+const RAIOX_WEIGHT_COMMUNITY = 0.35;
 const RAIOX_MIN_VOTES = 5;
 
 // Dimensões de avaliação por tipo de veículo (Decisão pendência #1 da Sprint 2).
@@ -10773,7 +10796,7 @@ function renderAllVehiclesGrid() {
   grid.innerHTML = list.map(v => {
     const s = v.summary;
     const rating = parseFloat(s.reliability_score) || 0;
-    const topProblem = v.issues[0]?.issue_title || s.weaknesses?.[0] || 'Verificar manual';
+    const hl = cardHighlight(v, rating);
     const resolved = Math.round(55 + rating * 5);
     const emoji = typeEmoji(v.type);
     const verdict = (s.verdict || '').slice(0, 70) + ((s.verdict||'').length > 70 ? '…' : '');
@@ -10793,8 +10816,8 @@ function renderAllVehiclesGrid() {
       <div class="vc-divider"></div>
       <div class="vc-info-grid">
         <div class="vc-info-item">
-          <span class="vc-info-label">⚠️ Mais relatado</span>
-          <span class="vc-info-value red">${topProblem}</span>
+          <span class="vc-info-label">${hl.icon} ${hl.label}</span>
+          <span class="vc-info-value ${hl.cls}">${hl.text}</span>
         </div>
         <div class="vc-info-item">
           <span class="vc-info-label">✅ Respondidas</span>
