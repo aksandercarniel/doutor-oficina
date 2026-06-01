@@ -534,21 +534,22 @@ header{
    pílula+avaliações em posição constante no meio (não desloca com nome),
    stats alinhados à esquerda no rodapé. */
 .mfr-card{display:flex;flex-direction:column;height:100%;padding:18px 16px}
-.mfr-card-head{display:flex;flex-direction:column;gap:2px;width:100%;min-width:0}
-.mfr-card-name{font-family:var(--font);font-weight:900;font-size:13px;color:var(--navy);line-height:1.25;min-height:48px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis}
-/* Nota Doxcare no topo, reduzida ~50% e alinhada à esquerda (só no card de marca) */
-.mfr-card-score{margin-top:8px;width:100%}
-.mfr-card .mfr-card-score .doxcare-capsule-wrap{align-items:flex-start;gap:3px;max-width:110px}
+.mfr-card-head{display:flex;flex-direction:column;gap:3px;width:100%;min-width:0}
+.mfr-card-name{font-family:var(--font);font-weight:900;font-size:13px;color:var(--navy);line-height:1.25;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis}
+/* Avatar grande no centro — espaço reservado pro logo da montadora futuro */
+.mfr-card-logo{display:flex;justify-content:center;padding:18px 0 12px}
+.mfr-logo-circle{position:relative;width:80px;height:80px;border-radius:50%;background:var(--navy);color:#fff;font-family:var(--font);font-weight:700;font-size:34px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mfr-logo-circle .mfr-chip-verified{width:20px;height:20px;font-size:11px;bottom:3px;right:3px;border-width:2px}
+/* Nota Doxcare abaixo do logo, centralizada, reduzida ~50% (só no card de marca) */
+.mfr-card-score{width:100%;display:flex;flex-direction:column;align-items:center;gap:4px}
+.mfr-card .mfr-card-score .doxcare-capsule-wrap{align-items:center;gap:3px;max-width:110px}
 .mfr-card .mfr-card-score .doxcare-capsule-bignum{font-size:15px}
 .mfr-card .mfr-card-score .doxcare-capsule{padding:2px;border-radius:10px}
 .mfr-card .mfr-card-score .doxcare-capsule-track{height:10px;border-radius:8px}
 .mfr-card .mfr-card-score .doxcare-capsule-fill svg{width:8px;height:8px}
-.mfr-card-votos{text-align:left;margin-top:5px}
-/* Avatar grande no centro — espaço reservado pro logo da montadora futuro */
-.mfr-card-logo{display:flex;justify-content:center;padding:16px 0 18px}
-.mfr-logo-circle{position:relative;width:80px;height:80px;border-radius:50%;background:var(--navy);color:#fff;font-family:var(--font);font-weight:700;font-size:34px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.mfr-logo-circle .mfr-chip-verified{width:20px;height:20px;font-size:11px;bottom:3px;right:3px;border-width:2px}
-.mfr-card-stats{margin-top:auto;display:flex;flex-direction:column;gap:2px;width:100%;text-align:left}
+.mfr-card-votos{text-align:center}
+.mfr-card-foot{margin-top:auto;width:100%}
+.mfr-card-stats{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left}
 .mfr-stat{color:var(--muted);font-size:11px;font-weight:500;line-height:1.4}
 .mfr-stat-emph{color:var(--text2);font-weight:600}
 
@@ -3777,18 +3778,20 @@ async function renderMarcas() {
       <div class="mfr-card-head">
         <div class="mfr-card-name" title="${c.name}">${c.name}</div>
         <div class="vc-brand">MONTADORA</div>
-        <div class="mfr-card-score">
-          ${renderDoxcareBar(c.nps, true)}
-        </div>
-        <div class="mfr-stat mfr-stat-emph mfr-card-votos">${c.votos} ${c.votos === 1 ? 'avaliação' : 'avaliações'}</div>
       </div>
       <div class="mfr-card-logo">
         <span class="mfr-logo-circle">${initial}${verified}</span>
       </div>
-      <div class="vc-divider"></div>
-      <div class="mfr-card-stats">
-        <div class="mfr-stat">${c.totalRecl} ${c.totalRecl === 1 ? 'reclamação' : 'reclamações'}</div>
-        <div class="mfr-stat">${c.pctResp}% respondidas</div>
+      <div class="mfr-card-score">
+        ${renderDoxcareBar(c.nps, true)}
+        <div class="mfr-stat mfr-stat-emph mfr-card-votos">${c.votos} ${c.votos === 1 ? 'avaliação' : 'avaliações'}</div>
+      </div>
+      <div class="mfr-card-foot">
+        <div class="vc-divider"></div>
+        <div class="mfr-card-stats">
+          <div class="mfr-stat">${c.totalRecl} ${c.totalRecl === 1 ? 'reclamação' : 'reclamações'}</div>
+          <div class="mfr-stat">${c.pctResp}% respondidas</div>
+        </div>
       </div>
     </div>`;
   }).join('');
