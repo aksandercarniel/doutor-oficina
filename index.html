@@ -7474,6 +7474,7 @@ async function openCompanyProfile(companyName) {
     const verifiedBadge = isClaimed
       ? '<span title="Conta verificada — administrada pela empresa" style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;background:#2563eb;color:#fff;border-radius:50%;font-size:13px;font-weight:700;vertical-align:middle;margin-left:8px;line-height:1">✓</span>'
       : '';
+    const initial = (companyName || '?').trim().charAt(0).toUpperCase() || '?';
 
     let extraFields = '';
     if (company) {
@@ -7496,8 +7497,13 @@ async function openCompanyProfile(companyName) {
 
         <!-- Coluna esquerda: identidade -->
         <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:28px">
-          <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">${typeLabel[tipo]||'📋 Outro'}</div>
-          <h2 style="font-family:var(--font);font-weight:900;font-size:clamp(20px,5vw,28px);color:var(--navy);margin:0 0 10px;line-height:1.2;word-break:break-word">${companyName}${verifiedBadge}</h2>
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px">
+            <span class="mfr-logo-circle" style="width:64px;height:64px;font-size:28px">${initial}</span>
+            <div style="min-width:0">
+              <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">${typeLabel[tipo]||'📋 Outro'}</div>
+              <h2 style="font-family:var(--font);font-weight:900;font-size:clamp(20px,5vw,28px);color:var(--navy);margin:0;line-height:1.2;word-break:break-word">${companyName}${verifiedBadge}</h2>
+            </div>
+          </div>
           <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px">
             ${company?.cnpj ? `<div style="font-size:13px;color:var(--muted)">📋 CNPJ: ${company.cnpj}</div>` : ''}
             ${company?.city||company?.state ? `<div style="font-size:13px;color:var(--muted)">📍 ${[company.city,company.state].filter(Boolean).join(' — ')}</div>` : ''}
