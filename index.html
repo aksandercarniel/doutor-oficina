@@ -542,11 +542,11 @@ header{
 .mfr-logo-circle .mfr-chip-verified{width:20px;height:20px;font-size:11px;bottom:3px;right:3px;border-width:2px}
 /* Nota Doxcare abaixo do logo, centralizada, reduzida ~50% (só no card de marca) */
 .mfr-card-score{width:100%;display:flex;flex-direction:column;align-items:center;gap:4px}
-.mfr-card .mfr-card-score .doxcare-capsule-wrap{align-items:center;gap:3px;max-width:110px}
-.mfr-card .mfr-card-score .doxcare-capsule-bignum{font-size:15px}
-.mfr-card .mfr-card-score .doxcare-capsule{padding:2px;border-radius:10px}
-.mfr-card .mfr-card-score .doxcare-capsule-track{height:10px;border-radius:8px}
-.mfr-card .mfr-card-score .doxcare-capsule-fill svg{width:8px;height:8px}
+.mfr-card .mfr-card-score .doxcare-capsule-wrap{align-items:center;gap:3px;max-width:130px}
+.mfr-card .mfr-card-score .doxcare-capsule-bignum{font-size:20px}
+.mfr-card .mfr-card-score .doxcare-capsule{padding:2px;border-radius:12px}
+.mfr-card .mfr-card-score .doxcare-capsule-track{height:13px;border-radius:9px}
+.mfr-card .mfr-card-score .doxcare-capsule-fill svg{width:11px;height:11px}
 .mfr-card-votos{text-align:center}
 .mfr-card-foot{margin-top:auto;width:100%}
 .mfr-card-stats{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left}
@@ -3765,7 +3765,7 @@ async function renderMarcas() {
 
   // Ordena conforme a aba ativa e pega 4
   const ascending = _marcasMode === 'worst';
-  const list = [...all].sort((a, b) => ascending ? a.nps - b.nps : b.nps - a.nps).slice(0, 4);
+  const list = [...all].sort((a, b) => ascending ? a.nps - b.nps : b.nps - a.nps).slice(0, 5);
 
   grid.innerHTML = list.map(c => {
     const initial = (c.name || '?')[0].toUpperCase();
