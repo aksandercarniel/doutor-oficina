@@ -3780,7 +3780,7 @@ function _paintMarcas() {
   const sorted = [..._marcasCache].sort((a, b) => ascending ? a.nps - b.nps : b.nps - a.nps);
 
   // Quantos cabem: largura disponível ÷ (largura mínima do card + espaço entre eles).
-  const GAP = 14, CARD_MIN = 240;
+  const GAP = 14, CARD_MIN = 190;
   const W = grid.clientWidth || (grid.parentElement && grid.parentElement.clientWidth) || window.innerWidth;
   const fit = Math.floor((W + GAP) / (CARD_MIN + GAP));
   const n = Math.max(1, Math.min(5, fit, sorted.length));
