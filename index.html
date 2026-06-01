@@ -534,14 +534,23 @@ header{
    pílula+avaliações em posição constante no meio (não desloca com nome),
    stats alinhados à esquerda no rodapé. */
 .mfr-card{display:flex;flex-direction:column;height:100%;padding:18px 16px}
-.mfr-card-head{display:flex;flex-direction:row;align-items:flex-start;gap:10px;width:100%;min-height:78px}
-.mfr-card-head-text{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
-.mfr-card-name{font-family:var(--font);font-weight:900;font-size:13px;color:var(--navy);line-height:1.25;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis}
-.mfr-card-center{padding:8px 0 20px;display:flex;flex-direction:column;align-items:center;gap:4px;width:100%}
-.mfr-card-pill{max-width:180px;width:100%}
+.mfr-card-head{display:flex;flex-direction:column;gap:2px;width:100%;min-width:0}
+.mfr-card-name{font-family:var(--font);font-weight:900;font-size:13px;color:var(--navy);line-height:1.25;min-height:48px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis}
+/* Nota Doxcare no topo, reduzida ~50% e alinhada à esquerda (só no card de marca) */
+.mfr-card-score{margin-top:8px;width:100%}
+.mfr-card .mfr-card-score .doxcare-capsule-wrap{align-items:flex-start;gap:3px;max-width:110px}
+.mfr-card .mfr-card-score .doxcare-capsule-bignum{font-size:15px}
+.mfr-card .mfr-card-score .doxcare-capsule{padding:2px;border-radius:10px}
+.mfr-card .mfr-card-score .doxcare-capsule-track{height:10px;border-radius:8px}
+.mfr-card .mfr-card-score .doxcare-capsule-fill svg{width:8px;height:8px}
+.mfr-card-votos{text-align:left;margin-top:5px}
+/* Avatar grande no centro — espaço reservado pro logo da montadora futuro */
+.mfr-card-logo{display:flex;justify-content:center;padding:16px 0 18px}
+.mfr-logo-circle{position:relative;width:80px;height:80px;border-radius:50%;background:var(--navy);color:#fff;font-family:var(--font);font-weight:700;font-size:34px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mfr-logo-circle .mfr-chip-verified{width:20px;height:20px;font-size:11px;bottom:3px;right:3px;border-width:2px}
 .mfr-card-stats{margin-top:auto;display:flex;flex-direction:column;gap:2px;width:100%;text-align:left}
 .mfr-stat{color:var(--muted);font-size:11px;font-weight:500;line-height:1.4}
-.mfr-stat-emph{color:var(--text2);font-weight:600;text-align:center}
+.mfr-stat-emph{color:var(--text2);font-weight:600}
 
 /* ── COMPLAINTS ── */
 .complaints-list{display:flex;flex-direction:column;gap:10px}
@@ -3766,17 +3775,15 @@ async function renderMarcas() {
     return `
     <div class="vehicle-card mfr-card" onclick="openCompanyProfile('${safeName}')">
       <div class="mfr-card-head">
-        <span class="vc-emoji" style="position:relative;display:inline-flex;width:40px;height:40px;border-radius:50%;background:var(--navy);color:#fff;font-family:var(--font);font-weight:700;font-size:16px;align-items:center;justify-content:center;flex-shrink:0">${initial}${verified}</span>
-        <div class="mfr-card-head-text">
-          <div class="mfr-card-name" title="${c.name}">${c.name}</div>
-          <div class="vc-brand">MONTADORA</div>
-        </div>
-      </div>
-      <div class="mfr-card-center">
-        <div class="mfr-card-pill">
+        <div class="mfr-card-name" title="${c.name}">${c.name}</div>
+        <div class="vc-brand">MONTADORA</div>
+        <div class="mfr-card-score">
           ${renderDoxcareBar(c.nps, true)}
         </div>
-        <div class="mfr-stat mfr-stat-emph">${c.votos} ${c.votos === 1 ? 'avaliação' : 'avaliações'}</div>
+        <div class="mfr-stat mfr-stat-emph mfr-card-votos">${c.votos} ${c.votos === 1 ? 'avaliação' : 'avaliações'}</div>
+      </div>
+      <div class="mfr-card-logo">
+        <span class="mfr-logo-circle">${initial}${verified}</span>
       </div>
       <div class="vc-divider"></div>
       <div class="mfr-card-stats">
