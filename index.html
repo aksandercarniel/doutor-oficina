@@ -511,7 +511,7 @@ header{
 .badge-red{background:var(--red-light);color:var(--red)}
 .vc-name{font-family:var(--font);font-weight:900;font-size:19px;color:var(--navy);margin-bottom:2px}
 .vc-brand{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:600}
-.vc-version{color:var(--muted2);font-size:12px;font-weight:500;margin-top:2px;font-style:italic}
+.vc-version{color:var(--muted2);font-size:12px;font-weight:500;margin-top:2px;font-style:italic;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
 .vc-rating{display:flex;align-items:center;gap:7px;margin:11px 0 5px}
 .stars{color:var(--yellow);font-size:13px;letter-spacing:1px}
 .star-val{font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy)}
@@ -3599,7 +3599,7 @@ async function renderRanking(){
     const rating = parseFloat(s.reliability_score) || 0;
     const hl = cardHighlight(v, rating);
     const emoji = typeEmoji(v.type);
-    const verdict = (s.verdict || '').slice(0, 70) + ((s.verdict||'').length > 70 ? '…' : '');
+    const verdict = (s.verdict || '').slice(0, 160);
     const safeKey = `${v.brand}-${v.model}`.replace(/[^a-zA-Z0-9-]/g, '_');
     return `
     <div class="vehicle-card" onclick="showVehicleProfileByBrandModel('${v.brand.replace(/'/g,"\\'")}','${v.model.replace(/'/g,"\\'")}')">
@@ -10767,7 +10767,7 @@ function renderAllVehiclesGrid() {
     const hl = cardHighlight(v, rating);
     const resolved = Math.round(55 + rating * 5);
     const emoji = typeEmoji(v.type);
-    const verdict = (s.verdict || '').slice(0, 70) + ((s.verdict||'').length > 70 ? '…' : '');
+    const verdict = (s.verdict || '').slice(0, 160);
     return `
     <div class="vehicle-card" onclick="showVehicleProfileByBrandModel('${v.brand.replace(/'/g,"\\'")}','${v.model.replace(/'/g,"\\'")}')">
       <div class="vc-top">
