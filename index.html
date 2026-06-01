@@ -3675,6 +3675,7 @@ async function renderRanking(){
 // invisível pro usuário — sem espaço quebrado, sem CTA forçado.
 // Quando a comunidade votar o suficiente, o bloco aparece automaticamente.
 let _marcasMode = 'best';
+let _marcasCache = null;
 
 function setMarcasMode(mode){
   if (mode !== 'best' && mode !== 'worst') return;
@@ -3760,13 +3761,34 @@ async function renderMarcas() {
     return;
   }
 
-  // Tem dados: revela a seção
+  // Tem dados: revela a seção, guarda no cache e pinta.
   section.style.display = '';
+  _marcasCache = all;
+  _paintMarcas();
+}
 
-  // Ordena conforme a aba ativa e pega 4
+// Pinta os cards de marca em UMA única linha. A quantidade exibida é
+// quantos cards cabem inteiros na largura atual (teto de 5): se só
+// couber 4, mostra 4; se 3, mostra 3. Recalculado no resize, sem novo
+// acesso ao banco (usa _marcasCache).
+function _paintMarcas() {
+  const section = document.getElementById('marcas-section');
+  const grid = document.getElementById('marcas-grid');
+  if (!section || !grid || !_marcasCache) return;
+
   const ascending = _marcasMode === 'worst';
-  const list = [...all].sort((a, b) => ascending ? a.nps - b.nps : b.nps - a.nps).slice(0, 5);
+  const sorted = [..._marcasCache].sort((a, b) => ascending ? a.nps - b.nps : b.nps - a.nps);
 
+  // Quantos cabem: largura disponível ÷ (largura mínima do card + espaço entre eles).
+  const GAP = 14, CARD_MIN = 240;
+  const W = grid.clientWidth || (grid.parentElement && grid.parentElement.clientWidth) || window.innerWidth;
+  const fit = Math.floor((W + GAP) / (CARD_MIN + GAP));
+  const n = Math.max(1, Math.min(5, fit, sorted.length));
+
+  // Força exatamente n colunas iguais numa linha (sem quebrar pra próxima).
+  grid.style.gridTemplateColumns = 'repeat(' + n + ', 1fr)';
+
+  const list = sorted.slice(0, n);
   grid.innerHTML = list.map(c => {
     const initial = (c.name || '?')[0].toUpperCase();
     const verified = c.is_claimed
@@ -3796,6 +3818,14 @@ async function renderMarcas() {
     </div>`;
   }).join('');
 }
+
+// Recalcula quantos cards cabem quando a janela muda de tamanho.
+let _marcasResizeTimer = null;
+window.addEventListener('resize', () => {
+  if (!_marcasCache) return;
+  clearTimeout(_marcasResizeTimer);
+  _marcasResizeTimer = setTimeout(_paintMarcas, 150);
+});
 // ═════════════════════════════════════════════════════════════════
 
 // ══ VEHICLE PROFILE ══
