@@ -5190,11 +5190,6 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + '</div>'
     + '<div class="ic-sub">' + (fipePrice && fipePrice.year ? 'Ano ' + fipePrice.year + ' · ' : '') + (fipePrice && fipePrice.ref ? fipePrice.ref : 'Referência atual') + '</div>'
     + '</div>'
-    + '<div class="info-card">'
-    + '<div class="ic-label">📋 Relatos na plataforma</div>'
-    + '<div class="ic-value ic-value-red">' + totalComplaints.toLocaleString('pt-BR') + '</div>'
-    + '<div class="ic-sub">' + (resolvedPct !== null ? resolvedPct + '% respondidas' : 'Sem dados ainda') + '</div>'
-    + '</div>'
     + '<button class="btn-primary" style="width:100%;justify-content:center" onclick="requireAuthForCurrentVehicle()">🚨 Reclamar deste veículo</button>'
     + '<button class="btn-secondary" style="width:100%;justify-content:center;margin-top:10px" onclick="emitirOpiniaoForCurrentVehicle()">💬 Emitir opinião sobre este veículo</button>'
     + '</div>'
@@ -5247,21 +5242,6 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + '<div class="pc-title"><span class="dot"></span>Distribuição de notas</div>'
     + '<div class="dist-bars">' + distBars + '</div>'
     + (distTotal === 0 ? '<div style="font-size:12px;color:var(--muted);margin-top:8px;text-align:center">Baseado em ' + totalComplaints + ' ' + (totalComplaints === 1 ? 'relato' : 'relatos') + ' — avalie após registrar sua reclamação</div>' : '')
-    + '</div>'
-
-    // Card FIPE comparativo
-    + '<div class="profile-card">'
-    + '<div class="pc-title"><span class="dot"></span>Comparar preço FIPE</div>'
-    + '<div class="fipe-row">'
-    + '<select class="form-select" id="cmp-brand" onchange="loadCmpModels()"><option>Carregando marcas…</option></select>'
-    + '<select class="form-select" id="cmp-model" disabled onchange="loadCmpYears()"><option>Selecione a marca</option></select>'
-    + '<select class="form-select" id="cmp-year" disabled onchange="loadCmpPrice()"><option>Selecione o modelo</option></select>'
-    + '</div>'
-    + '<div class="fipe-info" id="fipe-cmp" style="margin-top:12px">'
-    + '<div><div class="fipe-label">💰 Preço médio FIPE</div>'
-    + '<div class="fipe-price" id="fipe-cmp-val">—</div>'
-    + '<div class="fipe-label" id="fipe-cmp-ref" style="margin-top:2px">—</div></div>'
-    + '</div>'
     + '</div>'
 
     + '</div>' // fim coluna direita
