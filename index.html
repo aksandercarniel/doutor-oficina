@@ -524,9 +524,10 @@ header{
 .vc-info-value.red{color:var(--red)}
 .vc-info-value.green{color:var(--green)}
 .vc-info-value.orange{color:var(--orange)}
-.vc-price{margin-top:13px;padding-top:13px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.vehicle-card:has(.vc-price){display:flex;flex-direction:column}
+.vc-price{margin-top:auto;padding-top:13px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
 .price-label{color:var(--muted2);font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
-.price-val{font-family:var(--font);font-weight:800;font-size:14px;color:var(--green)}
+.price-val{font-family:var(--font);font-weight:800;font-size:14px;color:var(--navy)}
 .price-loading{color:var(--muted2);font-size:12px;font-style:italic}
 
 /* ── CARD DE MARCA (Marcas na home) ── */
@@ -758,7 +759,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
   display:none;align-items:center;gap:12px;
 }
 .fipe-info.show{display:flex}
-.fipe-price{font-family:var(--font);font-weight:900;font-size:20px;color:var(--green)}
+.fipe-price{font-family:var(--font);font-weight:900;font-size:20px;color:var(--navy)}
 .fipe-label{color:var(--muted);font-size:12px;font-weight:500}
 
 .category-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
@@ -1148,7 +1149,7 @@ button[data-side="no"][data-on]{border-color:var(--red)!important;background:#ff
 .profile-right{display:flex;flex-direction:column;gap:12px;min-width:190px}
 .info-card{background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:16px 20px}
 .ic-label{color:var(--muted2);font-size:11px;text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-bottom:6px;font-family:var(--font)}
-.ic-value{font-family:var(--font);font-weight:900;font-size:22px;color:var(--green)}
+.ic-value{font-family:var(--font);font-weight:900;font-size:22px;color:var(--navy)}
 .ic-value-red{color:var(--red)!important}
 .ic-sub{color:var(--muted2);font-size:11px;margin-top:3px;font-family:var(--font-body)}
 
