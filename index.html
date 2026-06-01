@@ -57,7 +57,6 @@ svg.ico{color:var(--navy)}
 .cmp-winner svg.ico{color:var(--green)}
 .auth-social-btn svg.ico{width:16px;height:16px}
 
-
 html{max-width:100vw}
 body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;overflow-x:hidden;overflow-y:scroll;min-height:100vh;display:flex;flex-direction:column;max-width:100vw}
 img,video{max-width:100%;height:auto}
@@ -267,7 +266,6 @@ header{
 .pfc-item{display:flex;flex-direction:column;gap:2px}
 .pfc-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
 .pfc-value{font-family:var(--font);font-weight:800;font-size:14px;color:var(--navy)}
-
 
 .search-bar-wrap{
   background:var(--white);
@@ -802,8 +800,6 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 .success-title{font-family:var(--font);font-weight:900;font-size:22px;color:var(--navy);margin-bottom:8px}
 .success-text{color:var(--muted);font-size:15px;font-family:var(--font-body)}
 
-
-
 /* ── AUTH MODAL ── */
 .auth-overlay{
   display:none;position:fixed;inset:0;z-index:2000;
@@ -1249,7 +1245,6 @@ button[data-side="no"][data-on]{border-color:var(--red)!important;background:#ff
 .mobile-menu-item.danger{color:var(--red)}
 .mobile-menu-item svg{flex-shrink:0;opacity:.7}
 
-
 .password-wrap{position:relative;display:flex;align-items:center}
 .password-wrap .auth-input{padding-right:44px;width:100%}
 .eye-btn{position:absolute;right:12px;background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;padding:4px;line-height:1}
@@ -1279,7 +1274,6 @@ button[data-side="no"][data-on]{border-color:var(--red)!important;background:#ff
 @media(min-width:768px){
   .split-card{padding:24px}
 }
-
 
 </style>
 </head>
@@ -1678,7 +1672,6 @@ button[data-side="no"][data-on]{border-color:var(--red)!important;background:#ff
   </div>
   <div id="search-results-grid"></div>
 </div>
-
 
 <!-- ══ PÁGINA: ESCOLHER ADVOGADO PARA MEDIAÇÃO ══ -->
 <div id="page-mediation" style="display:none;width:100%;align-self:stretch;max-width:1280px;margin:0 auto;padding:32px 24px">
@@ -2660,7 +2653,6 @@ async function logout() {
   document.getElementById('user-dropdown')?.classList.remove('open');
 }
 
-
 // ══ SELEÇÃO DE TIPO DE CADASTRO ══
 let _registerType = 'user'; // 'user', 'user+company', 'user+lawyer'
 
@@ -3125,7 +3117,6 @@ function selectCompanyType(type, btn) {
   }
 }
 
-
 // Auto-lookup CNPJ no formulário de reclamação (step 3)
 async function autoLookupComplaintCNPJ(val) {
   const cnpj = val.replace(/\D/g, '');
@@ -3334,7 +3325,6 @@ function selectMediation(yes) {
   btnSubmit.style.opacity = '1';
 }
 
-
 async function submitComplaint() {
   if (!currentUser) { closeModal(); openAuth('login'); return; }
   const brandEl = document.getElementById('sel-brand');
@@ -3476,7 +3466,6 @@ function starsHtml(r){let s='';for(let i=1;i<=5;i++)s+=i<=Math.round(r)?'★':'�
 
 // renderVehicles removida: o bloco 'Veículos mais avaliados' foi fundido
 // no Ranking (que agora usa cards via renderRanking, com abas Melhores/Piores).
-
 
 // Estado da aba ativa do ranking da home ('best' | 'worst')
 let _rankingMode = 'best';
@@ -4562,28 +4551,28 @@ async function loadFipePriceForVehicle(v, opts) {
     if (isGenericSearch) {
       // Busca genérica: retorna faixa de preço (mínimo e máximo)
       const currentYear = new Date().getFullYear();
-      
+
       // Filtra apenas anos válidos e recentes (últimos 3 anos)
       const recentYears = years.filter(function(y) {
         const yName = (y.name || y.nome || '').trim();
         // Pega primeiro número de 4 dígitos na string
         const yearMatch = yName.match(/\b(20\d{2})\b/);
         if (!yearMatch) return false;
-        
+
         const yNum = parseInt(yearMatch[1]);
         const isZeroKm = yName.toLowerCase().includes('zero') || yName.includes('32000');
         const isRecent = yNum >= (currentYear - 3) && yNum <= currentYear;
-        
+
         return isRecent && !isZeroKm;
       }).slice(0, 6); // Limita a 6 anos para não fazer muitas requisições
-      
+
       if (recentYears.length === 0) return null; // Sem anos válidos
-      
+
       let minPrice = Infinity;
       let maxPrice = 0;
       let minPriceYear = '';
       let maxPriceYear = '';
-      
+
       for (let i = 0; i < recentYears.length; i++) {
         const y = recentYears[i];
         const yearCode = y.code || y.codigo;
@@ -4593,7 +4582,7 @@ async function loadFipePriceForVehicle(v, opts) {
             const priceStr = fipeData.price || fipeData.Valor;
             // Remove tudo exceto dígitos e vírgula, depois converte
             const priceNum = parseFloat(priceStr.replace(/[^\d,]/g, '').replace(',', '.'));
-            
+
             if (priceNum > 0 && priceNum < minPrice) {
               minPrice = priceNum;
               minPriceYear = fipeData.modelYear || (y.name || y.nome || '').match(/\b(20\d{2})\b/)[1];
@@ -4605,12 +4594,12 @@ async function loadFipePriceForVehicle(v, opts) {
           }
         } catch(e) {}
       }
-      
+
       if (maxPrice > 0 && minPrice < Infinity) {
         const formatPrice = function(p) {
           return 'R$ ' + Math.round(p).toLocaleString('pt-BR');
         };
-        
+
         return {
           price: formatPrice(minPrice),
           priceMax: formatPrice(maxPrice),
@@ -4651,9 +4640,9 @@ async function loadFipePriceForVehicle(v, opts) {
 
     const yearCode = yearMatch.code || yearMatch.codigo;
     const yearLabel = (yearMatch.name || yearMatch.nome || '').split(' ')[0];
-    
+
     const fipeData = await fipeFetch(FIPE_V2 + '/' + fipeType + '/brands/' + brandCode + '/models/' + modelCode + '/years/' + yearCode);
-    
+
     if (fipeData && (fipeData.price || fipeData.Valor)) {
       return {
         price: fipeData.price || fipeData.Valor,
@@ -6008,7 +5997,7 @@ async function lookupPlate() {
     // Brasil API não tem placa diretamente, usamos FIPE parallelum
     // Tentamos consulta via parallelum
     const res2 = await fetch(`https://parallelum.com.br/fipe/api/v1/carros/marcas`);
-    
+
     // Como APIs públicas gratuitas de placa são limitadas no Brasil,
     // usamos a IA para enriquecer com os dados disponíveis
     await lookupPlateWithAI(plate);
@@ -6135,7 +6124,6 @@ function goStep1WithPlate() {
   if (vehErr) vehErr.style.display = 'none';
   goStep(1);
 }
-
 
 // ══ BUSCA INTELIGENTE ══
 let searchData = [];
@@ -6470,7 +6458,7 @@ function selectSuggestion(idx) {
     const prevIdx = dynamicVehicles.findIndex(v => v.id === 'dynamic');
     if (prevIdx > -1) dynamicVehicles.splice(prevIdx, 1);
     const typeEmoji = {'carros':'🚗','motos':'🏍️','caminhoes':'🚚'}[item.type] || '🚗';
-    
+
     // Separa o NOME BASE do modelo (ex: "Ranger") da VERSÃO (ex: "Raptor 3.0 V6 Bi-Turbo 4WD AUT.")
     // Heurística: pega só a 1ª palavra (modelo) e o resto vira versão
     // Funciona bem para FIPE: "Ranger Raptor 3.0..." → "Ranger" + "Raptor 3.0..."
@@ -6480,7 +6468,7 @@ function selectSuggestion(idx) {
     const firstSpace = fullModel.indexOf(' ');
     const baseName = firstSpace > 0 ? fullModel.slice(0, firstSpace) : fullModel;
     const versionPart = firstSpace > 0 ? fullModel.slice(firstSpace + 1).trim() : '';
-    
+
     dynamicVehicles.push({
       id:'dynamic', _dynamic:true,
       emoji: typeEmoji,
@@ -6620,10 +6608,10 @@ function renderSearchList(tab) {
   const { val, fipe, complaints, mock, companies } = _searchResults;
   sugItems = [];
   let html = '';
-  
+
   // Mock primeiro (já tem dados), depois FIPE ordenado por prioridade
   const allVehicles = [...mock.map(v => ({ _mock:true, _priority:3, ...v })), ...fipe];
-  
+
   grid.style.paddingTop = '0';
 
   // Reclamações
@@ -6690,7 +6678,7 @@ function renderSearchList(tab) {
 
 async function showSearchResults(val, fipeResults, complaintResults, mockResults) {
   const valLower = val.toLowerCase();
-  
+
   // Busca empresas em DUAS fontes: cadastradas (companies) + citadas em reclamações (complaints.company_name)
   let companyResults = [];
   try {
@@ -6766,10 +6754,10 @@ async function showSearchResults(val, fipeResults, complaintResults, mockResults
   const prioritizedFipe = (fipeResults || []).map(r => {
     const modelName = (r.model || r.brand || '').toLowerCase();
     const brandName = (r.brand || '').toLowerCase();
-    
+
     // Correspondência exata (Polo aparece antes de Apolo)
     const exactMatch = modelName === valLower || modelName.startsWith(valLower + ' ');
-    
+
     // Tem Raio-X cadastrado?
     const hasData = modelsWithData.some(m => 
       (m.vehicle_brand || '').toLowerCase() === brandName &&
@@ -6777,7 +6765,7 @@ async function showSearchResults(val, fipeResults, complaintResults, mockResults
     );
 
     const yearFromName = extractYearFromName(modelName);
-    
+
     return {
       ...r,
       _priority: exactMatch ? 3 : hasData ? 2 : 1,
@@ -6808,7 +6796,7 @@ async function showSearchResults(val, fipeResults, complaintResults, mockResults
   if (vt) vt.textContent = ((prioritizedFipe.length)+(mockResults?.length||0)) ? `(${(prioritizedFipe.length)+(mockResults?.length||0)})` : '';
   if (ct) ct.textContent = allCompanies.length ? `(${allCompanies.length})` : '';
   if (crt) crt.textContent = (complaintResults?.length||0) ? `(${complaintResults.length})` : '';
-  
+
   // Marca top 15 sem ano-no-nome como "carregando ano" para mostrar feedback visual
   const toEnrich = prioritizedFipe.slice(0, 15).filter(r => !r._yearFromName);
   toEnrich.forEach(r => { r._yearLoading = true; });
@@ -6890,14 +6878,14 @@ async function enrichFipeWithYears(items, originalVal, defaultTab) {
 // Detecta qual aba deve abrir por padrão baseado na intenção da busca
 function detectDefaultTab(searchTerm, vehicles, companies, complaints) {
   const term = searchTerm.toLowerCase().trim();
-  
+
   // Lista de palavras que indicam busca por problema/reclamação
   const problemKeywords = [
     'problema', 'defeito', 'falha', 'quebrou', 'barulho', 'ruído', 'vazamento',
     'motor', 'câmbio', 'suspensão', 'freio', 'elétrica', 'ar condicionado',
     'parou', 'travou', 'não liga', 'não funciona', 'reclamação'
   ];
-  
+
   // Lista de marcas conhecidas (indica busca por empresa)
   const brandKeywords = [
     'chevrolet', 'fiat', 'volkswagen', 'ford', 'toyota', 'hyundai', 'honda',
@@ -6905,35 +6893,35 @@ function detectDefaultTab(searchTerm, vehicles, companies, complaints) {
     'mercedes', 'audi', 'volvo', 'caoa', 'chery', 'byd', 'gwm', 'yamaha',
     'concessionária', 'concessionaria', 'revendedor', 'loja'
   ];
-  
+
   // Verifica se é busca por problema/reclamação
   const isProblemSearch = problemKeywords.some(kw => term.includes(kw));
   if (isProblemSearch && complaints && complaints.length > 0) {
     return 'complaints';
   }
-  
+
   // Verifica se é busca por marca/empresa
   const isBrandSearch = brandKeywords.some(kw => term.includes(kw));
   if (isBrandSearch && companies && companies.length > 0) {
     return 'companies';
   }
-  
+
   // Se tem veículos, prioriza veículos (caso padrão para modelo)
   if (vehicles && vehicles.length > 0) {
     return 'vehicles';
   }
-  
+
   // Fallback: abre a aba com mais resultados
   const counts = {
     vehicles: vehicles ? vehicles.length : 0,
     companies: companies ? companies.length : 0,
     complaints: complaints ? complaints.length : 0
   };
-  
+
   if (counts.vehicles > 0) return 'vehicles';
   if (counts.companies > 0) return 'companies';
   if (counts.complaints > 0) return 'complaints';
-  
+
   return 'all';
 }
 
@@ -7090,7 +7078,6 @@ async function openComplaintDetail(complaintId) {
     }
 
     let html = `
-      
 
       <div class="split-2col">
 
@@ -7484,7 +7471,6 @@ async function openCompanyProfile(companyName) {
     }
 
     let html = `
-      
 
       <div class="company-profile-grid">
 
@@ -8247,7 +8233,6 @@ async function requestPasswordReset() {
   }
 }
 
-
 // ── MENU MOBILE ──
 let _mobileMenuPrevFocus = null;
 
@@ -8664,7 +8649,6 @@ async function sbOnYearChange() {
   }
 }
 
-
 // Reset da searchbar — chamada após cada busca bem-sucedida.
 // Mantém o Tipo selecionado (assumindo que o usuário continua buscando
 // o mesmo tipo de veículo), limpa Marca/Modelo/Ano e seus caches,
@@ -8946,7 +8930,6 @@ function renderMediationLawyerList(complaintId, complaint, lawyers) {
       }).join('');
 
   el.innerHTML = `
-    
 
     <!-- Cabeçalho -->
     <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:24px">
@@ -9151,7 +9134,6 @@ async function openMediationChannel(mediationId) {
     }).join('') || '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Nenhuma mensagem ainda.</div>';
 
     el.innerHTML = `
-      
 
       <div class="split-2col">
 
@@ -9734,57 +9716,6 @@ async function calculateFipeScore(fipeCode) {
   return result;
 }
 
-// Score do Modelo-genérico (média ponderada das FIPEs do modelo)
-// Fallback: se nenhuma FIPE tem score, usa média de reliability_score
-// dos summaries genéricos (fipe_code IS NULL) do modelo.
-async function calculateModelScore(brand, model) {
-  if (!brand || !model) return { score: null, votos: 0, fipes: 0 };
-  const cacheKey = brand + '|' + model;
-  if (_scoreCache.model[cacheKey]) return _scoreCache.model[cacheKey];
-
-  let result = { score: null, votos: 0, fipes: 0 };
-
-  // 1. Lista FIPEs conhecidas do modelo (cache fipe_vehicles)
-  try {
-    const { data: fipes } = await sb.from('fipe_vehicles')
-      .select('fipe_code')
-      .eq('vehicle_brand', brand)
-      .eq('vehicle_model', model);
-
-    if (fipes && fipes.length) {
-      const scores = await Promise.all(fipes.map(f => calculateFipeScore(f.fipe_code)));
-      const valid = scores.filter(s => s.score != null);
-      const totalVotos = valid.reduce((sum, s) => sum + Math.max(s.votos, 1), 0);
-      if (valid.length && totalVotos > 0) {
-        // Peso = max(votos, 1) pra que FIPEs sem voto ainda contem (pelo curado)
-        const weighted = valid.reduce((sum, s) => sum + s.score * Math.max(s.votos, 1), 0);
-        result = {
-          score: weighted / totalVotos,
-          votos: valid.reduce((sum, s) => sum + s.votos, 0),
-          fipes: valid.length
-        };
-      }
-    }
-  } catch (e) { /* segue pro fallback */ }
-
-  // 2. Fallback: média de reliability_score dos summaries genéricos do modelo
-  if (result.score == null) {
-    try {
-      const { data: generic } = await sb.from('vehicle_summaries')
-        .select('reliability_score')
-        .eq('vehicle_brand', brand)
-        .eq('vehicle_model', model);
-      if (generic && generic.length) {
-        const vals = generic.map(g => parseFloat(g.reliability_score)).filter(v => !isNaN(v));
-        if (vals.length) result.score = vals.reduce((a, b) => a + b, 0) / vals.length;
-      }
-    } catch (e) { /* sem fallback, score fica null */ }
-  }
-
-  _scoreCache.model[cacheKey] = result;
-  return result;
-}
-
 // Score da Marca (média ponderada dos modelos da marca)
 // ═════════════════════════════════════════════════════════════════
 // Sprint 2 — Interface de voto 1-clique (etapa "voto rápido")
@@ -10203,7 +10134,6 @@ async function submitVote(fipeCode, rating, options = {}) {
 }
 // ═════════════════════════════════════════════════════════════════
 
-
 // ═════════════════════════════════════════════════════════════════
 // Sprint 2 — Etapa 2.2: Helpers da página FIPE-exata
 // ═════════════════════════════════════════════════════════════════
@@ -10382,7 +10312,6 @@ async function getOrFetchFipeVehicle(fipeCode, hint) {
   };
 }
 // ═════════════════════════════════════════════════════════════════
-
 
 function requireAuth(vehicleContext, modoOpiniao) {
   // Aceita contexto do veículo para pré-preencher o formulário
