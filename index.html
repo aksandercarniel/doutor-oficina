@@ -3797,12 +3797,12 @@ function _paintMarcas() {
     const safeName = c.name.replace(/'/g, "\\'");
     return `
     <div class="vehicle-card mfr-card" onclick="openCompanyProfile('${safeName}')">
+      <div class="mfr-card-logo">
+        <span class="mfr-logo-circle">${initial}${verified}</span>
+      </div>
       <div class="mfr-card-head">
         <div class="mfr-card-name" title="${c.name}">${c.name}</div>
         <div class="vc-brand">MONTADORA</div>
-      </div>
-      <div class="mfr-card-logo">
-        <span class="mfr-logo-circle">${initial}${verified}</span>
       </div>
       <div class="mfr-card-score">
         ${renderDoxcareBar(c.nps, true)}
