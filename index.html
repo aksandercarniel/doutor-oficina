@@ -5096,8 +5096,9 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
       + '<span style="font-size:11px">' + icon + '</span>' + txt
       + '<span class="vb-count" style="opacity:.7;font-weight:700">' + count + '</span>'
       + '</button>';
+    const titleAttr = (issue && issue.issue_title ? String(issue.issue_title) : '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
     const suggestBtn =
-      '<button type="button" '
+      '<button type="button" onclick="openSuggestModal(this)" data-issue-id="' + issueId + '" data-issue-title="' + titleAttr + '" '
       + 'style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;border:1px dashed var(--orange);background:transparent;'
       + 'font-family:var(--font);font-size:11.5px;font-weight:600;color:var(--orange);cursor:pointer;transition:all .12s">'
       + '<span style="font-size:11px">💡</span>Sugerir solução'
@@ -10306,6 +10307,69 @@ async function voteIssue(btn, issueId, side) {
     alert(res.error || 'Não foi possível registrar seu voto. Tente de novo.');
   }
 }
+
+
+// ═════════════════════════════════════════════════════════════════
+// Sugerir solução (balão) — login obrigatório, entra como 'pending'
+// ═════════════════════════════════════════════════════════════════
+let _suggestIssueId = null;
+
+function openSuggestModal(btn) {
+  const issueId = (btn && btn.getAttribute) ? btn.getAttribute('data-issue-id') : null;
+  const title   = (btn && btn.getAttribute) ? (btn.getAttribute('data-issue-title') || '') : '';
+  if (!issueId) return;
+  if (!currentUser) { openAuth('login'); return; } // login obrigatório (igual Reclamar/Opinar)
+  _suggestIssueId = issueId;
+  const tEl = document.getElementById('suggest-issue-title');
+  if (tEl) tEl.textContent = title || 'esse problema';
+  const ta = document.getElementById('suggest-text');
+  if (ta) ta.value = '';
+  const form = document.getElementById('suggest-form');
+  const ok   = document.getElementById('suggest-success');
+  if (form) form.style.display = '';
+  if (ok) ok.style.display = 'none';
+  const ov = document.getElementById('suggest-modal');
+  if (ov) ov.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  if (ta) setTimeout(() => ta.focus(), 60);
+}
+
+function closeSuggestModal() {
+  const ov = document.getElementById('suggest-modal');
+  if (ov) ov.classList.remove('open');
+  document.body.style.overflow = '';
+  _suggestIssueId = null;
+}
+
+async function submitSuggestion() {
+  if (!currentUser) { closeSuggestModal(); openAuth('login'); return; }
+  if (!_suggestIssueId) return;
+  const ta = document.getElementById('suggest-text');
+  const text = (ta ? ta.value : '').trim();
+  if (text.length < 10) { alert('Escreva um pouco mais sobre a solução (uns 10 caracteres no mínimo).'); if (ta) ta.focus(); return; }
+  const btn = document.querySelector('#suggest-form .btn-primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
+  try {
+    const { error } = await sb.from('solution_suggestions').insert([{
+      issue_id:   _suggestIssueId,
+      user_id:    String(currentUser.id),
+      user_name:  currentUser.name || null,
+      user_email: currentUser.email || null,
+      suggestion: text
+    }]);
+    if (error) {
+      alert('Não foi possível enviar a sugestão. (' + error.message + ')');
+    } else {
+      const form = document.getElementById('suggest-form');
+      const ok   = document.getElementById('suggest-success');
+      if (form) form.style.display = 'none';
+      if (ok) ok.style.display = '';
+    }
+  } catch (e) {
+    alert('Erro inesperado ao enviar a sugestão.');
+  }
+  if (btn) { btn.disabled = false; btn.innerHTML = '💡 Enviar sugestão'; }
+}
 // ═════════════════════════════════════════════════════════════════
 
 // ═════════════════════════════════════════════════════════════════
@@ -11154,5 +11218,29 @@ function togglePassword(inputId, btn) {
   <div id="mobile-menu-items" style="flex:1;overflow-y:auto;padding:16px 0"></div>
 </div>
 <div id="mobile-menu-overlay" onclick="toggleMobileMenu()" aria-hidden="true"></div>
+
+<!-- Modal: Sugerir solução (balão) -->
+<div class="modal-overlay" id="suggest-modal" onclick="if(event.target===this)closeSuggestModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">Sugerir <span class="accent">solução</span></h2>
+      <button class="modal-close" onclick="closeSuggestModal()" aria-label="Fechar">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="suggest-form">
+        <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:14px">Conhece um jeito de resolver <strong id="suggest-issue-title" style="color:var(--navy)"></strong>? Conta pra comunidade. Sua sugestão passa por revisão antes de aparecer.</p>
+        <label class="form-label" for="suggest-text">Sua solução</label>
+        <textarea id="suggest-text" class="form-textarea" placeholder="Ex: troquei a peça X na revisão e o problema sumiu…" style="min-height:120px;resize:vertical"></textarea>
+        <button class="btn-primary" style="width:100%;justify-content:center;margin-top:14px" onclick="submitSuggestion()">💡 Enviar sugestão</button>
+      </div>
+      <div id="suggest-success" style="display:none;text-align:center;padding:14px 0">
+        <div style="font-size:44px;margin-bottom:10px">✅</div>
+        <div style="font-family:var(--font);font-weight:800;font-size:17px;color:var(--navy);margin-bottom:6px">Sugestão enviada!</div>
+        <p style="font-size:13px;color:var(--muted);line-height:1.6">Obrigado por ajudar. Ela vai aparecer assim que for revisada.</p>
+        <button class="btn-secondary" style="margin-top:14px" onclick="closeSuggestModal()">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
