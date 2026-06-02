@@ -2102,8 +2102,8 @@ button[data-side="no"][data-on]{border-color:var(--red)!important;background:#ff
         <div class="user-email" id="profile-email-big">email@email.com</div>
         <div class="user-stats">
           <div class="ustat"><div class="ustat-n" id="profile-count">0</div><div class="ustat-l" id="profile-count-label">Reclamações</div></div>
-          <div class="ustat"><div class="ustat-n" id="profile-votes-total">0</div><div class="ustat-l" id="profile-votes-label">Votos recebidos</div></div>
-          <div class="ustat"><div class="ustat-n" id="profile-resolved">0</div><div class="ustat-l" id="profile-resolved-label">Respondidas</div></div>
+          <div class="ustat"><div class="ustat-n" id="profile-votes-total">0</div><div class="ustat-l" id="profile-votes-label">Opiniões</div></div>
+          <div class="ustat"><div class="ustat-n" id="profile-resolved">0</div><div class="ustat-l" id="profile-resolved-label">Sugestões</div></div>
         </div>
       </div>
     </div>
@@ -8363,22 +8363,18 @@ async function renderProfile() {
     if (error) { console.error('Erro ao buscar reclamações:', error); return; }
     const list = complaints || [];
 
-    // Atualiza contadores
-    const countEl = document.getElementById('profile-count');
-    const resolvedEl = document.getElementById('profile-resolved');
-    const votesEl = document.getElementById('profile-votes-total');
-    const countLbl = document.getElementById('profile-count-label');
-    const resolvedLbl = document.getElementById('profile-resolved-label');
-    const votesLbl = document.getElementById('profile-votes-label');
-    const totalCount = list.length;
-    const respondidasCount = list.filter(c => c.status && c.status !== 'open').length;
-    const votosTotal = list.reduce((sum, c) => sum + (c.votes_count || 0), 0);
-    if (countEl) countEl.textContent = totalCount;
-    if (resolvedEl) resolvedEl.textContent = respondidasCount;
-    if (votesEl) votesEl.textContent = votosTotal;
-    if (countLbl) countLbl.textContent = totalCount === 1 ? 'Reclamação' : 'Reclamações';
-    if (resolvedLbl) resolvedLbl.textContent = respondidasCount === 1 ? 'Respondida' : 'Respondidas';
-    if (votesLbl) votesLbl.textContent = votosTotal === 1 ? 'Voto recebido' : 'Votos recebidos';
+    // Contadores do topo: Reclamações · Opiniões · Sugestões
+    const reclamacoesCount = list.filter(c => c.type !== 'opiniao').length;
+    const opinioesCount    = list.filter(c => c.type === 'opiniao').length;
+    const recEl = document.getElementById('profile-count');
+    const recLbl = document.getElementById('profile-count-label');
+    const opEl  = document.getElementById('profile-votes-total');
+    const opLbl = document.getElementById('profile-votes-label');
+    if (recEl) recEl.textContent = reclamacoesCount;
+    if (recLbl) recLbl.textContent = reclamacoesCount === 1 ? 'Reclamação' : 'Reclamações';
+    if (opEl) opEl.textContent = opinioesCount;
+    if (opLbl) opLbl.textContent = opinioesCount === 1 ? 'Opinião' : 'Opiniões';
+    // (o contador de Sugestões é preenchido no bloco de sugestões, mais abaixo)
 
     // Separa por tipo e renderiza nas abas (reclamação x opinião)
     const reclamacoes = list.filter(c => c.type !== 'opiniao');
@@ -8429,6 +8425,10 @@ async function renderProfile() {
         .eq('user_id', String(currentUser.id))
         .order('created_at', { ascending: false });
       const list = mySugg || [];
+      const sugEl = document.getElementById('profile-resolved');
+      const sugLbl = document.getElementById('profile-resolved-label');
+      if (sugEl) sugEl.textContent = list.length;
+      if (sugLbl) sugLbl.textContent = list.length === 1 ? 'Sugestão' : 'Sugestões';
       if (!list.length) {
         el.innerHTML = '<div style="color:var(--muted);font-size:14px;padding:12px 0">Você ainda não sugeriu nenhuma solução.</div>';
       } else {
