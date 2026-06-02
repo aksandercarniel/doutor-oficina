@@ -1054,6 +1054,9 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 button[data-side]:hover{border-color:var(--muted)!important;color:var(--text2)!important}
 button[data-side="yes"][data-on]{border-color:var(--green)!important;background:var(--green-light)!important;color:var(--green)!important}
 button[data-side="no"][data-on]{border-color:var(--red)!important;background:#fff0f3!important;color:var(--red)!important}
+/* Balão de PROBLEMA: inverte (aconteceu comigo = ruim = vermelho; comigo não = escapou = verde) */
+[data-issue-kind="problem"] button[data-side="yes"][data-on]{border-color:var(--red)!important;background:#fff0f3!important;color:var(--red)!important}
+[data-issue-kind="problem"] button[data-side="no"][data-on]{border-color:var(--green)!important;background:var(--green-light)!important;color:var(--green)!important}
 
 .ai-spinner{width:16px;height:16px;border:2px solid rgba(37,99,235,.3);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -5136,7 +5139,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
       + 'font-family:var(--font);font-size:11.5px;font-weight:600;color:var(--orange);cursor:pointer;transition:all .12s">'
       + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>Sugerir solução'
       + '</button>';
-    return '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">'
+    return '<div data-issue-kind="' + (isProblem ? 'problem' : 'positive') + '" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">'
       + pill('yes', '✓', 'Aconteceu comigo', yes)
       + pill('no',  '✕', 'Comigo não', no)
       + (isProblem ? suggestBtn : '')
