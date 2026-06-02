@@ -9600,6 +9600,12 @@ function loginSuccess(user, opts) {
     openModal(ctx, modo);
     return;
   }
+  if (pendingSuggestion) {
+    const ps = pendingSuggestion;
+    pendingSuggestion = null;
+    _openSuggest(ps.issueId, ps.title);
+    return;
+  }
   // Redireciona por role só quando solicitado explicitamente (login/registro interativo)
   // Restore de sessão e skips de fluxo NÃO passam redirect:true (preservam página atual)
   if (opts && opts.redirect) {
@@ -9667,6 +9673,7 @@ document.addEventListener('click', function(e) {
 
 // Verifica se usuário logou, senão pede login antes de reclamar
 let pendingComplaint = false;
+let pendingSuggestion = null;
 let pendingVehicleContext = null; // {brand, model, fipeBrandCode, fipeModelCode, type}
 let pendingModoOpiniao = false;   // lembra se o fluxo pendente é opinião (após login)
 let _currentVehicle = null; // veículo atualmente exibido no perfil
@@ -10318,7 +10325,12 @@ function openSuggestModal(btn) {
   const issueId = (btn && btn.getAttribute) ? btn.getAttribute('data-issue-id') : null;
   const title   = (btn && btn.getAttribute) ? (btn.getAttribute('data-issue-title') || '') : '';
   if (!issueId) return;
-  if (!currentUser) { openAuth('login'); return; } // login obrigatório (igual Reclamar/Opinar)
+  if (!currentUser) { pendingSuggestion = { issueId: issueId, title: title }; openAuth('login'); return; } // login obrigatório; reabre após logar
+  _openSuggest(issueId, title);
+}
+
+function _openSuggest(issueId, title) {
+  if (!issueId) return;
   _suggestIssueId = issueId;
   const tEl = document.getElementById('suggest-issue-title');
   if (tEl) tEl.textContent = title || 'esse problema';
