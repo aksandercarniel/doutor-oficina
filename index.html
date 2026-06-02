@@ -1394,6 +1394,7 @@ button[data-side="no"][data-on]{border-color:var(--red)!important;background:#ff
   <div style="display:flex;gap:8px;margin-bottom:24px;border-bottom:2px solid var(--border);padding-bottom:0">
     <button id="admin-tab-mediations" onclick="adminSwitchTab('mediations')" style="background:none;border:none;border-bottom:3px solid var(--navy);margin-bottom:-2px;padding:10px 20px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px;color:var(--navy)">⚖️ Mediações</button>
     <button id="admin-tab-companies" onclick="adminSwitchTab('companies')" style="background:none;border:none;border-bottom:3px solid transparent;margin-bottom:-2px;padding:10px 20px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px;color:var(--muted)">🏢 Empresas Pendentes</button>
+    <button id="admin-tab-suggestions" onclick="adminSwitchTab('suggestions')" style="background:none;border:none;border-bottom:3px solid transparent;margin-bottom:-2px;padding:10px 20px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px;color:var(--muted)">💡 Sugestões</button>
   </div>
 
   <!-- Seção Mediações -->
@@ -1414,6 +1415,13 @@ button[data-side="no"][data-on]{border-color:var(--red)!important;background:#ff
   <div id="admin-section-companies" style="display:none">
     <div id="admin-companies-list" style="display:flex;flex-direction:column;gap:16px">
       <div style="text-align:center;padding:40px;color:var(--muted)">Carregando empresas…</div>
+    </div>
+  </div>
+
+  <!-- Seção Sugestões de solução -->
+  <div id="admin-section-suggestions" style="display:none">
+    <div id="admin-suggestions-list" style="display:flex;flex-direction:column;gap:16px">
+      <div style="text-align:center;padding:40px;color:var(--muted)">Carregando sugestões…</div>
     </div>
   </div>
 </div>
@@ -2112,6 +2120,12 @@ button[data-side="no"][data-on]{border-color:var(--red)!important;background:#ff
       <div class="pc-title"><span class="dot"></span>Minhas reclamações</div>
       <div class="my-complaints-list" id="my-complaints-list">
         <div style="color:var(--muted);font-size:14px;padding:12px 0">Você ainda não fez nenhuma reclamação.</div>
+      </div>
+    </div>
+    <div class="profile-card">
+      <div class="pc-title"><span class="dot"></span>Minhas sugestões de solução</div>
+      <div id="my-suggestions-list" style="display:flex;flex-direction:column;gap:10px;padding:4px 0">
+        <div style="color:var(--muted);font-size:14px;padding:12px 0">Carregando…</div>
       </div>
     </div>
   </div>
@@ -4510,6 +4524,21 @@ async function loadKnownIssues(brand, model, fipeCode, year) {
       }
     } catch (e) { /* contagens opcionais */ }
 
+    // Soluções da comunidade APROVADAS por balão (exibidas no card, com crédito).
+    try {
+      const ids2 = issues.map(i => i.id).filter(Boolean);
+      if (ids2.length) {
+        const { data: sugg } = await sb.from('solution_suggestions')
+          .select('issue_id, suggestion, user_name, created_at')
+          .in('issue_id', ids2)
+          .eq('status', 'approved')
+          .order('created_at', { ascending: false });
+        const byIssue = {};
+        (sugg || []).forEach(s => { (byIssue[s.issue_id] || (byIssue[s.issue_id] = [])).push(s); });
+        issues.forEach(i => { i.suggestions = byIssue[i.id] || []; });
+      }
+    } catch (e) { /* sugestões opcionais */ }
+
     const out = [];
     if (summaryRow) {
       out.push({
@@ -5110,6 +5139,25 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
       + '</div>';
   };
 
+  // Soluções da comunidade aprovadas (crédito de quem sugeriu)
+  const renderCommunitySolutions = (issue) => {
+    const list = (issue && Array.isArray(issue.suggestions)) ? issue.suggestions : [];
+    if (!list.length) return '';
+    const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const items = list.map(s => {
+      const who = s.user_name ? esc(s.user_name) : 'Comunidade';
+      const date = s.created_at ? new Date(s.created_at).toLocaleDateString('pt-BR') : '';
+      return '<div style="border-top:1px solid rgba(0,168,120,.15);padding-top:8px;margin-top:8px">'
+        + '<div style="font-size:12.5px;color:var(--text2);line-height:1.5">' + esc(s.suggestion) + '</div>'
+        + '<div style="font-size:10.5px;color:var(--muted);margin-top:3px">— ' + who + (date ? ' · ' + date : '') + '</div>'
+        + '</div>';
+    }).join('');
+    return '<div style="margin-top:10px;background:rgba(0,168,120,.06);border:1px solid rgba(0,168,120,.18);border-radius:8px;padding:10px 12px">'
+      + '<div style="font-family:var(--font);font-weight:700;font-size:12px;color:var(--green)">💡 Soluções da comunidade</div>'
+      + items
+      + '</div>';
+  };
+
   // Renderiza card de problema
   const renderIssueCard = (issue) => {
     const cfg = severityConfig[issue.severity] || severityConfig.leve;
@@ -5123,6 +5171,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
       + (issue.fix_exists && issue.fix_description ? '<div style="font-size:12px;color:var(--green);background:var(--green-light);border-radius:8px;padding:8px 10px;border:1px solid rgba(0,168,120,.2)">✅ <strong>Solução conhecida:</strong> ' + issue.fix_description + '</div>' : '')
       + (!issue.fix_exists ? '<div style="font-size:12px;color:var(--muted);font-style:italic">⚠️ Sem solução definitiva conhecida até o momento.</div>' : '')
       + renderSourceLine(issue.source, issue.source_url)
+      + renderCommunitySolutions(issue)
       + renderValidationButtons(issue)
       + '</div>';
   };
@@ -5856,11 +5905,55 @@ function adminFilterMediation(btn, status) {
 }
 
 function adminSwitchTab(tab) {
-  document.getElementById('admin-section-mediations').style.display = tab === 'mediations' ? 'block' : 'none';
-  document.getElementById('admin-section-companies').style.display  = tab === 'companies'  ? 'block' : 'none';
-  document.getElementById('admin-tab-mediations').style.cssText = `background:none;border:none;border-bottom:3px solid ${tab==='mediations'?'var(--navy)':'transparent'};margin-bottom:-2px;padding:10px 20px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px;color:${tab==='mediations'?'var(--navy)':'var(--muted)'}`;
-  document.getElementById('admin-tab-companies').style.cssText  = `background:none;border:none;border-bottom:3px solid ${tab==='companies' ?'var(--navy)':'transparent'};margin-bottom:-2px;padding:10px 20px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px;color:${tab==='companies' ?'var(--navy)':'var(--muted)'}`;
+  document.getElementById('admin-section-mediations').style.display  = tab === 'mediations'  ? 'block' : 'none';
+  document.getElementById('admin-section-companies').style.display   = tab === 'companies'   ? 'block' : 'none';
+  document.getElementById('admin-section-suggestions').style.display = tab === 'suggestions' ? 'block' : 'none';
+  const tabStyle = (on) => `background:none;border:none;border-bottom:3px solid ${on?'var(--navy)':'transparent'};margin-bottom:-2px;padding:10px 20px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px;color:${on?'var(--navy)':'var(--muted)'}`;
+  document.getElementById('admin-tab-mediations').style.cssText  = tabStyle(tab==='mediations');
+  document.getElementById('admin-tab-companies').style.cssText   = tabStyle(tab==='companies');
+  document.getElementById('admin-tab-suggestions').style.cssText = tabStyle(tab==='suggestions');
   if (tab === 'companies') loadPendingCompanies();
+  if (tab === 'suggestions') loadAdminSuggestions();
+}
+
+// ── Admin: moderar sugestões de solução ──
+async function loadAdminSuggestions() {
+  const el = document.getElementById('admin-suggestions-list');
+  if (!el) return;
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Carregando…</div>';
+  const { data, error } = await sb.from('solution_suggestions')
+    .select('*, vehicle_issues ( issue_title, vehicle_brand, vehicle_model )')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: true });
+  if (error) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Erro ao carregar.</div>'; return; }
+  if (!data || !data.length) { el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Nenhuma sugestão pendente. 🎉</div>'; return; }
+  const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  el.innerHTML = data.map(s => {
+    const vi = s.vehicle_issues || {};
+    const ctx = [vi.vehicle_brand, vi.vehicle_model].filter(Boolean).join(' ');
+    const who = [s.user_name, s.user_email].filter(Boolean).join(' · ');
+    const date = s.created_at ? new Date(s.created_at).toLocaleDateString('pt-BR') : '';
+    return '<div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:20px">'
+      + (ctx ? '<div style="font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:4px">' + esc(ctx) + '</div>' : '')
+      + '<div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy);margin-bottom:8px">' + (vi.issue_title ? esc(vi.issue_title) : 'Balão') + '</div>'
+      + '<div style="font-size:13.5px;color:var(--text2);line-height:1.55;background:var(--bg);border-radius:8px;padding:10px 12px">' + esc(s.suggestion) + '</div>'
+      + '<div style="font-size:12px;color:var(--muted);margin-top:8px">por ' + (who ? esc(who) : 'anônimo') + (date ? ' · ' + date : '') + '</div>'
+      + '<div style="display:flex;gap:10px;margin-top:14px">'
+      + '<button onclick="approveSuggestion(\'' + s.id + '\')" style="background:var(--green);color:#fff;border:none;border-radius:8px;padding:8px 18px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">✅ Aprovar</button>'
+      + '<button onclick="rejectSuggestion(\'' + s.id + '\')" style="background:var(--red);color:#fff;border:none;border-radius:8px;padding:8px 18px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px">❌ Recusar</button>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+async function approveSuggestion(id) {
+  const { error } = await sb.from('solution_suggestions').update({ status: 'approved' }).eq('id', id);
+  if (error) { alert('Erro ao aprovar: ' + error.message); return; }
+  loadAdminSuggestions();
+}
+async function rejectSuggestion(id) {
+  const { error } = await sb.from('solution_suggestions').update({ status: 'rejected' }).eq('id', id);
+  if (error) { alert('Erro ao recusar: ' + error.message); return; }
+  loadAdminSuggestions();
 }
 
 async function loadPendingCompanies() {
@@ -8308,6 +8401,41 @@ async function renderProfile() {
   } catch(e) {
     console.error('Erro em renderProfile:', e);
   }
+
+  // ── Minhas sugestões de solução (pendente / aprovada / recusada) ──
+  try {
+    const el = document.getElementById('my-suggestions-list');
+    if (el) {
+      const { data: mySugg } = await sb.from('solution_suggestions')
+        .select('suggestion, status, created_at, vehicle_issues ( issue_title, vehicle_brand, vehicle_model )')
+        .eq('user_id', String(currentUser.id))
+        .order('created_at', { ascending: false });
+      const list = mySugg || [];
+      if (!list.length) {
+        el.innerHTML = '<div style="color:var(--muted);font-size:14px;padding:12px 0">Você ainda não sugeriu nenhuma solução.</div>';
+      } else {
+        const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const badge = (s) => s === 'approved'
+          ? '<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:#e8f5e9;color:#16a34a">✅ Aprovada</span>'
+          : (s === 'rejected'
+            ? '<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:#fef2f2;color:#dc2626">❌ Recusada</span>'
+            : '<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:#fff8e1;color:#92400e">⏳ Pendente</span>');
+        el.innerHTML = list.map(s => {
+          const vi = s.vehicle_issues || {};
+          const ctx = [vi.vehicle_brand, vi.vehicle_model].filter(Boolean).join(' ');
+          return '<div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:14px 16px">'
+            + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">'
+            + '<div style="font-family:var(--font);font-weight:700;font-size:13.5px;color:var(--navy)">' + (vi.issue_title ? esc(vi.issue_title) : 'Sugestão') + '</div>'
+            + badge(s.status)
+            + '</div>'
+            + (ctx ? '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">' + esc(ctx) + '</div>' : '')
+            + '<div style="font-size:13px;color:var(--text2);line-height:1.5">' + esc(s.suggestion) + '</div>'
+            + '<div style="font-size:11px;color:var(--muted);margin-top:6px">' + (s.created_at ? new Date(s.created_at).toLocaleDateString('pt-BR') : '') + '</div>'
+            + '</div>';
+        }).join('');
+      }
+    }
+  } catch (e) { console.error('Erro ao carregar sugestões:', e); }
 }
 
 // ══════════════════════════════════════════
