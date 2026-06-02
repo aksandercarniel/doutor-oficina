@@ -4488,6 +4488,28 @@ async function loadKnownIssues(brand, model, fipeCode, year) {
     };
     const issues = issuesRaw.filter(inScope).map(r => ({ ...r, is_summary: false, source: r.source_label || null }));
 
+    // Contagens reais dos votos do balão ("Aconteceu comigo"/"Comigo não").
+    // 1 consulta pra todos os balões; soma yes/no e marca o voto deste aparelho.
+    try {
+      const ids = issues.map(i => i.id).filter(Boolean);
+      if (ids.length) {
+        const myId = getOrCreateVoterId();
+        const { data: vals } = await sb.from('issue_validations')
+          .select('issue_id, vote, voter_id')
+          .in('issue_id', ids);
+        const tally = {};
+        (vals || []).forEach(v => {
+          const t = tally[v.issue_id] || (tally[v.issue_id] = { yes: 0, no: 0, mine: '' });
+          if (v.vote === 'yes') t.yes++; else if (v.vote === 'no') t.no++;
+          if (v.voter_id === myId) t.mine = v.vote;
+        });
+        issues.forEach(i => {
+          const t = tally[i.id] || { yes: 0, no: 0, mine: '' };
+          i.val_yes = t.yes; i.val_no = t.no; i.my_vote = t.mine;
+        });
+      }
+    } catch (e) { /* contagens opcionais */ }
+
     const out = [];
     if (summaryRow) {
       out.push({
@@ -5055,23 +5077,24 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     return '<div style="margin-top:8px;font-size:11px;color:var(--muted2)">Fonte: ' + inner + '</div>';
   };
 
-  // Botões de validação da comunidade — "Aconteceu comigo" / "Comigo não" +
-  // ação "Sugerir solução" (só nos balões de problema).
-  // DÍVIDA TÉCNICA: por enquanto é SÓ LAYOUT. Os números são fixos (exemplo), o
-  // clique nas pílulas só acende no visual e o "Sugerir solução" ainda não abre nada.
-  // Quando virar real: tabela de validações + RLS, ler contagens, gravar voto e
-  // abrir o formulário de sugestão.
+  // Botões de validação da comunidade — "Aconteceu comigo" / "Comigo não".
+  // Votos REAIS: contagens vêm de issue_validations (anexadas a cada balão em
+  // loadKnownIssues); o clique grava/troca o voto via voteIssue → submitValidation.
+  // 1 voto por aparelho/balão (voter_id), sem login, revote permitido.
+  // PENDENTE: "Sugerir solução" (só nos balões de problema) ainda não abre nada.
   const renderValidationButtons = (issue) => {
-    const yes = (issue && issue.val_yes != null) ? issue.val_yes : 12; // exemplo
-    const no  = (issue && issue.val_no  != null) ? issue.val_no  : 3;  // exemplo
+    const yes = (issue && issue.val_yes != null) ? issue.val_yes : 0;
+    const no  = (issue && issue.val_no  != null) ? issue.val_no  : 0;
+    const issueId = (issue && issue.id) ? issue.id : '';
+    const mine = (issue && issue.my_vote) ? issue.my_vote : '';
     const isProblem = issue && issue.severity && issue.severity !== 'positivo';
     const pill = (side, icon, txt, count) =>
-      '<button type="button" onclick="this.parentNode.querySelectorAll(\'button[data-side]\').forEach(function(b){b.removeAttribute(\'data-on\')});this.setAttribute(\'data-on\',\'1\')" '
-      + 'data-side="' + side + '" '
+      '<button type="button" onclick="voteIssue(this,\'' + issueId + '\',\'' + side + '\')" '
+      + 'data-side="' + side + '"' + (mine === side ? ' data-on="1"' : '') + ' '
       + 'style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;border:1px solid var(--border);background:transparent;'
       + 'font-family:var(--font);font-size:11.5px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .12s">'
       + '<span style="font-size:11px">' + icon + '</span>' + txt
-      + '<span style="opacity:.7;font-weight:700">' + count + '</span>'
+      + '<span class="vb-count" style="opacity:.7;font-weight:700">' + count + '</span>'
       + '</button>';
     const suggestBtn =
       '<button type="button" '
@@ -10216,6 +10239,71 @@ async function submitVote(fipeCode, rating, options = {}) {
 
   } catch (e) {
     return { success: false, error: 'Erro inesperado ao salvar o voto.' };
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════
+// Votos do balão — "Aconteceu comigo" / "Comigo não" (issue_validations)
+// ═════════════════════════════════════════════════════════════════
+// Grava ou troca o voto deste aparelho num balão. 1 voto por (voter_id, issue_id).
+async function submitValidation(issueId, vote) {
+  if (!issueId) return { success: false, error: 'Balão sem identificador.' };
+  if (vote !== 'yes' && vote !== 'no') return { success: false, error: 'Voto inválido.' };
+  const voterId = getOrCreateVoterId();
+  try {
+    const { data: existing } = await sb.from('issue_validations')
+      .select('id')
+      .eq('voter_id', voterId)
+      .eq('issue_id', issueId)
+      .maybeSingle();
+    if (existing) {
+      const { error } = await sb.from('issue_validations')
+        .update({ vote: vote, updated_at: new Date().toISOString() })
+        .eq('id', existing.id);
+      if (error) return { success: false, error: 'Não foi possível atualizar o voto. (' + error.message + ')' };
+      return { success: true, isUpdate: true };
+    }
+    const { error } = await sb.from('issue_validations')
+      .insert([{ issue_id: issueId, voter_id: voterId, vote: vote }]);
+    if (error) return { success: false, error: 'Não foi possível registrar o voto. (' + error.message + ')' };
+    return { success: true, isUpdate: false };
+  } catch (e) {
+    return { success: false, error: 'Erro inesperado ao votar.' };
+  }
+}
+
+// Clique nas pílulas do balão: atualização otimista + reversão se der erro.
+async function voteIssue(btn, issueId, side) {
+  if (!issueId) return;
+  const row = btn.parentNode;
+  const yesBtn = row.querySelector('button[data-side="yes"]');
+  const noBtn  = row.querySelector('button[data-side="no"]');
+  if (!yesBtn || !noBtn) return;
+  const prevOn = row.querySelector('button[data-side][data-on]');
+  const prevSide = prevOn ? prevOn.getAttribute('data-side') : null;
+  if (prevSide === side) return; // já votou nesse lado, nada a fazer
+
+  const getCount = (b) => parseInt(b.querySelector('.vb-count').textContent, 10) || 0;
+  const setCount = (b, n) => { b.querySelector('.vb-count').textContent = n; };
+  const yc = getCount(yesBtn), nc = getCount(noBtn);
+
+  // otimista: move o voto pro lado clicado
+  let newYes = yc, newNo = nc;
+  if (side === 'yes') { newYes = yc + 1; if (prevSide === 'no') newNo = Math.max(0, nc - 1); }
+  else { newNo = nc + 1; if (prevSide === 'yes') newYes = Math.max(0, yc - 1); }
+  yesBtn.removeAttribute('data-on'); noBtn.removeAttribute('data-on');
+  btn.setAttribute('data-on', '1');
+  setCount(yesBtn, newYes); setCount(noBtn, newNo);
+  yesBtn.disabled = true; noBtn.disabled = true;
+
+  const res = await submitValidation(issueId, side);
+  yesBtn.disabled = false; noBtn.disabled = false;
+  if (!res.success) {
+    // reverte visual + contagens
+    yesBtn.removeAttribute('data-on'); noBtn.removeAttribute('data-on');
+    if (prevSide) { const pb = row.querySelector('button[data-side="' + prevSide + '"]'); if (pb) pb.setAttribute('data-on', '1'); }
+    setCount(yesBtn, yc); setCount(noBtn, nc);
+    alert(res.error || 'Não foi possível registrar seu voto. Tente de novo.');
   }
 }
 // ═════════════════════════════════════════════════════════════════
