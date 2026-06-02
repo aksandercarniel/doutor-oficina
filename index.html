@@ -511,7 +511,7 @@ header{
 .badge-red{background:var(--red-light);color:var(--red)}
 .vc-name{font-family:var(--font);font-weight:900;font-size:19px;color:var(--navy);margin-bottom:2px}
 .vc-brand{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:600}
-.vc-version{color:var(--muted2);font-size:12px;font-weight:500;margin-top:2px;font-style:italic}
+.vc-version{color:var(--muted2);font-size:12px;font-weight:500;margin-top:2px;font-style:italic;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
 .vc-rating{display:flex;align-items:center;gap:7px;margin:11px 0 5px}
 .stars{color:var(--yellow);font-size:13px;letter-spacing:1px}
 .star-val{font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy)}
@@ -524,9 +524,10 @@ header{
 .vc-info-value.red{color:var(--red)}
 .vc-info-value.green{color:var(--green)}
 .vc-info-value.orange{color:var(--orange)}
-.vc-price{margin-top:13px;padding-top:13px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.vehicle-card:has(.vc-price){display:flex;flex-direction:column}
+.vc-price{margin-top:auto;padding-top:13px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
 .price-label{color:var(--muted2);font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
-.price-val{font-family:var(--font);font-weight:800;font-size:14px;color:var(--green)}
+.price-val{font-family:var(--font);font-weight:800;font-size:14px;color:var(--navy)}
 .price-loading{color:var(--muted2);font-size:12px;font-style:italic}
 
 /* ── CARD DE MARCA (Marcas na home) ── */
@@ -537,13 +538,13 @@ header{
 .mfr-card-head{display:flex;flex-direction:column;gap:3px;width:100%;min-width:0;height:70px;overflow:hidden}
 .mfr-card-name{font-family:var(--font);font-weight:900;font-size:13px;color:var(--navy);line-height:1.25;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis}
 /* Avatar grande no centro — espaço reservado pro logo da montadora futuro */
-.mfr-card-logo{display:flex;justify-content:center;padding:18px 0 12px}
+.mfr-card-logo{display:flex;justify-content:center;padding:0 0 22px}
 .mfr-logo-circle{position:relative;width:80px;height:80px;border-radius:50%;background:var(--navy);color:#fff;font-family:var(--font);font-weight:700;font-size:34px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .mfr-logo-circle .mfr-chip-verified{width:20px;height:20px;font-size:11px;bottom:3px;right:3px;border-width:2px}
 /* Nota Doxcare abaixo do logo, centralizada, reduzida ~50% (só no card de marca) */
-.mfr-card-score{width:100%;display:flex;flex-direction:column;align-items:center;gap:4px}
+.mfr-card-score{width:100%;display:flex;flex-direction:column;align-items:center;gap:4px;margin-top:12px}
 .mfr-card .mfr-card-score .doxcare-capsule-wrap{align-items:center;gap:3px;max-width:130px}
-.mfr-card .mfr-card-score .doxcare-capsule-bignum{font-size:20px}
+.mfr-card .mfr-card-score .doxcare-capsule-bignum{font-size:32px}
 .mfr-card .mfr-card-score .doxcare-capsule{padding:2px;border-radius:12px}
 .mfr-card .mfr-card-score .doxcare-capsule-track{height:13px;border-radius:9px}
 .mfr-card .mfr-card-score .doxcare-capsule-fill svg{width:11px;height:11px}
@@ -758,7 +759,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
   display:none;align-items:center;gap:12px;
 }
 .fipe-info.show{display:flex}
-.fipe-price{font-family:var(--font);font-weight:900;font-size:20px;color:var(--green)}
+.fipe-price{font-family:var(--font);font-weight:900;font-size:20px;color:var(--navy)}
 .fipe-label{color:var(--muted);font-size:12px;font-weight:500}
 
 .category-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
@@ -1148,7 +1149,7 @@ button[data-side="no"][data-on]{border-color:var(--red)!important;background:#ff
 .profile-right{display:flex;flex-direction:column;gap:12px;min-width:190px}
 .info-card{background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:16px 20px}
 .ic-label{color:var(--muted2);font-size:11px;text-transform:uppercase;letter-spacing:.8px;font-weight:700;margin-bottom:6px;font-family:var(--font)}
-.ic-value{font-family:var(--font);font-weight:900;font-size:22px;color:var(--green)}
+.ic-value{font-family:var(--font);font-weight:900;font-size:22px;color:var(--navy)}
 .ic-value-red{color:var(--red)!important}
 .ic-sub{color:var(--muted2);font-size:11px;margin-top:3px;font-family:var(--font-body)}
 
@@ -3599,7 +3600,7 @@ async function renderRanking(){
     const rating = parseFloat(s.reliability_score) || 0;
     const hl = cardHighlight(v, rating);
     const emoji = typeEmoji(v.type);
-    const verdict = (s.verdict || '').slice(0, 70) + ((s.verdict||'').length > 70 ? '…' : '');
+    const verdict = (s.verdict || '').slice(0, 160);
     const safeKey = `${v.brand}-${v.model}`.replace(/[^a-zA-Z0-9-]/g, '_');
     return `
     <div class="vehicle-card" onclick="showVehicleProfileByBrandModel('${v.brand.replace(/'/g,"\\'")}','${v.model.replace(/'/g,"\\'")}')">
@@ -3613,7 +3614,6 @@ async function renderRanking(){
       <div class="vc-brand">${v.brand}</div>
       <div class="vc-version">${verdict}</div>
       <div class="vc-rating-velocimetro">${renderDoxcoreVelocimetro(rating, 'medium')}</div>
-      <div class="vc-count">${v.issues.length} problema${v.issues.length !== 1 ? 's' : ''} mapeado${v.issues.length !== 1 ? 's' : ''}</div>
       <div class="vc-divider"></div>
       <div class="vc-info-grid">
         <div class="vc-info-item" style="grid-column:1/-1">
@@ -3797,12 +3797,12 @@ function _paintMarcas() {
     const safeName = c.name.replace(/'/g, "\\'");
     return `
     <div class="vehicle-card mfr-card" onclick="openCompanyProfile('${safeName}')">
+      <div class="mfr-card-logo">
+        <span class="mfr-logo-circle">${initial}${verified}</span>
+      </div>
       <div class="mfr-card-head">
         <div class="mfr-card-name" title="${c.name}">${c.name}</div>
         <div class="vc-brand">MONTADORA</div>
-      </div>
-      <div class="mfr-card-logo">
-        <span class="mfr-logo-circle">${initial}${verified}</span>
       </div>
       <div class="mfr-card-score">
         ${renderDoxcareBar(c.nps, true)}
@@ -5190,11 +5190,6 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + '</div>'
     + '<div class="ic-sub">' + (fipePrice && fipePrice.year ? 'Ano ' + fipePrice.year + ' · ' : '') + (fipePrice && fipePrice.ref ? fipePrice.ref : 'Referência atual') + '</div>'
     + '</div>'
-    + '<div class="info-card">'
-    + '<div class="ic-label">📋 Relatos na plataforma</div>'
-    + '<div class="ic-value ic-value-red">' + totalComplaints.toLocaleString('pt-BR') + '</div>'
-    + '<div class="ic-sub">' + (resolvedPct !== null ? resolvedPct + '% respondidas' : 'Sem dados ainda') + '</div>'
-    + '</div>'
     + '<button class="btn-primary" style="width:100%;justify-content:center" onclick="requireAuthForCurrentVehicle()">🚨 Reclamar deste veículo</button>'
     + '<button class="btn-secondary" style="width:100%;justify-content:center;margin-top:10px" onclick="emitirOpiniaoForCurrentVehicle()">💬 Emitir opinião sobre este veículo</button>'
     + '</div>'
@@ -5247,21 +5242,6 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + '<div class="pc-title"><span class="dot"></span>Distribuição de notas</div>'
     + '<div class="dist-bars">' + distBars + '</div>'
     + (distTotal === 0 ? '<div style="font-size:12px;color:var(--muted);margin-top:8px;text-align:center">Baseado em ' + totalComplaints + ' ' + (totalComplaints === 1 ? 'relato' : 'relatos') + ' — avalie após registrar sua reclamação</div>' : '')
-    + '</div>'
-
-    // Card FIPE comparativo
-    + '<div class="profile-card">'
-    + '<div class="pc-title"><span class="dot"></span>Comparar preço FIPE</div>'
-    + '<div class="fipe-row">'
-    + '<select class="form-select" id="cmp-brand" onchange="loadCmpModels()"><option>Carregando marcas…</option></select>'
-    + '<select class="form-select" id="cmp-model" disabled onchange="loadCmpYears()"><option>Selecione a marca</option></select>'
-    + '<select class="form-select" id="cmp-year" disabled onchange="loadCmpPrice()"><option>Selecione o modelo</option></select>'
-    + '</div>'
-    + '<div class="fipe-info" id="fipe-cmp" style="margin-top:12px">'
-    + '<div><div class="fipe-label">💰 Preço médio FIPE</div>'
-    + '<div class="fipe-price" id="fipe-cmp-val">—</div>'
-    + '<div class="fipe-label" id="fipe-cmp-ref" style="margin-top:2px">—</div></div>'
-    + '</div>'
     + '</div>'
 
     + '</div>' // fim coluna direita
@@ -7494,6 +7474,7 @@ async function openCompanyProfile(companyName) {
     const verifiedBadge = isClaimed
       ? '<span title="Conta verificada — administrada pela empresa" style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;background:#2563eb;color:#fff;border-radius:50%;font-size:13px;font-weight:700;vertical-align:middle;margin-left:8px;line-height:1">✓</span>'
       : '';
+    const initial = (companyName || '?').trim().charAt(0).toUpperCase() || '?';
 
     let extraFields = '';
     if (company) {
@@ -7516,8 +7497,13 @@ async function openCompanyProfile(companyName) {
 
         <!-- Coluna esquerda: identidade -->
         <div style="background:var(--white);border:1.5px solid var(--border);border-radius:16px;padding:28px">
-          <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">${typeLabel[tipo]||'📋 Outro'}</div>
-          <h2 style="font-family:var(--font);font-weight:900;font-size:clamp(20px,5vw,28px);color:var(--navy);margin:0 0 10px;line-height:1.2;word-break:break-word">${companyName}${verifiedBadge}</h2>
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px">
+            <span class="mfr-logo-circle" style="width:64px;height:64px;font-size:28px">${initial}</span>
+            <div style="min-width:0">
+              <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">${typeLabel[tipo]||'📋 Outro'}</div>
+              <h2 style="font-family:var(--font);font-weight:900;font-size:clamp(20px,5vw,28px);color:var(--navy);margin:0;line-height:1.2;word-break:break-word">${companyName}${verifiedBadge}</h2>
+            </div>
+          </div>
           <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px">
             ${company?.cnpj ? `<div style="font-size:13px;color:var(--muted)">📋 CNPJ: ${company.cnpj}</div>` : ''}
             ${company?.city||company?.state ? `<div style="font-size:13px;color:var(--muted)">📍 ${[company.city,company.state].filter(Boolean).join(' — ')}</div>` : ''}
@@ -8416,33 +8402,45 @@ window.addEventListener('resize', () => {
 function renderMobileMenu() {
   const el = document.getElementById('mobile-menu-items');
   if (!el) return;
+  const t = 'toggleMobileMenu();';
+  // Mesmo visual do dropdown logado: ícone via .udrop-ico (18px) + classes udrop-*
+  const uico = (p) => '<svg class="udrop-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>';
   let html = '';
 
-  // (Reclamar não vai aqui — já existe o botão redondo vermelho fixo no header mobile)
-  const ico = (path) => `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
-
   if (currentUser) {
-    html += `<button class="mobile-menu-item" onclick="toggleMobileMenu();showPage('profile')">
-      ${ico('<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>')} Meu perfil
+    html += `<button class="udrop-item" onclick="${t}showPage('profile')">
+      ${uico('<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>')}Meu perfil
     </button>`;
-    if (currentUser.role === 'company' || currentUser.company_name) {
-      html += `<button class="mobile-menu-item" onclick="toggleMobileMenu();showPage('company')">
-        ${ico('<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>')} Minha empresa
-      </button>`;
+    html += `<button class="udrop-item" onclick="${t}showPage('compare')">
+      ${uico('<path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="m15 15 6 6"/><path d="M4 4l5 5"/>')}Comparar veículos
+    </button>`;
+    html += `<div class="udrop-divider"></div>`;
+    html += `<button class="udrop-item" onclick="${t}requireAuth()">
+      ${uico('<path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>')}Nova reclamação
+    </button>`;
+    if (currentUser?.email === ADMIN_EMAIL) {
+      html += `<div class="udrop-divider"></div><button class="udrop-item udrop-item-special" onclick="${t}showPage('admin')">${uico('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>')}Painel Admin</button>`;
     }
-  } else {
-    html += `<button class="mobile-menu-item" onclick="toggleMobileMenu();openAuth('login')">
-      ${ico('<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>')} Entrar
+    if (currentUser?.role === 'company') {
+      html += `<div class="udrop-divider"></div><button class="udrop-item udrop-item-special" onclick="${t}showPage('company')">${uico('<path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01"/><path d="M9 12v.01"/><path d="M9 15v.01"/><path d="M9 18v.01"/>')}Painel da Empresa</button>`;
+    }
+    if (currentUser?.role === 'lawyer') {
+      html += `<div class="udrop-divider"></div><button class="udrop-item udrop-item-special" onclick="${t}showPage('lawyer-panel')">${uico('<path d="M16 16l3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1z"/><path d="M2 16l3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>')}Painel do Advogado</button>`;
+    }
+    html += `<div class="udrop-divider"></div>`;
+    html += `<button class="udrop-item udrop-item-logout" onclick="${t}logout()">
+      ${uico('<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>')}Sair
     </button>`;
-  }
-
-  html += `<button class="mobile-menu-item" onclick="toggleMobileMenu();showPage('lawyers')">
-    ${ico('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>')} Advogados parceiros
-  </button>`;
-
-  if (currentUser) {
-    html += `<button class="mobile-menu-item danger" onclick="toggleMobileMenu();logout()">
-      ${ico('<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>')} Sair
+  } else {
+    html += `<button class="udrop-item" onclick="${t}openAuth('login')">
+      ${uico('<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>')}Entrar
+    </button>`;
+    html += `<button class="udrop-item" onclick="${t}showPage('compare')">
+      ${uico('<path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="m15 15 6 6"/><path d="M4 4l5 5"/>')}Comparar veículos
+    </button>`;
+    html += `<div class="udrop-divider"></div>`;
+    html += `<button class="udrop-item" onclick="${t}requireAuth()">
+      ${uico('<path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>')}Nova reclamação
     </button>`;
   }
 
@@ -10768,7 +10766,7 @@ function renderAllVehiclesGrid() {
     const hl = cardHighlight(v, rating);
     const resolved = Math.round(55 + rating * 5);
     const emoji = typeEmoji(v.type);
-    const verdict = (s.verdict || '').slice(0, 70) + ((s.verdict||'').length > 70 ? '…' : '');
+    const verdict = (s.verdict || '').slice(0, 160);
     return `
     <div class="vehicle-card" onclick="showVehicleProfileByBrandModel('${v.brand.replace(/'/g,"\\'")}','${v.model.replace(/'/g,"\\'")}')">
       <div class="vc-top">
