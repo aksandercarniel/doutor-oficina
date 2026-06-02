@@ -5134,7 +5134,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
       '<button type="button" onclick="openSuggestModal(this)" data-issue-id="' + issueId + '" data-issue-title="' + titleAttr + '" '
       + 'style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;border:1px dashed var(--orange);background:transparent;'
       + 'font-family:var(--font);font-size:11.5px;font-weight:600;color:var(--orange);cursor:pointer;transition:all .12s">'
-      + '<span style="font-size:11px">💡</span>Sugerir solução'
+      + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>Sugerir solução'
       + '</button>';
     return '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">'
       + pill('yes', '✓', 'Aconteceu comigo', yes)
@@ -5157,7 +5157,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
         + '</div>';
     }).join('');
     return '<div style="margin-top:10px;background:rgba(0,168,120,.06);border:1px solid rgba(0,168,120,.18);border-radius:8px;padding:10px 12px">'
-      + '<div style="font-family:var(--font);font-weight:700;font-size:12px;color:var(--green)">💡 Soluções da comunidade</div>'
+      + '<div style="font-family:var(--font);font-weight:700;font-size:12px;color:var(--green)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>Soluções da comunidade</div>'
       + items
       + '</div>';
   };
@@ -10554,7 +10554,7 @@ async function submitSuggestion() {
   } catch (e) {
     alert('Erro inesperado ao enviar a sugestão.');
   }
-  if (btn) { btn.disabled = false; btn.innerHTML = '💡 Enviar sugestão'; }
+  if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:5px"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>Enviar sugestão'; }
 }
 // ═════════════════════════════════════════════════════════════════
 
@@ -11417,7 +11417,7 @@ function togglePassword(inputId, btn) {
         <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:14px">Conhece um jeito de resolver <strong id="suggest-issue-title" style="color:var(--navy)"></strong>? Conta pra comunidade. Sua sugestão passa por revisão antes de aparecer.</p>
         <label class="form-label" for="suggest-text">Sua solução</label>
         <textarea id="suggest-text" class="form-textarea" placeholder="Ex: troquei a peça X na revisão e o problema sumiu…" style="min-height:120px;resize:vertical"></textarea>
-        <button class="btn-primary" style="width:100%;justify-content:center;margin-top:14px" onclick="submitSuggestion()">💡 Enviar sugestão</button>
+        <button class="btn-primary" style="width:100%;justify-content:center;margin-top:14px" onclick="submitSuggestion()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:5px"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/></svg>Enviar sugestão</button>
       </div>
       <div id="suggest-success" style="display:none;text-align:center;padding:14px 0">
         <div style="font-size:44px;margin-bottom:10px">✅</div>
