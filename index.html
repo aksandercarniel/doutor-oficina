@@ -4371,7 +4371,7 @@ function renderVehicleProfileSkeleton(v) {
           <div class="ic-sub">buscando…</div>
         </div>
         <button class="btn-primary" style="width:100%;justify-content:center" onclick="requireAuthForCurrentVehicle()">🚨 Reclamar deste veículo</button>
-        <button class="btn-secondary" style="width:100%;justify-content:center;margin-top:10px" onclick="emitirOpiniaoForCurrentVehicle()">💬 Emitir opinião sobre este veículo</button>
+        <button class="btn-secondary" style="width:100%;justify-content:center;margin-top:10px" onclick="emitirOpiniaoForCurrentVehicle()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Opinar sobre este veículo</button>
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:10px;padding:20px 0;color:var(--muted);font-size:13px">
@@ -5314,7 +5314,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + '<div class="ic-sub">' + (fipePrice && fipePrice.year ? 'Ano ' + fipePrice.year + ' · ' : '') + (fipePrice && fipePrice.ref ? fipePrice.ref : 'Referência atual') + '</div>'
     + '</div>'
     + '<button class="btn-primary" style="width:100%;justify-content:center" onclick="requireAuthForCurrentVehicle()">🚨 Reclamar deste veículo</button>'
-    + '<button class="btn-secondary" style="width:100%;justify-content:center;margin-top:10px" onclick="emitirOpiniaoForCurrentVehicle()">💬 Emitir opinião sobre este veículo</button>'
+    + '<button class="btn-secondary" style="width:100%;justify-content:center;margin-top:10px" onclick="emitirOpiniaoForCurrentVehicle()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Opinar sobre este veículo</button>'
     + '</div>'
     + '</div>'
 
