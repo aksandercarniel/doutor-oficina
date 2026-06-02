@@ -2117,14 +2117,18 @@ button[data-side="no"][data-on]{border-color:var(--red)!important;background:#ff
       </div>
     </div>
     <div class="profile-card">
-      <div class="pc-title"><span class="dot"></span>Minhas reclamações</div>
+      <div style="display:flex;gap:4px;border-bottom:2px solid var(--border);margin-bottom:14px;flex-wrap:wrap">
+        <button id="ptab-complaints" onclick="profileSwitchTab('complaints')" style="background:none;border:none;border-bottom:3px solid var(--navy);margin-bottom:-2px;padding:9px 16px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px;color:var(--navy)">Reclamações</button>
+        <button id="ptab-opinions" onclick="profileSwitchTab('opinions')" style="background:none;border:none;border-bottom:3px solid transparent;margin-bottom:-2px;padding:9px 16px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px;color:var(--muted)">Opiniões</button>
+        <button id="ptab-suggestions" onclick="profileSwitchTab('suggestions')" style="background:none;border:none;border-bottom:3px solid transparent;margin-bottom:-2px;padding:9px 16px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px;color:var(--muted)">Sugestões</button>
+      </div>
       <div class="my-complaints-list" id="my-complaints-list">
         <div style="color:var(--muted);font-size:14px;padding:12px 0">Você ainda não fez nenhuma reclamação.</div>
       </div>
-    </div>
-    <div class="profile-card">
-      <div class="pc-title"><span class="dot"></span>Minhas sugestões de solução</div>
-      <div id="my-suggestions-list" style="display:flex;flex-direction:column;gap:10px;padding:4px 0">
+      <div id="my-opinions-list" style="display:none;flex-direction:column;gap:10px;padding:4px 0">
+        <div style="color:var(--muted);font-size:14px;padding:12px 0">Você ainda não deu nenhuma opinião.</div>
+      </div>
+      <div id="my-suggestions-list" style="display:none;flex-direction:column;gap:10px;padding:4px 0">
         <div style="color:var(--muted);font-size:14px;padding:12px 0">Carregando…</div>
       </div>
     </div>
@@ -8373,14 +8377,10 @@ async function renderProfile() {
     if (resolvedLbl) resolvedLbl.textContent = respondidasCount === 1 ? 'Respondida' : 'Respondidas';
     if (votesLbl) votesLbl.textContent = votosTotal === 1 ? 'Voto recebido' : 'Votos recebidos';
 
-    // Renderiza lista de reclamações
-    const listEl = document.getElementById('my-complaints-list');
-    if (!listEl) return;
-    if (list.length === 0) {
-      listEl.innerHTML = '<div style="color:var(--muted);font-size:14px;padding:12px 0">Você ainda não fez nenhuma reclamação.</div>';
-      return;
-    }
-    listEl.innerHTML = list.map(c => `
+    // Separa por tipo e renderiza nas abas (reclamação x opinião)
+    const reclamacoes = list.filter(c => c.type !== 'opiniao');
+    const opinioes    = list.filter(c => c.type === 'opiniao');
+    const complaintCard = (c) => `
       <div onclick="showResolution('${c.id}')" style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:18px;margin-bottom:12px;cursor:pointer;transition:border-color .2s" onmouseover="this.style.borderColor='var(--navy)'" onmouseout="this.style.borderColor='var(--border)'">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:8px">
           <div>
@@ -8397,7 +8397,22 @@ async function renderProfile() {
           <span style="color:var(--navy);font-weight:700">Ver detalhes →</span>
         </div>
       </div>
-    `).join('');
+    `;
+    const opinionCard = (c) => `
+      <div onclick="showResolution('${c.id}')" style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:18px;margin-bottom:12px;cursor:pointer;transition:border-color .2s" onmouseover="this.style.borderColor='var(--navy)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px">${c.vehicle_brand || ''} ${c.vehicle_year ? '· ' + c.vehicle_year : ''}</div>
+        <div style="font-family:var(--font);font-weight:900;font-size:16px;color:var(--navy);line-height:1.2">${c.vehicle_model || ''}</div>
+        ${c.vehicle_version ? `<div style="font-size:12px;color:var(--muted);font-style:italic;margin-top:2px">${c.vehicle_version}</div>` : ''}
+        <div style="font-family:var(--font);font-weight:800;font-size:14px;color:var(--text);margin-top:8px">${c.title || 'Opinião'}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px;display:flex;justify-content:space-between">
+          <span>${c.created_at ? new Date(c.created_at).toLocaleDateString('pt-BR') : ''}</span>
+          <span style="color:var(--navy);font-weight:700">Ver detalhes →</span>
+        </div>
+      </div>`;
+    const cEl = document.getElementById('my-complaints-list');
+    if (cEl) cEl.innerHTML = reclamacoes.length ? reclamacoes.map(complaintCard).join('') : '<div style="color:var(--muted);font-size:14px;padding:12px 0">Você ainda não fez nenhuma reclamação.</div>';
+    const oEl = document.getElementById('my-opinions-list');
+    if (oEl) oEl.innerHTML = opinioes.length ? opinioes.map(opinionCard).join('') : '<div style="color:var(--muted);font-size:14px;padding:12px 0">Você ainda não deu nenhuma opinião.</div>';
   } catch(e) {
     console.error('Erro em renderProfile:', e);
   }
@@ -8407,7 +8422,7 @@ async function renderProfile() {
     const el = document.getElementById('my-suggestions-list');
     if (el) {
       const { data: mySugg } = await sb.from('solution_suggestions')
-        .select('suggestion, status, created_at, vehicle_issues ( issue_title, vehicle_brand, vehicle_model )')
+        .select('suggestion, status, created_at, vehicle_issues ( * )')
         .eq('user_id', String(currentUser.id))
         .order('created_at', { ascending: false });
       const list = mySugg || [];
@@ -8415,6 +8430,7 @@ async function renderProfile() {
         el.innerHTML = '<div style="color:var(--muted);font-size:14px;padding:12px 0">Você ainda não sugeriu nenhuma solução.</div>';
       } else {
         const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const escA = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
         const badge = (s) => s === 'approved'
           ? '<span style="font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:#e8f5e9;color:#16a34a">✅ Aprovada</span>'
           : (s === 'rejected'
@@ -8423,6 +8439,11 @@ async function renderProfile() {
         el.innerHTML = list.map(s => {
           const vi = s.vehicle_issues || {};
           const ctx = [vi.vehicle_brand, vi.vehicle_model].filter(Boolean).join(' ');
+          const fipe = vi.scope_fipe || vi.fipe_code || '';
+          const hasLink = !!(fipe || (vi.vehicle_brand && vi.vehicle_model));
+          const link = hasLink
+            ? '<a href="#" onclick="event.preventDefault();goToSuggestionVehicle(this)" data-fipe="' + escA(fipe) + '" data-brand="' + escA(vi.vehicle_brand) + '" data-model="' + escA(vi.vehicle_model) + '" data-vtype="' + escA(vi.vehicle_type) + '" style="font-size:12px;color:var(--navy);font-weight:700;text-decoration:none;margin-top:8px;display:inline-block">Ver no veículo →</a>'
+            : '';
           return '<div style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:14px 16px">'
             + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">'
             + '<div style="font-family:var(--font);font-weight:700;font-size:13.5px;color:var(--navy)">' + (vi.issue_title ? esc(vi.issue_title) : 'Sugestão') + '</div>'
@@ -8431,11 +8452,36 @@ async function renderProfile() {
             + (ctx ? '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">' + esc(ctx) + '</div>' : '')
             + '<div style="font-size:13px;color:var(--text2);line-height:1.5">' + esc(s.suggestion) + '</div>'
             + '<div style="font-size:11px;color:var(--muted);margin-top:6px">' + (s.created_at ? new Date(s.created_at).toLocaleDateString('pt-BR') : '') + '</div>'
+            + link
             + '</div>';
         }).join('');
       }
     }
   } catch (e) { console.error('Erro ao carregar sugestões:', e); }
+}
+
+// Alterna as abas do perfil (Reclamações / Opiniões / Sugestões)
+function profileSwitchTab(tab) {
+  const map = { complaints: 'my-complaints-list', opinions: 'my-opinions-list', suggestions: 'my-suggestions-list' };
+  Object.keys(map).forEach(k => {
+    const el = document.getElementById(map[k]);
+    if (el) el.style.display = (k === tab) ? 'flex' : 'none';
+  });
+  const tabStyle = (on) => `background:none;border:none;border-bottom:3px solid ${on?'var(--navy)':'transparent'};margin-bottom:-2px;padding:9px 16px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px;color:${on?'var(--navy)':'var(--muted)'}`;
+  const bc = document.getElementById('ptab-complaints'); if (bc) bc.style.cssText = tabStyle(tab === 'complaints');
+  const bo = document.getElementById('ptab-opinions'); if (bo) bo.style.cssText = tabStyle(tab === 'opinions');
+  const bs = document.getElementById('ptab-suggestions'); if (bs) bs.style.cssText = tabStyle(tab === 'suggestions');
+}
+
+// Abre o veículo onde a sugestão foi feita
+function goToSuggestionVehicle(a) {
+  if (!a || !a.getAttribute) return;
+  const fipe = a.getAttribute('data-fipe') || '';
+  const brand = a.getAttribute('data-brand') || '';
+  const model = a.getAttribute('data-model') || '';
+  const vtype = a.getAttribute('data-vtype') || '';
+  if (fipe) showVehicleProfileByFipe(fipe, { brand: brand, name: model, vehicleType: vtype });
+  else if (brand && model) showVehicleProfileByBrandModel(brand, model);
 }
 
 // ══════════════════════════════════════════
