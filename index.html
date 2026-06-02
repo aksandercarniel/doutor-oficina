@@ -4514,7 +4514,7 @@ async function loadKnownIssues(brand, model, fipeCode, year) {
     try {
       const ids = issues.map(i => i.id).filter(Boolean);
       if (ids.length) {
-        const myId = getOrCreateVoterId();
+        const myId = (currentUser && currentUser.id) ? String(currentUser.id) : null;
         const { data: vals } = await sb.from('issue_validations')
           .select('issue_id, vote, voter_id')
           .in('issue_id', ids);
@@ -4522,7 +4522,7 @@ async function loadKnownIssues(brand, model, fipeCode, year) {
         (vals || []).forEach(v => {
           const t = tally[v.issue_id] || (tally[v.issue_id] = { yes: 0, no: 0, mine: '' });
           if (v.vote === 'yes') t.yes++; else if (v.vote === 'no') t.no++;
-          if (v.voter_id === myId) t.mine = v.vote;
+          if (myId && v.voter_id === myId) t.mine = v.vote;
         });
         issues.forEach(i => {
           const t = tally[i.id] || { yes: 0, no: 0, mine: '' };
@@ -5126,7 +5126,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     const isProblem = issue && issue.severity && issue.severity !== 'positivo';
     const pill = (side, icon, txt, count) =>
       '<button type="button" onclick="voteIssue(this,\'' + issueId + '\',\'' + side + '\')" '
-      + 'data-side="' + side + '"' + (mine === side ? ' data-on="1"' : '') + ' '
+      + 'data-issue-id="' + issueId + '" data-side="' + side + '"' + (mine === side ? ' data-on="1"' : '') + ' '
       + 'style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;border:1px solid var(--border);background:transparent;'
       + 'font-family:var(--font);font-size:11.5px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .12s">'
       + '<span style="font-size:11px">' + icon + '</span>' + txt
@@ -9783,6 +9783,15 @@ function loginSuccess(user, opts) {
     _openSuggest(ps.issueId, ps.title);
     return;
   }
+  if (pendingVote) {
+    const pv = pendingVote;
+    pendingVote = null;
+    submitValidation(pv.issueId, pv.side).then(r => {
+      if (r && !r.success && r.error) alert(r.error);
+      refreshIssueVotes(pv.issueId);
+    });
+    return;
+  }
   // Redireciona por role só quando solicitado explicitamente (login/registro interativo)
   // Restore de sessão e skips de fluxo NÃO passam redirect:true (preservam página atual)
   if (opts && opts.redirect) {
@@ -9851,6 +9860,7 @@ document.addEventListener('click', function(e) {
 // Verifica se usuário logou, senão pede login antes de reclamar
 let pendingComplaint = false;
 let pendingSuggestion = null;
+let pendingVote = null;
 let pendingVehicleContext = null; // {brand, model, fipeBrandCode, fipeModelCode, type}
 let pendingModoOpiniao = false;   // lembra se o fluxo pendente é opinião (após login)
 let _currentVehicle = null; // veículo atualmente exibido no perfil
@@ -10434,7 +10444,8 @@ async function submitVote(fipeCode, rating, options = {}) {
 async function submitValidation(issueId, vote) {
   if (!issueId) return { success: false, error: 'Balão sem identificador.' };
   if (vote !== 'yes' && vote !== 'no') return { success: false, error: 'Voto inválido.' };
-  const voterId = getOrCreateVoterId();
+  if (!currentUser) return { success: false, error: 'Faça login para votar.' };
+  const voterId = String(currentUser.id);
   try {
     const { data: existing } = await sb.from('issue_validations')
       .select('id')
@@ -10457,39 +10468,69 @@ async function submitValidation(issueId, vote) {
   }
 }
 
-// Clique nas pílulas do balão: atualização otimista + reversão se der erro.
+// Remove o voto deste usuário num balão
+async function removeValidation(issueId) {
+  if (!issueId) return { success: false, error: 'Balão sem identificador.' };
+  if (!currentUser) return { success: false, error: 'Faça login para votar.' };
+  try {
+    const { error } = await sb.from('issue_validations')
+      .delete()
+      .eq('voter_id', String(currentUser.id))
+      .eq('issue_id', issueId);
+    if (error) return { success: false, error: 'Não foi possível remover o voto. (' + error.message + ')' };
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: 'Erro inesperado ao remover o voto.' };
+  }
+}
+
+// Relê as contagens reais do balão no banco e atualiza os 2 botões + o destaque.
+async function refreshIssueVotes(issueId) {
+  const anyBtn = document.querySelector('button[data-side][data-issue-id="' + issueId + '"]');
+  const row = anyBtn ? anyBtn.parentNode : null;
+  if (!row) return;
+  const yesBtn = row.querySelector('button[data-side="yes"]');
+  const noBtn  = row.querySelector('button[data-side="no"]');
+  if (!yesBtn || !noBtn) return;
+  try {
+    const { data: vals } = await sb.from('issue_validations')
+      .select('vote, voter_id')
+      .eq('issue_id', issueId);
+    let yes = 0, no = 0, mine = '';
+    const myId = (currentUser && currentUser.id) ? String(currentUser.id) : null;
+    (vals || []).forEach(v => {
+      if (v.vote === 'yes') yes++; else if (v.vote === 'no') no++;
+      if (myId && v.voter_id === myId) mine = v.vote;
+    });
+    const yEl = yesBtn.querySelector('.vb-count'); if (yEl) yEl.textContent = yes;
+    const nEl = noBtn.querySelector('.vb-count'); if (nEl) nEl.textContent = no;
+    yesBtn.removeAttribute('data-on'); noBtn.removeAttribute('data-on');
+    if (mine === 'yes') yesBtn.setAttribute('data-on', '1');
+    else if (mine === 'no') noBtn.setAttribute('data-on', '1');
+  } catch (e) { /* silencioso */ }
+}
+
+// Clique nas pílulas do balão: exige login; clicar no lado já marcado REMOVE o voto;
+// outro lado troca. A contagem e o destaque são relidos do banco (sem drift).
 async function voteIssue(btn, issueId, side) {
   if (!issueId) return;
+  if (!currentUser) { pendingVote = { issueId: issueId, side: side }; openAuth('login'); return; } // login obrigatório; reaplica após logar
   const row = btn.parentNode;
   const yesBtn = row.querySelector('button[data-side="yes"]');
   const noBtn  = row.querySelector('button[data-side="no"]');
   if (!yesBtn || !noBtn) return;
   const prevOn = row.querySelector('button[data-side][data-on]');
   const prevSide = prevOn ? prevOn.getAttribute('data-side') : null;
-  if (prevSide === side) return; // já votou nesse lado, nada a fazer
 
-  const getCount = (b) => parseInt(b.querySelector('.vb-count').textContent, 10) || 0;
-  const setCount = (b, n) => { b.querySelector('.vb-count').textContent = n; };
-  const yc = getCount(yesBtn), nc = getCount(noBtn);
-
-  // otimista: move o voto pro lado clicado
-  let newYes = yc, newNo = nc;
-  if (side === 'yes') { newYes = yc + 1; if (prevSide === 'no') newNo = Math.max(0, nc - 1); }
-  else { newNo = nc + 1; if (prevSide === 'yes') newYes = Math.max(0, yc - 1); }
-  yesBtn.removeAttribute('data-on'); noBtn.removeAttribute('data-on');
-  btn.setAttribute('data-on', '1');
-  setCount(yesBtn, newYes); setCount(noBtn, newNo);
   yesBtn.disabled = true; noBtn.disabled = true;
-
-  const res = await submitValidation(issueId, side);
-  yesBtn.disabled = false; noBtn.disabled = false;
-  if (!res.success) {
-    // reverte visual + contagens
-    yesBtn.removeAttribute('data-on'); noBtn.removeAttribute('data-on');
-    if (prevSide) { const pb = row.querySelector('button[data-side="' + prevSide + '"]'); if (pb) pb.setAttribute('data-on', '1'); }
-    setCount(yesBtn, yc); setCount(noBtn, nc);
+  const res = (prevSide === side)
+    ? await removeValidation(issueId)   // clicou no já marcado → remove
+    : await submitValidation(issueId, side); // registra ou troca
+  if (res && !res.success) {
     alert(res.error || 'Não foi possível registrar seu voto. Tente de novo.');
   }
+  await refreshIssueVotes(issueId);
+  yesBtn.disabled = false; noBtn.disabled = false;
 }
 
 
