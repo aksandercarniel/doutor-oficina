@@ -780,7 +780,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 }
 .vtype-btn:hover{border-color:var(--navy);color:var(--navy);background:var(--white)}
 .vtype-btn.active{border-color:var(--navy);background:var(--navy);color:#fff}
-.vtype-icon{display:block;font-size:26px;margin-bottom:6px}
+.vtype-icon{display:flex;justify-content:center;margin-bottom:6px}
 
 .form-actions{display:flex;gap:10px;margin-top:24px}
 .btn-submit{
@@ -1733,7 +1733,7 @@ button[data-side="no"][data-on]{border-color:var(--red)!important;background:#ff
     <button id="tab-all" onclick="filterSearchResults('all',this)" style="background:none;border:none;border-bottom:2px solid var(--navy);margin-bottom:-2px;padding:8px 20px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:13px;color:var(--navy)">Tudo</button>
     <button id="tab-complaints" onclick="filterSearchResults('complaints',this)" style="background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;padding:8px 20px;cursor:pointer;font-family:var(--font);font-weight:600;font-size:13px;color:var(--muted)">📋 Reclamações <span id="tab-complaints-count"></span></button>
     <button id="tab-companies" onclick="filterSearchResults('companies',this)" style="background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;padding:8px 20px;cursor:pointer;font-family:var(--font);font-weight:600;font-size:13px;color:var(--muted)">🏢 Empresas <span id="tab-companies-count"></span></button>
-    <button id="tab-vehicles" onclick="filterSearchResults('vehicles',this)" style="background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;padding:8px 20px;cursor:pointer;font-family:var(--font);font-weight:600;font-size:13px;color:var(--muted)">🚗 Veículos <span id="tab-vehicles-count"></span></button>
+    <button id="tab-vehicles" onclick="filterSearchResults('vehicles',this)" style="background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;padding:8px 20px;cursor:pointer;font-family:var(--font);font-weight:600;font-size:13px;color:var(--muted)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:5px;flex-shrink:0"><path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M15 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5"/></svg>Veículos <span id="tab-vehicles-count"></span></button>
   </div>
   <div id="search-results-grid"></div>
 </div>
@@ -2215,9 +2215,9 @@ button[data-side="no"][data-on]{border-color:var(--red)!important;background:#ff
         <div class="form-group">
           <label class="form-label">Tipo de veículo</label>
           <div class="vehicle-type-row" style="grid-template-columns:1fr 1fr 1fr">
-            <button class="vtype-btn active" onclick="selectVehicleType(this,'carros')"><span class="vtype-icon">🚗</span>Carro</button>
-            <button class="vtype-btn" onclick="selectVehicleType(this,'motos')"><span class="vtype-icon">🏍️</span>Moto</button>
-            <button class="vtype-btn" onclick="selectVehicleType(this,'caminhoes')"><span class="vtype-icon">🚚</span>Caminhão</button>
+            <button class="vtype-btn active" onclick="selectVehicleType(this,'carros')"><span class="vtype-icon"><svg class="vehicle-icon-svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M15 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M3 17v-4a2 2 0 0 1 2 -2h1l3 -5h6l3 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-3 0l-3 -5"/></svg></span>Carro</button>
+            <button class="vtype-btn" onclick="selectVehicleType(this,'motos')"><span class="vtype-icon"><svg class="vehicle-icon-svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 16a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M16 16a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M7.5 14h5l4 -4h-10.5m1.5 4l4 -4"/><path d="M13 6h2l1.5 3l2 4"/></svg></span>Moto</button>
+            <button class="vtype-btn" onclick="selectVehicleType(this,'caminhoes')"><span class="vtype-icon"><svg class="vehicle-icon-svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M15 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M5 17h-2v-11a1 1 0 0 1 1 -1h9v12m-4 0h6m4 0h2v-6h-8m0 -5h5l3 5"/></svg></span>Caminhão</button>
           </div>
         </div>
         <div class="form-row">
@@ -6472,7 +6472,7 @@ function showSmartSuggestions(val) {
   const pMatches = getSearchData().filter(s => s.type === 'problem' && s.label.toLowerCase().includes(valLower)).slice(0,3);
 
   if (vMatches.length) {
-    html += `<div class="sug-section">🚗 Veículos</div>`;
+    html += `<div class="sug-section"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:5px;flex-shrink:0"><path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M15 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5"/></svg>Veículos</div>`;
     vMatches.forEach(v => {
       sugItems.push({
         action: 'fipe-direct',
@@ -6610,7 +6610,7 @@ function renderFipeSuggestions(val, results, append = false) {
 
   let html = append ? content.innerHTML : '';
   if (append && html) html += '<div class="sug-divider"></div>';
-  html += `<div class="sug-section">🚗 Modelos FIPE</div>`;
+  html += `<div class="sug-section"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:5px;flex-shrink:0"><path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M15 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5"/></svg>Modelos FIPE</div>`;
 
   results.slice(0, 10).forEach(r => {
     const label = r.model ? `${r.brand} ${r.model}` : r.brand;
@@ -6833,7 +6833,7 @@ function renderSearchList(tab) {
 
   // Veículos
   if (tab === 'all' || tab === 'vehicles') {
-    if (tab === 'all' && allVehicles.length) html += `<div style="font-family:var(--font);font-weight:900;font-size:12px;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;padding:20px 0 10px;border-bottom:1px solid var(--border)">🚗 Veículos</div>`;
+    if (tab === 'all' && allVehicles.length) html += `<div style="font-family:var(--font);font-weight:900;font-size:12px;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px;padding:20px 0 10px;border-bottom:1px solid var(--border)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:5px;flex-shrink:0"><path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M15 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5"/></svg>Veículos</div>`;
     allVehicles.forEach(r => {
       const idx = sugItems.length;
       if (r._mock) sugItems.push({ action:'vehicle', id:r.id, label:`${r.brand} ${r.name}` });
@@ -7734,7 +7734,7 @@ async function openCompanyProfile(companyName) {
             <div style="flex:1;min-width:0">
               <div style="font-family:var(--font);font-weight:800;font-size:16px;color:var(--navy);margin-bottom:4px">${c.title}</div>
               <div style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-                <span>🚗 ${c.vehicle_brand||''} ${c.vehicle_model||''} ${c.vehicle_year||''}</span>
+                <span><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:5px;flex-shrink:0"><path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M15 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5"/></svg>${c.vehicle_brand||''} ${c.vehicle_model||''} ${c.vehicle_year||''}</span>
                 ${c.category ? `<span style="background:var(--bg2);padding:1px 8px;border-radius:10px">${c.category}</span>` : ''}
                 ${c.state ? `<span>📍 ${c.state}</span>` : ''}
               </div>
@@ -9224,7 +9224,7 @@ function renderMediationLawyerList(complaintId, complaint, lawyers) {
         <div style="flex:1">
           <div style="font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">⚖️ Solicitar Mediação</div>
           <h2 style="font-family:var(--font);font-weight:900;font-size:22px;color:var(--navy);margin:0 0 8px">${complaint?.title || 'Reclamação'}</h2>
-          <div style="font-size:13px;color:var(--muted)">🚗 ${complaint?.vehicle_brand||''} ${complaint?.vehicle_model||''} ${complaint?.vehicle_year||''}</div>
+          <div style="font-size:13px;color:var(--muted)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:5px;flex-shrink:0"><path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M15 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5"/></svg>${complaint?.vehicle_brand||''} ${complaint?.vehicle_model||''} ${complaint?.vehicle_year||''}</div>
         </div>
         <div style="background:var(--orange-light);border:1px solid #fed7aa;border-radius:12px;padding:16px;min-width:200px">
           <div style="font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Como funciona</div>
@@ -9279,7 +9279,7 @@ async function confirmMediationRequest(complaintId, lawyerId, lawyerName, lawyer
         </div>
         <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Reclamação</div>
         <div style="font-family:var(--font);font-weight:700;font-size:15px;color:var(--navy);margin-bottom:4px">${complaint?.title || ''}</div>
-        <div style="font-size:13px;color:var(--muted)">🚗 ${complaint?.vehicle_brand||''} ${complaint?.vehicle_model||''}</div>
+        <div style="font-size:13px;color:var(--muted)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:5px;flex-shrink:0"><path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M15 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5"/></svg>${complaint?.vehicle_brand||''} ${complaint?.vehicle_model||''}</div>
       </div>
 
       <!-- Valores -->
@@ -9431,7 +9431,7 @@ async function openMediationChannel(mediationId) {
               <div>
                 <div style="font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">⚖️ Canal de Mediação</div>
                 <h2 style="font-family:var(--font);font-weight:900;font-size:20px;color:var(--navy);margin:0 0 4px">${complaint?.title || 'Reclamação'}</h2>
-                <div style="font-size:13px;color:var(--muted)">🚗 ${complaint?.vehicle_brand||''} ${complaint?.vehicle_model||''}</div>
+                <div style="font-size:13px;color:var(--muted)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:5px;flex-shrink:0"><path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M15 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5"/></svg>${complaint?.vehicle_brand||''} ${complaint?.vehicle_model||''}</div>
               </div>
               <span style="font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;background:${statusColor[med.status]||'#e5e7eb'}22;color:${statusColor[med.status]||'#6b7280'};border:1px solid ${statusColor[med.status]||'#e5e7eb'}44">${statusMap[med.status]||med.status}</span>
             </div>
@@ -9485,7 +9485,7 @@ async function openMediationChannel(mediationId) {
                 <div style="font-size:11px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Detalhes do caso</div>
                 <div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
                   <div style="display:flex;gap:8px;flex-wrap:wrap">
-                    <span style="background:var(--bg2);padding:3px 10px;border-radius:8px;font-weight:600">🚗 ${complaint?.vehicle_brand||''} ${complaint?.vehicle_model||''} ${complaint?.vehicle_year||''}</span>
+                    <span style="background:var(--bg2);padding:3px 10px;border-radius:8px;font-weight:600"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:5px;flex-shrink:0"><path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M15 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5"/></svg>${complaint?.vehicle_brand||''} ${complaint?.vehicle_model||''} ${complaint?.vehicle_year||''}</span>
                     ${complaint?.category ? `<span style="background:var(--bg2);padding:3px 10px;border-radius:8px;font-weight:600">${complaint.category}</span>` : ''}
                     ${complaint?.state ? `<span style="background:var(--bg2);padding:3px 10px;border-radius:8px;font-weight:600">📍 ${complaint.state}</span>` : ''}
                     ${complaint?.km ? `<span style="background:var(--bg2);padding:3px 10px;border-radius:8px;font-weight:600">📏 ${Number(complaint.km).toLocaleString('pt-BR')} km</span>` : ''}
