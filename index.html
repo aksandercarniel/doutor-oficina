@@ -3609,6 +3609,34 @@ function cardHighlight(v, rating){
            text:(worst ? worst.issue_title : 'Verificar manual') };
 }
 
+// Card de veículo compartilhado (ranking + lista de versões), pra nunca descolar.
+// opts: onClick, name, showVerdict (def true), showHighlight (def true), fipeElId.
+function vehicleCardHtml(v, opts) {
+  opts = opts || {};
+  const s = v.summary;
+  const rating = parseFloat(s.reliability_score) || 0;
+  const emoji = v.type === 'moto' ? '🏍️' : v.type === 'caminhao' ? '🚚' : '🚗';
+  const name = (opts.name != null) ? opts.name : v.model;
+  const onClick = opts.onClick || ("showVehicleProfileByBrandModel('" + String(v.brand).replace(/'/g, "\\'") + "','" + String(v.model).replace(/'/g, "\\'") + "')");
+  const showVerdict = opts.showVerdict !== false;
+  const showHighlight = opts.showHighlight !== false;
+  const safeKey = (v.brand + '-' + v.model).replace(/[^a-zA-Z0-9-]/g, '_');
+  const fipeElId = opts.fipeElId || ('fipe-card-' + safeKey);
+  let h = '<div class="vehicle-card" onclick="' + onClick + '">';
+  h += '<div class="vc-top"><div style="display:flex;align-items:center;gap:8px"><span class="vc-emoji">' + vehicleIcon(emoji, v.model) + '</span><div class="vc-name">' + name + '</div></div><span class="vc-badge badge-blue">✓ Raio-X</span></div>';
+  h += '<div class="vc-brand">' + v.brand + '</div>';
+  if (showVerdict) h += '<div class="vc-version">' + (s.verdict || '').slice(0, 160) + '</div>';
+  h += '<div class="vc-rating-velocimetro">' + renderDoxcoreVelocimetro(rating, 'medium') + '</div>';
+  h += '<div class="vc-divider"></div>';
+  if (showHighlight) {
+    const hl = cardHighlight(v, rating);
+    h += '<div class="vc-info-grid"><div class="vc-info-item" style="grid-column:1/-1"><span class="vc-info-label">' + hl.icon + ' ' + hl.label + '</span><span class="vc-info-value ' + hl.cls + '">' + hl.text + '</span></div></div>';
+  }
+  h += '<div class="vc-price"><span class="price-label">Tabela FIPE</span><span class="price-loading" id="' + fipeElId + '">carregando…</span></div>';
+  h += '</div>';
+  return h;
+}
+
 async function renderRanking(){
   const grid = document.getElementById('ranking-grid');
   if (!grid) return;
@@ -4058,22 +4086,36 @@ function _rootVersionButtons(indices) {
   if (!indices.length) {
     return '<div style="color:var(--muted,#6b7280);padding:8px 0">Nenhuma versão cadastrada ainda.</div>';
   }
-  return '<div style="display:flex;flex-direction:column;gap:10px">' + indices.map(i => {
+  let h = '<div class="ranking-grid">';
+  indices.forEach(i => {
     const s = _rootData.versions[i];
     const ver = s.version || '';
     const ano = s.year_start || '';
-    // Rótulo: versão se houver; senão o nome do modelo. Sublinha ano OU fipe.
-    const nome = _rootEsc(ver || s.vehicle_model);
-    const sub = ano ? ' · ' + _rootEsc(ano) : (s.fipe_code ? ' · FIPE ' + _rootEsc(s.fipe_code) : '');
-    const nota = (s.reliability_score != null && !isNaN(parseFloat(s.reliability_score)))
-      ? '<span style="font-weight:700;color:var(--navy,#1e3a5f)">' + parseFloat(s.reliability_score).toFixed(1) + '</span><span style="color:var(--muted,#6b7280);font-size:12px"> Doxcore</span>'
-      : '<span style="color:var(--muted,#6b7280);font-size:13px">sem nota</span>';
-    return '<button onclick="openRootVersion(' + i + ')" ' +
-      'style="display:flex;justify-content:space-between;align-items:center;gap:12px;text-align:left;' +
-      'padding:14px 16px;border:1px solid var(--line,#e5e7eb);border-radius:12px;background:var(--card,#fff);' +
-      'cursor:pointer;font-size:15px;width:100%">' +
-      '<span>' + nome + sub + '</span><span>' + nota + '</span></button>';
-  }).join('') + '</div>';
+    const nome = _rootEsc((ver || s.vehicle_model) + (ano ? ' · ' + ano : ''));
+    const v = { brand: s.vehicle_brand, model: s.vehicle_model, type: s.vehicle_type, summary: s, issues: [] };
+    h += vehicleCardHtml(v, { onClick: 'openRootVersion(' + i + ')', name: nome, showVerdict: false, showHighlight: false, fipeElId: 'fipe-ver-' + i });
+  });
+  h += '</div>';
+  setTimeout(() => _loadVersionFipe(indices), 0);
+  return h;
+}
+
+// Preenche a FIPE de cada card de versão pelo fipe_code próprio (fila com pausa).
+async function _loadVersionFipe(indices) {
+  const typeMap = { moto: 'motos', caminhao: 'caminhoes' };
+  for (let k = 0; k < indices.length; k++) {
+    const s = _rootData && _rootData.versions[indices[k]];
+    const el = document.getElementById('fipe-ver-' + indices[k]);
+    if (!s || !el) continue;
+    if (!s.fipe_code) { el.className = 'price-val'; el.textContent = '—'; continue; }
+    const vObj = { fipe_code: s.fipe_code, fipeType: (typeMap[s.vehicle_type] || 'carros'), year: s.year_start, model_year: s.year_start };
+    try {
+      const result = await loadFipePriceForVehicle(vObj);
+      el.className = 'price-val';
+      el.textContent = result ? (result.isRange ? ('De ' + result.price + ' até ' + result.priceMax) : (result.price || '—')) : '—';
+    } catch (e) { el.className = 'price-val'; el.textContent = '—'; }
+    if (k < indices.length - 1) await new Promise(r => setTimeout(r, 200));
+  }
 }
 
 // Render principal: cabeçalho + seletor (gerações OU versões direto).
