@@ -770,7 +770,7 @@ footer{background:#fff;border-top:1px solid var(--border);padding:24px 24px;marg
 }
 .cat-btn:hover{border-color:var(--navy);color:var(--navy);background:var(--white)}
 .cat-btn.active{border-color:var(--navy);background:var(--navy);color:#fff}
-.cat-icon{display:block;font-size:18px;margin-bottom:4px}
+.cat-icon{display:flex;justify-content:center;margin-bottom:4px}
 
 .vehicle-type-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
 .vtype-btn{
@@ -2264,15 +2264,15 @@ button[data-side="no"][data-on]{border-color:var(--red)!important;background:#ff
         <div class="form-group">
           <label class="form-label">Categoria do problema</label>
           <div class="category-grid">
-            <button class="cat-btn" onclick="selectCat(this,'Motor/Mecânica')"><span class="cat-icon">⚙️</span>Motor</button>
-            <button class="cat-btn" onclick="selectCat(this,'Elétrica')"><span class="cat-icon">⚡</span>Elétrica</button>
-            <button class="cat-btn" onclick="selectCat(this,'Freios')"><span class="cat-icon">🛑</span>Freios</button>
-            <button class="cat-btn" onclick="selectCat(this,'Suspensão')"><span class="cat-icon">🔧</span>Suspensão</button>
-            <button class="cat-btn" onclick="selectCat(this,'Câmbio')"><span class="cat-icon">⚙️</span>Câmbio</button>
-            <button class="cat-btn" onclick="selectCat(this,'Funilaria')"><span class="cat-icon">🎨</span>Funilaria</button>
-            <button class="cat-btn" onclick="selectCat(this,'Ar-condicionado')"><span class="cat-icon">❄️</span>Ar-cond.</button>
-            <button class="cat-btn" onclick="selectCat(this,'Concessionária')"><span class="cat-icon">🏢</span>Concession.</button>
-            <button class="cat-btn" onclick="selectCat(this,'Outro')"><span class="cat-icon">📋</span>Outro</button>
+            <button class="cat-btn" onclick="selectCat(this,'Motor/Mecânica')"><span class="cat-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="17" r="2"/><path d="M11.2 15.4 8 8"/><path d="M12.8 15.4 16 8"/><rect x="4.5" y="4" width="6" height="4" rx="1" transform="rotate(-22 7.5 6)"/><rect x="13.5" y="4" width="6" height="4" rx="1" transform="rotate(22 16.5 6)"/></svg></span>Motor</button>
+            <button class="cat-btn" onclick="selectCat(this,'Elétrica')"><span class="cat-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg></span>Elétrica</button>
+            <button class="cat-btn" onclick="selectCat(this,'Freios')"><span class="cat-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg></span>Freios</button>
+            <button class="cat-btn" onclick="selectCat(this,'Suspensão')"><span class="cat-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h14"/><path d="M5 20h14"/><path d="M7 5c10 1 10 3.5 0 4.7c10 1.2 10 3.5 0 4.7c10 1.2 10 3.4 0 4.6"/></svg></span>Suspensão</button>
+            <button class="cat-btn" onclick="selectCat(this,'Câmbio')"><span class="cat-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span>Câmbio</button>
+            <button class="cat-btn" onclick="selectCat(this,'Funilaria')"><span class="cat-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14,15h2m4,5V4a1,1,0,0,0-1-1H12.41a1,1,0,0,0-.7.29L4.29,10.71a1,1,0,0,0-.29.7V20a1,1,0,0,0,1,1H19A1,1,0,0,0,20,20ZM4.1,11H20"/></svg></span>Funilaria</button>
+            <button class="cat-btn" onclick="selectCat(this,'Ar-condicionado')"><span class="cat-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="2" x2="22" y1="12" y2="12"/><line x1="12" x2="12" y1="2" y2="22"/><path d="m20 16-4-4 4-4"/><path d="m4 8 4 4-4 4"/><path d="m16 4-4 4-4-4"/><path d="m8 20 4-4 4 4"/></svg></span>Ar-cond.</button>
+            <button class="cat-btn" onclick="selectCat(this,'Concessionária')"><span class="cat-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="16" height="20" x="4" y="2" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg></span>Concession.</button>
+            <button class="cat-btn" onclick="selectCat(this,'Outro')"><span class="cat-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg></span>Outro</button>
           </div>
         </div>
         <div class="form-group" style="margin-top:4px">
@@ -7273,7 +7273,7 @@ async function openComplaintDetail(complaintId) {
           <div class="split-card">
             <h2 style="font-family:var(--font);font-weight:900;font-size:26px;color:var(--navy);margin:0 0 10px;line-height:1.2">${complaint.title}</h2>
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
-              ${complaint.state ? `<span style="font-size:13px;color:var(--muted)">📍 ${complaint.state}</span>` : ''}
+              ${complaint.state ? `<span style="font-size:13px;color:var(--muted)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>${complaint.state}</span>` : ''}
               <span style="font-size:13px;color:var(--muted)">📅 ${date}</span>
             </div>
             <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
@@ -7673,7 +7673,7 @@ async function openCompanyProfile(companyName) {
           </div>
           <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px">
             ${company?.cnpj ? `<div style="font-size:13px;color:var(--muted)">📋 CNPJ: ${company.cnpj}</div>` : ''}
-            ${company?.city||company?.state ? `<div style="font-size:13px;color:var(--muted)">📍 ${[company.city,company.state].filter(Boolean).join(' — ')}</div>` : ''}
+            ${company?.city||company?.state ? `<div style="font-size:13px;color:var(--muted)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>${[company.city,company.state].filter(Boolean).join(' — ')}</div>` : ''}
             ${company?.phone ? `<div style="font-size:13px;color:var(--muted)">📞 ${company.phone}</div>` : ''}
             ${company?.email ? `<div style="font-size:13px;color:var(--muted)">✉️ ${company.email}</div>` : ''}
           </div>
@@ -7736,7 +7736,7 @@ async function openCompanyProfile(companyName) {
               <div style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap">
                 <span><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:5px;flex-shrink:0"><path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M15 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5"/></svg>${c.vehicle_brand||''} ${c.vehicle_model||''} ${c.vehicle_year||''}</span>
                 ${c.category ? `<span style="background:var(--bg2);padding:1px 8px;border-radius:10px">${c.category}</span>` : ''}
-                ${c.state ? `<span>📍 ${c.state}</span>` : ''}
+                ${c.state ? `<span><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>${c.state}</span>` : ''}
               </div>
             </div>
             <span style="font-size:11px;font-weight:700;white-space:nowrap;padding:4px 12px;border-radius:20px;background:${statusBg[st]||'#fef2f2'};color:${statusCol[st]||'#dc2626'};flex-shrink:0">${statusMap[st]||'🔴 Não respondida'}</span>
@@ -8098,7 +8098,7 @@ async function loadCompanyComplaints(status='open') {
     list.innerHTML = data.map(c => `
       <div style="background:var(--white);border:1.5px solid ${isBrand ? 'var(--orange)' : isOpiniao ? 'var(--navy)' : 'var(--border)'};border-radius:16px;padding:20px;cursor:pointer" onclick="${isOpiniao ? `openComplaintDetail('${c.id}')` : `showResolution('${c.id}')`}">
         ${isBrand ? `<div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:8px;display:flex;align-items:center;gap:6px">⚠️ Reclamação não vinculada à sua empresa — cliente não informou o nome</div>` : ''}
-        ${isOpiniao ? `<div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px;display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Opinião sobre o produto — sem fluxo de resolução</div>` : ''}
+        ${isOpiniao ? `<div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px;display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Opinião sobre o produto — sem fluxo de resolução</div>` : ''}
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;flex-wrap:wrap;gap:8px">
           <div>
             <div style="font-size:12px;color:var(--muted);margin-bottom:4px">${c.vehicle_brand||''} ${c.vehicle_model||''} ${c.vehicle_year||''}</div>
@@ -9487,7 +9487,7 @@ async function openMediationChannel(mediationId) {
                   <div style="display:flex;gap:8px;flex-wrap:wrap">
                     <span style="background:var(--bg2);padding:3px 10px;border-radius:8px;font-weight:600"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:5px;flex-shrink:0"><path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M15 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5"/></svg>${complaint?.vehicle_brand||''} ${complaint?.vehicle_model||''} ${complaint?.vehicle_year||''}</span>
                     ${complaint?.category ? `<span style="background:var(--bg2);padding:3px 10px;border-radius:8px;font-weight:600">${complaint.category}</span>` : ''}
-                    ${complaint?.state ? `<span style="background:var(--bg2);padding:3px 10px;border-radius:8px;font-weight:600">📍 ${complaint.state}</span>` : ''}
+                    ${complaint?.state ? `<span style="background:var(--bg2);padding:3px 10px;border-radius:8px;font-weight:600"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>${complaint.state}</span>` : ''}
                     ${complaint?.km ? `<span style="background:var(--bg2);padding:3px 10px;border-radius:8px;font-weight:600">📏 ${Number(complaint.km).toLocaleString('pt-BR')} km</span>` : ''}
                   </div>
                   ${complaint?.company_name ? `
@@ -10855,10 +10855,10 @@ function _renderComplaintCards(targetId, list, opts = {}) {
     subParts.push(`<span>${c.model}</span>`);
     const sub = subParts.join('<span class="cra-sub-sep">·</span>');
     const loc = c.city && c.state ? `${c.city}, ${c.state}` : (c.state || '');
-    const locHtml = loc ? `<span class="cra-foot-sep">·</span><span class="cra-foot-item">📍 ${loc}</span>` : '';
+    const locHtml = loc ? `<span class="cra-foot-sep">·</span><span class="cra-foot-item"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>${loc}</span>` : '';
     const voted = votedIds.includes(id) ? 'voted' : '';
     const badgeHtml = isOpiniao
-      ? `<span style="font-size:11px;font-weight:700;padding:3px 12px;border-radius:20px;background:#eef2f7;color:var(--navy);display:inline-flex;align-items:center;gap:4px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Opinião</span>`
+      ? `<span style="font-size:11px;font-weight:700;padding:3px 12px;border-radius:20px;background:#eef2f7;color:var(--navy);display:inline-flex;align-items:center;gap:4px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Opinião</span>`
       : `<span style="font-size:11px;font-weight:700;padding:3px 12px 3px 4px;border-radius:20px;background:${({'s-open':'#fef2f2','s-progress':'#eff6ff','s-replied':'#fef3c7','s-resolved':'#f0fdf4','s-unresolved':'#fff7ed'}[c.status]||'#fef2f2')};color:${({'s-open':'#dc2626','s-progress':'#2563eb','s-replied':'#d97706','s-resolved':'#16a34a','s-unresolved':'#ea580c'}[c.status]||'#dc2626')};display:inline-flex;align-items:center;gap:4px">${statusFace(c.status,16)}${c.statusLabel}</span>`;
     return `
     <div class="complaint-card-ra" onclick="openComplaintDetail('${id}')">
@@ -10954,7 +10954,7 @@ function buildComplaintCardHtml(c, i) {
   subParts.push(`<span>${c.model}</span>`);
   const sub = subParts.join('<span class="cra-sub-sep">·</span>');
   const loc = c.city && c.state ? `${c.city}, ${c.state}` : (c.state || '');
-  const locHtml = loc ? `<span class="cra-foot-sep">·</span><span class="cra-foot-item">📍 ${loc}</span>` : '';
+  const locHtml = loc ? `<span class="cra-foot-sep">·</span><span class="cra-foot-item"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>${loc}</span>` : '';
   const voted = votedIds.includes(id) ? 'voted' : '';
   return `
     <div class="complaint-card-ra" onclick="openComplaintDetail('${id}')">
