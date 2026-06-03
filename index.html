@@ -7750,17 +7750,13 @@ function renderDoxcareRoda(score) {
     ? '<path d="M 224.87 82.64 A 187 187 0 0 1 455.13 82.64 L 394.79 159.87 A 89 89 0 0 0 285.21 159.87 Z" fill="none" stroke="' + d + '" stroke-width="4.5" stroke-linejoin="round"/>'
     : '';
 
-  // wordmark Doxcare curvado embaixo, acompanhando o círculo (Dox cinza + care azul bold)
-  var uid = 'd' + Math.random().toString(36).slice(2, 8);
+  // wordmark Doxcare reto, centralizado abaixo da roda (Dox cinza + care azul bold)
   var brand =
-    '<defs><path id="doxArc_' + uid + '" d="M 291.80 298.80 A 84 84 0 0 1 388.20 298.80" fill="none"/></defs>' +
-    '<text font-family="var(--font),sans-serif" font-size="18" letter-spacing="0.3">' +
-      '<textPath href="#doxArc_' + uid + '" xlink:href="#doxArc_' + uid + '" startOffset="50%" text-anchor="middle">' +
-        '<tspan fill="#4b5563" font-weight="400">Dox</tspan><tspan fill="#185fa5" font-weight="800">care</tspan>' +
-      '</textPath>' +
+    '<text x="340" y="433" text-anchor="middle" font-family="var(--font),sans-serif" font-size="19" letter-spacing="0.2">' +
+      '<tspan fill="#4b5563" font-weight="400">Dox</tspan><tspan fill="#185fa5" font-weight="800">care</tspan>' +
     '</text>';
 
-  return '<svg viewBox="120 -5 440 440" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" role="img" aria-label="Avaliação Doxcare: ' +
+  return '<svg viewBox="120 -5 440 452" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" role="img" aria-label="Avaliação Doxcare: ' +
       (hasScore ? word + ', nota ' + nstr : 'sem avaliações') + '" style="width:100%;height:auto;display:block">' +
     (word ? '<text x="340" y="32" text-anchor="middle" font-family="var(--font),sans-serif" font-size="42" font-weight="700" fill="' + d + '">' + word + '</text>' : '') +
     '<g transform="rotate(' + f2(rot) + ' ' + Cx + ' ' + Cy + ')">' + wedges + '</g>' +
