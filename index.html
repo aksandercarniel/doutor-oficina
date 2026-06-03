@@ -535,10 +535,12 @@ header{
    pílula+avaliações em posição constante no meio (não desloca com nome),
    stats alinhados à esquerda no rodapé. */
 .mfr-card{display:flex;flex-direction:column;height:100%;padding:18px 16px}
-.mfr-card-head{display:flex;flex-direction:column;gap:3px;width:100%;min-width:0;height:70px;overflow:hidden}
+.mfr-card-head{display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0;flex:1;overflow:hidden}
 .mfr-card-name{font-family:var(--font);font-weight:900;font-size:13px;color:var(--navy);line-height:1.25;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis}
 /* Avatar grande no centro — espaço reservado pro logo da montadora futuro */
-.mfr-card-logo{display:flex;justify-content:center;padding:0 0 22px}
+.mfr-card-id{display:flex;align-items:center;gap:12px;width:100%;padding:0 0 14px}
+.mfr-card .mfr-logo-circle{width:52px;height:52px;font-size:22px}
+.mfr-card .mfr-logo-circle .mfr-chip-verified{width:15px;height:15px;font-size:9px;bottom:0;right:0}
 .mfr-logo-circle{position:relative;width:80px;height:80px;border-radius:50%;background:var(--navy);color:#fff;font-family:var(--font);font-weight:700;font-size:34px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .mfr-logo-circle .mfr-chip-verified{width:20px;height:20px;font-size:11px;bottom:3px;right:3px;border-width:2px}
 /* Nota Doxcare abaixo do logo, centralizada, reduzida ~50% (só no card de marca) */
@@ -3919,12 +3921,12 @@ function _paintMarcas() {
     const _numHtml = _hasNps ? (_npsTxt + '<span class="mfr-doxslash" style="color:' + _dox.s + '">/10</span>') : '—';
     return `
     <div class="vehicle-card mfr-card" onclick="openCompanyProfile('${safeName}')">
-      <div class="mfr-card-logo">
+      <div class="mfr-card-id">
         <span class="mfr-logo-circle">${initial}${verified}</span>
-      </div>
-      <div class="mfr-card-head">
-        <div class="mfr-card-name" title="${c.name}">${c.name}</div>
-        <div class="vc-brand">MONTADORA</div>
+        <div class="mfr-card-head">
+          <div class="mfr-card-name" title="${c.name}">${c.name}</div>
+          <div class="vc-brand">MONTADORA</div>
+        </div>
       </div>
       <div class="mfr-card-score">
         ${_hasNps
@@ -7727,13 +7729,11 @@ function renderDoxcareRoda(score) {
   var L = !hasScore ? 0 : (v >= 8.1 ? 5 : v >= 6.1 ? 4 : v >= 4.1 ? 3 : v >= 2.1 ? 2 : 1);
   var rot = hasScore ? -(L - 1) * 72 : 0;
 
-  // fatias + raios (giram juntos)
-  var wedges = '', spokes = '';
+  // fatias (giram juntas; sem divisórias — coladas)
+  var wedges = '';
   for (var k = 0; k < 5; k++) {
     var fill = hasScore ? LV[k].fb : '#e5e7eb';
     wedges += '<path d="' + sector(base(k) - 36, base(k) + 36) + '" fill="' + fill + '"/>';
-    var b = base(k) + 36, a = px(Ri, b), c = px(Ro, b);
-    spokes += '<line x1="' + f2(a[0]) + '" y1="' + f2(a[1]) + '" x2="' + f2(c[0]) + '" y2="' + f2(c[1]) + '" stroke="#ffffff" stroke-width="3"/>';
   }
   // carinhas (em pé, fora do giro)
   var faces = '';
@@ -7750,13 +7750,24 @@ function renderDoxcareRoda(score) {
     ? '<path d="M 224.87 82.64 A 187 187 0 0 1 455.13 82.64 L 394.79 159.87 A 89 89 0 0 0 285.21 159.87 Z" fill="none" stroke="' + d + '" stroke-width="4.5" stroke-linejoin="round"/>'
     : '';
 
-  return '<svg viewBox="120 -5 440 440" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Avaliação Doxcare: ' +
+  // wordmark Doxcare curvado embaixo, acompanhando o círculo (Dox cinza + care azul bold)
+  var uid = 'd' + Math.random().toString(36).slice(2, 8);
+  var brand =
+    '<defs><path id="doxArc_' + uid + '" d="M 291.80 298.80 A 84 84 0 0 1 388.20 298.80" fill="none"/></defs>' +
+    '<text font-family="var(--font),sans-serif" font-size="18" letter-spacing="0.3">' +
+      '<textPath href="#doxArc_' + uid + '" xlink:href="#doxArc_' + uid + '" startOffset="50%" text-anchor="middle">' +
+        '<tspan fill="#4b5563" font-weight="400">Dox</tspan><tspan fill="#185fa5" font-weight="800">care</tspan>' +
+      '</textPath>' +
+    '</text>';
+
+  return '<svg viewBox="120 -5 440 440" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" role="img" aria-label="Avaliação Doxcare: ' +
       (hasScore ? word + ', nota ' + nstr : 'sem avaliações') + '" style="width:100%;height:auto;display:block">' +
     (word ? '<text x="340" y="32" text-anchor="middle" font-family="var(--font),sans-serif" font-size="42" font-weight="700" fill="' + d + '">' + word + '</text>' : '') +
-    '<g transform="rotate(' + f2(rot) + ' ' + Cx + ' ' + Cy + ')">' + wedges + spokes + '</g>' +
+    '<g transform="rotate(' + f2(rot) + ' ' + Cx + ' ' + Cy + ')">' + wedges + '</g>' +
     '<g>' + faces + '</g>' +
     selector +
     '<text x="340" y="230" text-anchor="middle" dominant-baseline="central" font-family="var(--font),sans-serif" font-size="' + numSize + '" font-weight="800" fill="' + (hasScore ? NAVY : '#9aa5be') + '">' + nstr + '</text>' +
+    brand +
     '</svg>';
 }
 
