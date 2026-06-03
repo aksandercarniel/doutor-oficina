@@ -549,6 +549,11 @@ header{
 .mfr-card .mfr-card-score .doxcare-capsule-track{height:18px;border-radius:12px}
 .mfr-card .mfr-card-score .doxcare-capsule-fill svg{width:15px;height:15px}
 .mfr-card-votos{text-align:center}
+.mfr-doxstatus{display:flex;align-items:center;justify-content:center;gap:8px;margin:4px 0}
+.mfr-doxword{font-family:var(--font);font-weight:800;font-size:16px;line-height:1}
+.mfr-doxbox{width:100%;box-sizing:border-box;border-radius:12px;padding:14px 12px;text-align:center}
+.mfr-doxnum{font-family:var(--font);font-weight:800;font-size:26px;line-height:1}
+.mfr-doxslash{font-weight:800;font-size:15px}
 .mfr-card-foot{margin-top:auto;width:100%}
 .mfr-card-stats{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left}
 .mfr-stat{color:var(--muted);font-size:11px;font-weight:500;line-height:1.4}
@@ -3897,6 +3902,12 @@ function _paintMarcas() {
       ? '<span class="mfr-chip-verified" title="Conta verificada">✓</span>'
       : '';
     const safeName = c.name.replace(/'/g, "\\'");
+    const _hasNps = c.nps != null && !isNaN(parseFloat(c.nps));
+    const _cat = _hasNps ? _doxcareCategory(parseFloat(c.nps)) : 'empty';
+    const _dox = ({promotor:{w:'Bom',d:'#15643F',p:'#EAF3DE',s:'#7fae8e'},neutro:{w:'Regular',d:'#b45309',p:'#FAEEDA',s:'#cda05a'},detrator:{w:'Ruim',d:'#A32D2D',p:'#FCEBEB',s:'#d08a8a'}})[_cat] || {w:'—',d:'var(--muted)',p:'#f3f4f6',s:'var(--muted)'};
+    const _npsTxt = _hasNps ? parseFloat(c.nps).toFixed(1).replace('.', ',') : '—';
+    const _statusRow = _hasNps ? ('<div class="mfr-doxstatus">' + _doxcareFace(_cat, 26) + '<span class="mfr-doxword" style="color:' + _dox.d + '">' + _dox.w + '</span></div>') : '';
+    const _numHtml = _hasNps ? (_npsTxt + '<span class="mfr-doxslash" style="color:' + _dox.s + '">/10</span>') : '—';
     return `
     <div class="vehicle-card mfr-card" onclick="openCompanyProfile('${safeName}')">
       <div class="mfr-card-logo">
@@ -3907,7 +3918,8 @@ function _paintMarcas() {
         <div class="vc-brand">MONTADORA</div>
       </div>
       <div class="mfr-card-score">
-        ${renderDoxcareBar(c.nps, true)}
+        ${_statusRow}
+        <div class="mfr-doxbox" style="background:${_dox.p}"><div class="mfr-doxnum" style="color:${_dox.d}">${_numHtml}</div></div>
         <div class="mfr-stat mfr-stat-emph mfr-card-votos">${c.votos} ${c.votos === 1 ? 'avaliação' : 'avaliações'}</div>
       </div>
       <div class="mfr-card-foot">
