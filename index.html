@@ -550,6 +550,8 @@ header{
 .mfr-card .mfr-card-score .doxcare-capsule-fill svg{width:15px;height:15px}
 .mfr-card-votos{text-align:center}
 .mfr-doxstatus{display:flex;align-items:center;justify-content:center;gap:8px;margin:4px 0}
+.mfr-doxface{display:inline-flex;width:28px;height:28px;border-radius:50%;align-items:center;justify-content:center;flex-shrink:0}
+.mfr-doxface svg{width:22px;height:22px}
 .mfr-doxword{font-family:var(--font);font-weight:800;font-size:16px;line-height:1}
 .mfr-doxbox{width:100%;box-sizing:border-box;border-radius:12px;padding:14px 12px;text-align:center}
 .mfr-doxnum{font-family:var(--font);font-weight:800;font-size:26px;line-height:1}
@@ -3904,14 +3906,15 @@ function _paintMarcas() {
     const safeName = c.name.replace(/'/g, "\\'");
     const _hasNps = c.nps != null && !isNaN(parseFloat(c.nps));
     const _npsNum = _hasNps ? parseFloat(c.nps) : 0;
-    const _dox = !_hasNps ? {w:'—',d:'var(--muted)',p:'#f3f4f6',s:'var(--muted)',cat:'empty'}
-      : _npsNum >= 8.1 ? {w:'Ótimo',  d:'#15643F', p:'#EAF3DE', s:'#7fae8e', cat:'promotor'}
-      : _npsNum >= 6.1 ? {w:'Bom',    d:'#2a9d6a', p:'#EAF3DE', s:'#9cc7a8', cat:'promotor'}
-      : _npsNum >= 4.1 ? {w:'Regular',d:'#b45309', p:'#FAEEDA', s:'#cda05a', cat:'neutro'}
-      : _npsNum >= 2.1 ? {w:'Ruim',   d:'#c0392b', p:'#FCEBEB', s:'#d08a8a', cat:'detrator'}
-      :                  {w:'Péssimo',d:'#A32D2D', p:'#FCEBEB', s:'#d08a8a', cat:'detrator'};
+    const _dox = !_hasNps ? {w:'—',d:'var(--muted)',p:'#f3f4f6',s:'var(--muted)',fb:'#9aa5be',n:0}
+      : _npsNum >= 8.1 ? {w:'Ótimo',  d:'#4f7c1b', p:'#DCE7C2', s:'#9ab373', fb:'#639922', n:5}
+      : _npsNum >= 6.1 ? {w:'Bom',    d:'#5e8a2d', p:'#E5F2D2', s:'#a5c478', fb:'#97C459', n:4}
+      : _npsNum >= 4.1 ? {w:'Regular',d:'#8a5d12', p:'#FEF3DC', s:'#c79f5e', fb:'#FAC775', n:3}
+      : _npsNum >= 2.1 ? {w:'Ruim',   d:'#b86d0d', p:'#FDEBD2', s:'#e2b06e', fb:'#EF9F27', n:2}
+      :                  {w:'Péssimo',d:'#b03537', p:'#FBE5E5', s:'#d68f8f', fb:'#E24B4A', n:1};
     const _npsTxt = _hasNps ? _npsNum.toFixed(1).replace('.', ',') : '—';
-    const _statusRow = _hasNps ? ('<div class="mfr-doxstatus">' + _doxcareFace(_dox.cat, 26) + '<span class="mfr-doxword" style="color:' + _dox.d + '">' + _dox.w + '</span></div>') : '';
+    const _faceHtml = _hasNps ? ('<span class="mfr-doxface" style="background:' + _dox.fb + '">' + faceSvg(_dox.n) + '</span>') : '';
+    const _statusRow = _hasNps ? ('<div class="mfr-doxstatus">' + _faceHtml + '<span class="mfr-doxword" style="color:' + _dox.d + '">' + _dox.w + '</span></div>') : '';
     const _numHtml = _hasNps ? (_npsTxt + '<span class="mfr-doxslash" style="color:' + _dox.s + '">/10</span>') : '—';
     return `
     <div class="vehicle-card mfr-card" onclick="openCompanyProfile('${safeName}')">
