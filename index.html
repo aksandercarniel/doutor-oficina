@@ -4364,7 +4364,7 @@ function renderVehicleProfileSkeleton(v) {
           <div class="ic-value ic-value-red">—</div>
           <div class="ic-sub">buscando…</div>
         </div>
-        <button class="btn-primary" style="width:100%;justify-content:center" onclick="requireAuthForCurrentVehicle()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>Reclamar deste veículo</button>
+        <button class="btn-primary" style="width:100%;justify-content:center" onclick="requireAuthForCurrentVehicle()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><g transform="translate(0,2) scale(0.85)"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></g><path d="M19.8 9.6A3 3 0 0 1 19.8 14.8" stroke-width="1.7"/><path d="M21.4 8A5.4 5.4 0 0 1 21.4 16.4" stroke-width="1.7"/></svg>Reclamar deste veículo</button>
         <button class="btn-secondary" style="width:100%;justify-content:center;margin-top:10px" onclick="emitirOpiniaoForCurrentVehicle()"><span style="display:inline-flex;align-items:center;gap:7px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Opinar sobre este veículo</span></button>
       </div>
     </div>
@@ -5252,7 +5252,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
       + '<div style="margin-bottom:8px;color:var(--muted2)"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg></div>'
       + '<div style="font-family:var(--font);font-weight:700;color:var(--navy);margin-bottom:4px">Seja o primeiro a relatar</div>'
       + '<div style="font-size:13px;color:var(--muted);margin-bottom:14px">Nenhuma reclamação registrada para este veículo ainda.</div>'
-      + '<button class="btn-primary" onclick="requireAuthForCurrentVehicle()" style="margin:0 auto"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>Registrar reclamação</button>'
+      + '<button class="btn-primary" onclick="requireAuthForCurrentVehicle()" style="margin:0 auto"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><g transform="translate(0,2) scale(0.85)"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></g><path d="M19.8 9.6A3 3 0 0 1 19.8 14.8" stroke-width="1.7"/><path d="M21.4 8A5.4 5.4 0 0 1 21.4 16.4" stroke-width="1.7"/></svg>Registrar reclamação</button>'
       + '</div>';
 
   // -- Monta HTML final
@@ -5307,7 +5307,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + '</div>'
     + '<div class="ic-sub">' + (fipePrice && fipePrice.year ? 'Ano ' + fipePrice.year + ' · ' : '') + (fipePrice && fipePrice.ref ? fipePrice.ref : 'Referência atual') + '</div>'
     + '</div>'
-    + '<button class="btn-primary" style="width:100%;justify-content:center" onclick="requireAuthForCurrentVehicle()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>Reclamar deste veículo</button>'
+    + '<button class="btn-primary" style="width:100%;justify-content:center" onclick="requireAuthForCurrentVehicle()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><g transform="translate(0,2) scale(0.85)"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></g><path d="M19.8 9.6A3 3 0 0 1 19.8 14.8" stroke-width="1.7"/><path d="M21.4 8A5.4 5.4 0 0 1 21.4 16.4" stroke-width="1.7"/></svg>Reclamar deste veículo</button>'
     + '<button class="btn-secondary" style="width:100%;justify-content:center;margin-top:10px" onclick="emitirOpiniaoForCurrentVehicle()"><span style="display:inline-flex;align-items:center;gap:7px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Opinar sobre este veículo</span></button>'
     + '</div>'
     + '</div>'
@@ -9822,7 +9822,7 @@ function updateNavAuth() {
           </button>
           <div class="udrop-divider"></div>
           <button class="udrop-item" onclick="requireAuth()">
-            <svg class="udrop-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+            <svg class="udrop-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0,2) scale(0.85)"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></g><path d="M19.8 9.6A3 3 0 0 1 19.8 14.8" stroke-width="1.5"/><path d="M21.4 8A5.4 5.4 0 0 1 21.4 16.4" stroke-width="1.5"/></svg>
             Nova reclamação
           </button>
           ${currentUser?.email === ADMIN_EMAIL ? `<div class="udrop-divider"></div><button class="udrop-item udrop-item-special" onclick="showPage('admin')"><svg class="udrop-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Painel Admin</button>` : ''}
