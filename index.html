@@ -1130,6 +1130,7 @@ button[data-side="no"][data-on]{border-color:var(--red)!important;background:#ff
 .vc-rating-velocimetro{display:flex;justify-content:center;margin:8px 0}
 /* ── Cards de geração (lista "Escolha a geração") ── */
 .gen-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.ver-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,280px));gap:12px;justify-content:start}
 .gen-card{position:relative;display:block;width:100%;text-align:left;padding:18px;border:1.5px solid var(--border2);border-radius:14px;background:var(--white);cursor:pointer;transition:border-color .15s,transform .15s,box-shadow .15s;font-family:var(--font)}
 .gen-card:hover{border-color:var(--red);transform:translateY(-2px);box-shadow:0 6px 20px rgba(232,24,74,.12)}
 .gen-card::before{content:"";display:block;width:26px;height:3px;border-radius:2px;background:var(--red);margin-bottom:9px}
@@ -4101,7 +4102,7 @@ function _rootVersionButtons(indices) {
   if (!indices.length) {
     return '<div style="color:var(--muted,#6b7280);padding:8px 0">Nenhuma versão cadastrada ainda.</div>';
   }
-  let h = '<div class="ranking-grid">';
+  let h = '<div class="ver-grid">';
   indices.forEach(i => {
     const s = _rootData.versions[i];
     const ver = s.version || '';
