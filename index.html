@@ -1577,7 +1577,7 @@ button[data-side="no"][data-on]{border-color:var(--red)!important;background:#ff
     <button class="qf-btn qf-btn-status-unresolved" onclick="companyFilterComplaints(this,'unresolved')"><span class="face-slot" data-status="unresolved"></span> <span class="qf-btn-label">Não resolvidas</span></button>
     <button class="qf-btn active" onclick="companyFilterComplaints(this,'all')">Todas</button>
     <button class="qf-btn" id="btn-brand-mentions" onclick="companyFilterComplaints(this,'brand')" style="border-color:var(--orange);color:var(--orange)">⚠️ Menções à marca</button>
-    <button class="qf-btn" id="btn-opinioes" onclick="companyFilterComplaints(this,'opiniao')" style="border-color:var(--navy);color:var(--navy)">💬 Opiniões sobre o produto</button>
+    <button class="qf-btn" id="btn-opinioes" onclick="companyFilterComplaints(this,'opiniao')" style="border-color:var(--navy);color:var(--navy)"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Opiniões sobre o produto</button>
   </div>
   <div id="company-complaints-list" style="display:flex;flex-direction:column;gap:14px">
     <div style="text-align:center;padding:40px;color:var(--muted)">Carregando reclamações…</div>
@@ -4370,7 +4370,7 @@ function renderVehicleProfileSkeleton(v) {
           <div class="ic-value ic-value-red">—</div>
           <div class="ic-sub">buscando…</div>
         </div>
-        <button class="btn-primary" style="width:100%;justify-content:center" onclick="requireAuthForCurrentVehicle()">🚨 Reclamar deste veículo</button>
+        <button class="btn-primary" style="width:100%;justify-content:center" onclick="requireAuthForCurrentVehicle()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>Reclamar deste veículo</button>
         <button class="btn-secondary" style="width:100%;justify-content:center;margin-top:10px" onclick="emitirOpiniaoForCurrentVehicle()"><span style="display:inline-flex;align-items:center;gap:7px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Opinar sobre este veículo</span></button>
       </div>
     </div>
@@ -5255,10 +5255,10 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
         + '</div></div>'
       ).join('')
     : '<div style="text-align:center;padding:24px 0">'
-      + '<div style="font-size:32px;margin-bottom:8px">💬</div>'
+      + '<div style="margin-bottom:8px;color:var(--muted2)"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg></div>'
       + '<div style="font-family:var(--font);font-weight:700;color:var(--navy);margin-bottom:4px">Seja o primeiro a relatar</div>'
       + '<div style="font-size:13px;color:var(--muted);margin-bottom:14px">Nenhuma reclamação registrada para este veículo ainda.</div>'
-      + '<button class="btn-primary" onclick="requireAuthForCurrentVehicle()" style="margin:0 auto">🚨 Registrar reclamação</button>'
+      + '<button class="btn-primary" onclick="requireAuthForCurrentVehicle()" style="margin:0 auto"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>Registrar reclamação</button>'
       + '</div>';
 
   // -- Monta HTML final
@@ -5313,7 +5313,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + '</div>'
     + '<div class="ic-sub">' + (fipePrice && fipePrice.year ? 'Ano ' + fipePrice.year + ' · ' : '') + (fipePrice && fipePrice.ref ? fipePrice.ref : 'Referência atual') + '</div>'
     + '</div>'
-    + '<button class="btn-primary" style="width:100%;justify-content:center" onclick="requireAuthForCurrentVehicle()">🚨 Reclamar deste veículo</button>'
+    + '<button class="btn-primary" style="width:100%;justify-content:center" onclick="requireAuthForCurrentVehicle()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>Reclamar deste veículo</button>'
     + '<button class="btn-secondary" style="width:100%;justify-content:center;margin-top:10px" onclick="emitirOpiniaoForCurrentVehicle()"><span style="display:inline-flex;align-items:center;gap:7px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Opinar sobre este veículo</span></button>'
     + '</div>'
     + '</div>'
@@ -5341,7 +5341,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + '<hr class="raiox-divider">'
 
     // ── Sub-bloco 2: Relatos da comunidade ──
-    + '<div class="raiox-subtitle">💬 Relatos da comunidade'
+    + '<div class="raiox-subtitle"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Relatos da comunidade'
     + (complaints.length > 0 ? '<span class="count">' + complaints.length + ' ' + (complaints.length === 1 ? 'relato' : 'relatos') + '</span>' : '')
     + '</div>'
     + complaintCards
@@ -7278,7 +7278,7 @@ async function openComplaintDetail(complaintId) {
             </div>
             <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
               ${isOpiniao
-                ? `<span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;background:#eef2f7;color:var(--navy);white-space:nowrap">💬 Opinião sobre o veículo</span>`
+                ? `<span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;background:#eef2f7;color:var(--navy);white-space:nowrap"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Opinião sobre o veículo</span>`
                 : `<span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;background:${statusBg[st]};color:${statusCol[st]};white-space:nowrap">${statusMap[st]||'🔴 Não respondida'}</span>`}
               ${!isOpiniao && (st === 'resolved' || st === 'unresolved') && hasNps ? (() => {
                 const s = Math.max(0, Math.min(10, parseFloat(doxcareScore)));
@@ -8084,7 +8084,7 @@ async function loadCompanyComplaints(status='open') {
       const emptyMsg = status === 'brand'
         ? '✅ Nenhuma reclamação não vinculada encontrada para sua marca.'
         : status === 'opiniao'
-        ? '💬 Nenhuma opinião sobre seus produtos ainda.'
+        ? '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Nenhuma opinião sobre seus produtos ainda.'
         : 'Nenhuma reclamação encontrada.';
       list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">${emptyMsg}</div>`;
       return;
@@ -8098,7 +8098,7 @@ async function loadCompanyComplaints(status='open') {
     list.innerHTML = data.map(c => `
       <div style="background:var(--white);border:1.5px solid ${isBrand ? 'var(--orange)' : isOpiniao ? 'var(--navy)' : 'var(--border)'};border-radius:16px;padding:20px;cursor:pointer" onclick="${isOpiniao ? `openComplaintDetail('${c.id}')` : `showResolution('${c.id}')`}">
         ${isBrand ? `<div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:8px;display:flex;align-items:center;gap:6px">⚠️ Reclamação não vinculada à sua empresa — cliente não informou o nome</div>` : ''}
-        ${isOpiniao ? `<div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px;display:flex;align-items:center;gap:6px">💬 Opinião sobre o produto — sem fluxo de resolução</div>` : ''}
+        ${isOpiniao ? `<div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:8px;display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Opinião sobre o produto — sem fluxo de resolução</div>` : ''}
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;flex-wrap:wrap;gap:8px">
           <div>
             <div style="font-size:12px;color:var(--muted);margin-bottom:4px">${c.vehicle_brand||''} ${c.vehicle_model||''} ${c.vehicle_year||''}</div>
@@ -10858,7 +10858,7 @@ function _renderComplaintCards(targetId, list, opts = {}) {
     const locHtml = loc ? `<span class="cra-foot-sep">·</span><span class="cra-foot-item">📍 ${loc}</span>` : '';
     const voted = votedIds.includes(id) ? 'voted' : '';
     const badgeHtml = isOpiniao
-      ? `<span style="font-size:11px;font-weight:700;padding:3px 12px;border-radius:20px;background:#eef2f7;color:var(--navy);display:inline-flex;align-items:center;gap:4px">💬 Opinião</span>`
+      ? `<span style="font-size:11px;font-weight:700;padding:3px 12px;border-radius:20px;background:#eef2f7;color:var(--navy);display:inline-flex;align-items:center;gap:4px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Opinião</span>`
       : `<span style="font-size:11px;font-weight:700;padding:3px 12px 3px 4px;border-radius:20px;background:${({'s-open':'#fef2f2','s-progress':'#eff6ff','s-replied':'#fef3c7','s-resolved':'#f0fdf4','s-unresolved':'#fff7ed'}[c.status]||'#fef2f2')};color:${({'s-open':'#dc2626','s-progress':'#2563eb','s-replied':'#d97706','s-resolved':'#16a34a','s-unresolved':'#ea580c'}[c.status]||'#dc2626')};display:inline-flex;align-items:center;gap:4px">${statusFace(c.status,16)}${c.statusLabel}</span>`;
     return `
     <div class="complaint-card-ra" onclick="openComplaintDetail('${id}')">
