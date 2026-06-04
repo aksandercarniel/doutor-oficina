@@ -1614,7 +1614,7 @@ button[data-side="no"][data-on]{border-color:var(--red)!important;background:#ff
 <div id="page-ranking-companies" style="display:none;max-width:1280px;margin:0 auto;padding:32px 24px">
   <div style="margin-bottom:28px">
     <h2 style="font-family:var(--font);font-size:26px;font-weight:900;color:var(--navy);margin:0 0 8px"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>Ranking de Empresas</h2>
-    <p style="color:var(--muted);font-size:14px;margin:0">Baseado no Doxcare — a nota de cuidado e atendimento dada pelos clientes após cada reclamação.</p>
+    <p style="color:var(--muted);font-size:14px;margin:0">Baseado no <span style="font-family:var(--font);line-height:1"><span style="font-weight:400;color:var(--navy)">Dox</span><span style="font-weight:800;color:#185fa5">care</span></span> — a nota de cuidado e atendimento dada pelos clientes após cada reclamação.</p>
   </div>
   <div id="company-ranking-list" style="display:flex;flex-direction:column;gap:14px">
     <div style="text-align:center;padding:40px;color:var(--muted)">Carregando ranking…</div>
@@ -1787,7 +1787,7 @@ button[data-side="no"][data-on]{border-color:var(--red)!important;background:#ff
       <h1><span class="accent">Reclame aqui</span><br class="br-mobile"> <span class="dim-navy">do seu veículo</span></h1>
       <p>Resolva seu problema e ajude outros motoristas a comprarem com segurança.</p>
       <p class="hero-stats" id="hero-stats">
-        Catálogo com <strong>5.000+ modelos</strong>. <strong>Doxcore</strong> em <strong id="hero-raiox-count">dezenas de</strong> veículos.
+        Catálogo com <strong>5.000+ modelos</strong>. <span style="font-family:var(--font);line-height:1;letter-spacing:0"><span style="font-weight:600;color:#FC0047">Do</span><span style="font-weight:800;color:#0d1f3c">xcore</span></span> em <strong id="hero-raiox-count">dezenas de</strong> veículos.
       </p>
       <div class="hero-ctas">
         <button class="btn-primary" onclick="requireAuth()"><span style="display:inline-flex;align-items:center;gap:7px"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>Fazer reclamação</span></button>
@@ -4504,7 +4504,7 @@ function renderVehicleProfileSkeleton(v) {
         <div class="profile-name"><span class="profile-emoji">${vehicleIcon(v.emoji, v.name)}</span>${v.name || ''}</div>
         ${(v.version || v.year) ? `<div class="profile-sub">${[v.version, v.year].filter(x => x && x !== '—').join(' · ')}</div>` : ''}
         <div class="profile-rating">
-          <span class="doxcore-badge">Doxcore</span>
+          <span class="doxcore-badge"><span style="font-weight:600;color:#FC0047">Do</span><span style="font-weight:800;color:#0d1f3c">xcore</span></span>
           <span class="doxcore-composition">carregando análise…</span>
         </div>
         <div class="profile-tags"><span class="ptag" style="background:var(--bg2);color:var(--muted);border-color:var(--border)">Buscando dados…</span></div>
@@ -5430,7 +5430,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
           var bg = (r >= 4.0) ? 'var(--green-light)' : (r >= 3.0) ? '#fff7ed' : '#fff0f3';
           style = ' style="background:' + bg + ';color:' + c + '"';
         }
-        return '<span class="doxcore-badge"' + style + '>Doxcore</span>';
+        return '<span class="doxcore-badge"' + style + '>' + _doxcoreLabel() + '</span>';
       })()
     + (shownRating ? ('<span class="doxcore-velocimetro-wrap">' + renderDoxcoreVelocimetro(shownRating, 'large') + '</span>') : '')
     + (verdictText
@@ -7545,7 +7545,7 @@ async function openComplaintDetail(complaintId) {
               ${doxcore !== null ? (() => {
                 const dxColor = doxcore >= 4 ? '#2a9d6a' : doxcore >= 3 ? '#EF9F27' : '#E24B4A';
                 return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-                  <span style="color:var(--muted)">Doxcore</span>
+                  ${_doxcoreLabel()}
                   <span style="font-family:var(--font);font-weight:800;font-size:14px;color:${dxColor}">${doxcore.toFixed(1).replace('.',',')}</span>
                 </div>`;
               })() : ''}
@@ -7678,6 +7678,19 @@ function _doxcareLabel(opts) {
   return '<span style="font-family:var(--font);font-size:' + size + 'px;line-height:1;letter-spacing:0">'
     + '<span style="font-weight:400;color:var(--navy)">Dox</span>'
     + '<span style="font-weight:800;color:#185fa5">care</span>'
+    + '</span>';
+}
+
+// Helper: retorna HTML da palavra "Doxcore" com a grafia oficial (nota do VEÍCULO).
+// "Do" peso 600 no vermelho do logo (#FC0047) + "xcore" peso 800 navy (#0d1f3c).
+// O destaque cai em "xcore" (lê-se "Do-score"); usa a paleta do logo, não a escala de notas.
+// opts.size: font-size em px. Se omitido, herda o tamanho do contexto (uso inline).
+function _doxcoreLabel(opts) {
+  opts = opts || {};
+  const sz = opts.size ? ('font-size:' + opts.size + 'px;') : '';
+  return '<span style="font-family:var(--font);' + sz + 'line-height:1;letter-spacing:0">'
+    + '<span style="font-weight:600;color:#FC0047">Do</span>'
+    + '<span style="font-weight:800;color:#0d1f3c">xcore</span>'
     + '</span>';
 }
 
