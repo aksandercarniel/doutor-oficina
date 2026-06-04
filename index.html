@@ -8435,6 +8435,27 @@ function companyFilterComplaints(btn, status) {
 // ══════════════════════════════════════════
 // RANKING DE EMPRESAS
 // ══════════════════════════════════════════
+// Medalha SVG do pódio (1º/2º/3º): disco metálico ouro/prata/bronze + fitinha + número.
+// Substitui os emojis 🥇🥈🥉 (que renderizavam diferente em cada SO e destoavam do visual).
+function rankMedalSvg(place){
+  const C = {
+    1:{lt:'#FFE695',bs:'#F4C12E',dk:'#C8901A',rim:'#A9760F',rib:'#E0A92E',rib2:'#C7901F',tx:'#7a5300'},
+    2:{lt:'#F1F3F7',bs:'#CBD1DA',dk:'#9AA3B1',rim:'#828B99',rib:'#B6BDC8',rib2:'#9aa3b1',tx:'#5b6472'},
+    3:{lt:'#E7B485',bs:'#CF8B4F',dk:'#A2632E',rim:'#874E22',rib:'#C07C40',rib2:'#a2632e',tx:'#5e3717'}
+  }[place];
+  const g = 'mg' + place;
+  return '<svg width="40" height="44" viewBox="0 0 40 44" xmlns="http://www.w3.org/2000/svg" aria-label="' + place + 'º lugar">'
+    + '<defs><linearGradient id="' + g + '" x1="0" y1="0" x2="1" y2="1">'
+    + '<stop offset="0" stop-color="' + C.lt + '"/><stop offset=".5" stop-color="' + C.bs + '"/><stop offset="1" stop-color="' + C.dk + '"/>'
+    + '</linearGradient></defs>'
+    + '<path d="M13 3 L20 18 L16.5 20 L9.5 5 Z" fill="' + C.rib2 + '"/>'
+    + '<path d="M27 3 L20 18 L23.5 20 L30.5 5 Z" fill="' + C.rib + '"/>'
+    + '<circle cx="20" cy="28" r="14" fill="url(#' + g + ')" stroke="' + C.rim + '" stroke-width="1.5"/>'
+    + '<circle cx="20" cy="28" r="10.5" fill="none" stroke="' + C.lt + '" stroke-width="1" opacity=".55"/>'
+    + '<text x="20" y="29" text-anchor="middle" dominant-baseline="central" font-family="var(--font)" font-weight="800" font-size="16" fill="#fff" stroke="' + C.tx + '" stroke-width="0.6" paint-order="stroke" style="paint-order:stroke">' + place + '</text>'
+    + '</svg>';
+}
+
 async function loadCompanyRanking() {
   const list = document.getElementById('company-ranking-list');
   if (!list) return;
@@ -8468,7 +8489,9 @@ async function loadCompanyRanking() {
     list.innerHTML = ranking.map((c, i) => {
       const avg = parseFloat(c.avg);
       const st = doxcareState(avg);
-      const medal = i===0 ? '🥇' : i===1 ? '🥈' : i===2 ? '🥉' : (i+1)+'.';
+      const posCell = i < 3
+        ? rankMedalSvg(i + 1)
+        : '<span style="font-family:var(--font);font-weight:900;font-size:19px;color:var(--navy)">' + (i + 1) + '</span><span style="font-size:12px;color:var(--muted2);font-weight:800">/' + ranking.length + '</span>';
       const safeName = encodeURIComponent(c.name);
       const co = compMap[c.name.toLowerCase()] || null;
       const sub = (tipoLabel[co?.type] || 'Empresa') + ' · ' + c.count + (c.count===1 ? ' avaliação' : ' avaliações');
@@ -8476,7 +8499,7 @@ async function loadCompanyRanking() {
         ? '<span title="Conta verificada" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;background:#2563eb;color:#fff;border-radius:50%;font-size:10px;font-weight:700;vertical-align:middle;margin-left:6px;line-height:1">✓</span>'
         : '';
       return '<div onclick="openCompanyProfile(decodeURIComponent(this.dataset.name))" data-name="' + safeName + '" style="background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:16px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:border-color .2s,box-shadow .2s" class="ranking-card">'
-        + '<div style="font-size:20px;width:30px;text-align:center;flex-shrink:0">' + medal + '</div>'
+        + '<div style="width:48px;display:flex;align-items:center;justify-content:center;flex-shrink:0">' + posCell + '</div>'
         + companyAvatar({ name: c.name, logo_url: co && co.logo_url }, 44)
         + '<div style="flex:1;min-width:0">'
         + '<div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy);line-height:1.2">' + c.name + verified + '</div>'
