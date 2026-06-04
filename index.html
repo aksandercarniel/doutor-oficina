@@ -8435,27 +8435,28 @@ function companyFilterComplaints(btn, status) {
 // ══════════════════════════════════════════
 // RANKING DE EMPRESAS
 // ══════════════════════════════════════════
-// Selo de premiação do pódio (1º/2º/3º): selo serrilhado ouro/prata/bronze com o número.
-// Vai no canto superior esquerdo do card, saindo da borda — dá o ar de "bloco premiado".
-function rankSealSvg(place){
+// Medalhão de pódio (1º/2º/3º): disco metálico ouro/prata/bronze com anéis concêntricos
+// e número, sobre fita vermelha curta (#FC0047, cor do logo). Fixo no canto sup. esquerdo.
+function rankMedalSvg(place){
   const C = {
-    1:{lt:'#FFE695',bs:'#F4C12E',dk:'#C8901A',rim:'#A9760F',tx:'#7a5300'},
-    2:{lt:'#F1F3F7',bs:'#CBD1DA',dk:'#9AA3B1',rim:'#828B99',tx:'#5b6472'},
-    3:{lt:'#E7B485',bs:'#CF8B4F',dk:'#A2632E',rim:'#874E22',tx:'#5e3717'}
+    1:{lt:'#FFF3C0',bs:'#F4C32A',dk:'#C9920F',rim:'#9A6E08',num:'#8a5f08'},
+    2:{lt:'#FCFDFF',bs:'#CFD5DE',dk:'#9BA4B2',rim:'#7E8794',num:'#69727f'},
+    3:{lt:'#F0C49B',bs:'#CD8447',dk:'#9C5C27',rim:'#7C481D',num:'#774318'}
   }[place];
-  const g = 'sg' + place, cx = 25, cy = 25, N = 16, Ro = 24, Ri = 20;
-  const pts = [];
-  for (let k = 0; k < 2 * N; k++) {
-    const r = k % 2 ? Ri : Ro, a = k / (2 * N) * 2 * Math.PI - Math.PI / 2;
-    pts.push((cx + r * Math.cos(a)).toFixed(1) + ' ' + (cy + r * Math.sin(a)).toFixed(1));
-  }
-  return '<svg width="50" height="50" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg" aria-label="' + place + 'º lugar">'
-    + '<defs><radialGradient id="' + g + '" cx=".4" cy=".35" r=".75">'
-    + '<stop offset="0" stop-color="' + C.lt + '"/><stop offset=".6" stop-color="' + C.bs + '"/><stop offset="1" stop-color="' + C.dk + '"/>'
-    + '</radialGradient></defs>'
-    + '<path d="M' + pts.join(' L') + ' Z" fill="url(#' + g + ')" stroke="' + C.rim + '" stroke-width="1"/>'
-    + '<circle cx="' + cx + '" cy="' + cy + '" r="15" fill="none" stroke="' + C.lt + '" stroke-width="1.2" opacity=".5"/>'
-    + '<text x="' + cx + '" y="' + (cy + 1) + '" text-anchor="middle" dominant-baseline="central" font-family="var(--font)" font-weight="800" font-size="14" fill="#fff" stroke="' + C.tx + '" stroke-width="0.6" paint-order="stroke" style="paint-order:stroke">' + place + 'º</text>'
+  const id = 'med' + place, cx = 32, cy = 27, R = 22;
+  return '<svg width="46" height="55" viewBox="0 0 64 76" xmlns="http://www.w3.org/2000/svg" aria-label="' + place + 'º lugar">'
+    + '<defs>'
+    + '<linearGradient id="r' + id + '" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#C8003A"/><stop offset=".18" stop-color="#FF3D6B"/><stop offset=".5" stop-color="#FC0047"/><stop offset=".82" stop-color="#E0003F"/><stop offset="1" stop-color="#A8002F"/></linearGradient>'
+    + '<radialGradient id="' + id + '" cx=".38" cy=".3" r=".82"><stop offset="0" stop-color="' + C.lt + '"/><stop offset=".55" stop-color="' + C.bs + '"/><stop offset="1" stop-color="' + C.dk + '"/></radialGradient>'
+    + '</defs>'
+    + '<path d="M20 8 L44 8 L44 70 L32 60 L20 70 Z" fill="url(#r' + id + ')"/>'
+    + '<path d="M20 8 L20 70 L23 66 L23 9 Z" fill="#9A002C" opacity=".35"/>'
+    + '<circle cx="' + cx + '" cy="' + cy + '" r="' + (R + 2) + '" fill="' + C.dk + '"/>'
+    + '<circle cx="' + cx + '" cy="' + cy + '" r="' + R + '" fill="url(#' + id + ')" stroke="' + C.rim + '" stroke-width="1.4"/>'
+    + '<circle cx="' + cx + '" cy="' + cy + '" r="' + (R - 5) + '" fill="none" stroke="' + C.dk + '" stroke-width="1.8" opacity=".4"/>'
+    + '<circle cx="' + cx + '" cy="' + cy + '" r="' + (R - 7) + '" fill="none" stroke="' + C.lt + '" stroke-width="1" opacity=".6"/>'
+    + '<ellipse cx="' + (cx - 7) + '" cy="' + (cy - 9) + '" rx="11" ry="6.5" fill="#fff" opacity=".28"/>'
+    + '<text x="' + cx + '" y="' + (cy + 1) + '" text-anchor="middle" dominant-baseline="central" font-family="var(--font)" font-weight="900" font-size="24" fill="' + C.num + '">' + place + '</text>'
     + '</svg>';
 }
 
@@ -8495,8 +8496,8 @@ async function loadCompanyRanking() {
       const posCell = i < 3
         ? ''
         : '<span style="font-family:var(--font);font-weight:900;font-size:19px;color:var(--navy)">' + (i + 1) + '</span><span style="font-size:12px;color:var(--muted2);font-weight:800">/' + ranking.length + '</span>';
-      const seal = i < 3
-        ? '<div style="position:absolute;top:-14px;left:-14px;transform:rotate(-9deg);filter:drop-shadow(0 3px 4px rgba(0,0,0,.20));z-index:2">' + rankSealSvg(i + 1) + '</div>'
+      const medal = i < 3
+        ? '<div style="position:absolute;top:-16px;left:-16px;transform:rotate(-8deg);filter:drop-shadow(0 3px 5px rgba(0,0,0,.22));z-index:2">' + rankMedalSvg(i + 1) + '</div>'
         : '';
       const safeName = encodeURIComponent(c.name);
       const co = compMap[c.name.toLowerCase()] || null;
@@ -8505,7 +8506,7 @@ async function loadCompanyRanking() {
         ? '<span title="Conta verificada" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;background:#2563eb;color:#fff;border-radius:50%;font-size:10px;font-weight:700;vertical-align:middle;margin-left:6px;line-height:1">✓</span>'
         : '';
       return '<div onclick="openCompanyProfile(decodeURIComponent(this.dataset.name))" data-name="' + safeName + '" style="position:relative;background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:16px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:border-color .2s,box-shadow .2s" class="ranking-card">'
-        + seal
+        + medal
         + '<div style="width:48px;display:flex;align-items:center;justify-content:center;flex-shrink:0">' + posCell + '</div>'
         + companyAvatar({ name: c.name, logo_url: co && co.logo_url }, 44)
         + '<div style="flex:1;min-width:0">'
