@@ -7844,7 +7844,7 @@ async function openCompanyProfile(companyName) {
               ${_doxcareLabel({ size: 13 })}
             </div>
             <div style="max-width:180px;width:100%;margin:0 auto">
-              ${renderDoxcareBar(doxcareAvg, true)}
+              ${doxcareAvg !== null ? `<div class="mfr-wheel" data-nps="${doxcareAvg}"></div>` : `<div class="mfr-doxbox"><div class="mfr-doxnum" style="color:var(--muted)">—</div></div>`}
             </div>
             <div style="text-align:center;margin-top:4px;font-size:11px;color:var(--text2);font-weight:600${doxcareAvg===null?';font-style:italic;color:var(--muted)':''}">
               ${doxcareAvg===null?'Seja o 1º a avaliar →':(doxcareScores.length===1?'1 avaliação':doxcareScores.length+' avaliações')}
@@ -7900,6 +7900,7 @@ async function openCompanyProfile(companyName) {
       }).join('');
     }
     el.innerHTML = html;
+    el.querySelectorAll('.mfr-wheel').forEach(w => renderDoxcareWheel(w, parseFloat(w.dataset.nps)));
   } catch(e) {
     el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)">Erro ao carregar perfil da empresa.</div>';
   }
