@@ -1626,7 +1626,7 @@ button[data-side="no"][data-on]{border-color:var(--red)!important;background:#ff
 </div>
 
 <!-- ══ PÁGINA: TODOS OS VEÍCULOS (com filtros e ordenação) ══ -->
-<div id="page-vehicles" style="display:none;max-width:1280px;margin:0 auto;padding:32px 24px">
+<div id="page-vehicles" style="display:none;max-width:1480px;margin:0 auto;padding:32px 24px">
   <div style="margin-bottom:24px">
     <h2 style="font-family:var(--font);font-size:26px;font-weight:900;color:var(--navy);margin:0 0 6px">Todos os <span style="color:var(--red)">veículos</span></h2>
     <p id="all-vehicles-subtitle" style="color:var(--muted);font-size:14px;margin:0">Carregando…</p>
@@ -11544,6 +11544,7 @@ async function loadAllVehiclesPage(params = {}) {
   updateVehicleFiltersBadge();
 }
 
+let _allVehiclesFipeToken = 0;
 function renderAllVehiclesGrid() {
   const grid = document.getElementById('all-vehicles-grid');
   const sub  = document.getElementById('all-vehicles-subtitle');
@@ -11577,39 +11578,35 @@ function renderAllVehiclesGrid() {
 
   const typeEmoji = (t) => t === 'moto' ? '🏍️' : t === 'caminhao' ? '🚚' : '🚗';
 
-  grid.innerHTML = list.map(v => {
-    const s = v.summary;
-    const rating = parseFloat(s.reliability_score) || 0;
-    const hl = cardHighlight(v, rating);
-    const resolved = Math.round(55 + rating * 5);
-    const emoji = typeEmoji(v.type);
-    const verdict = (s.verdict || '').slice(0, 160);
-    return `
-    <div class="vehicle-card" onclick="showVehicleProfileByBrandModel('${v.brand.replace(/'/g,"\\'")}','${v.model.replace(/'/g,"\\'")}')">
-      <div class="vc-top">
-        <div style="display:flex;align-items:center;gap:8px">
-          <span class="vc-emoji">${vehicleIcon(emoji, v.model)}</span>
-          <div class="vc-name">${v.model}</div>
-        </div>
-        <span class="vc-badge badge-blue">✓ Raio-X</span>
-      </div>
-      <div class="vc-brand">${v.brand}</div>
-      <div class="vc-version">${verdict}</div>
-      <div class="vc-rating"><span class="stars">${starsHtml(rating)}</span><span class="star-val">${rating.toFixed(1)}</span></div>
-      <div class="vc-count">${v.issues.length} problema${v.issues.length !== 1 ? 's' : ''} mapeado${v.issues.length !== 1 ? 's' : ''}</div>
-      <div class="vc-divider"></div>
-      <div class="vc-info-grid">
-        <div class="vc-info-item">
-          <span class="vc-info-label">${hl.icon} ${hl.label}</span>
-          <span class="vc-info-value ${hl.cls}">${hl.text}</span>
-        </div>
-        <div class="vc-info-item">
-          <span class="vc-info-label">✅ Respondidas</span>
-          <span class="vc-info-value green">${resolved}%</span>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
+  // Mesmos cards da home (vehicleCardHtml): velocímetro Doxcore + destaque + FIPE.
+  grid.innerHTML = list.map(v => vehicleCardHtml(v)).join('');
+
+  // Carrega preços FIPE em fila (igual à home). O token cancela cargas antigas
+  // se o usuário trocar filtro/ordenação antes da fila terminar.
+  const myToken = ++_allVehiclesFipeToken;
+  (async () => {
+    try { await fipeFetch(FIPE_V2 + '/cars/brands'); } catch(e) {}
+    for (let i = 0; i < list.length; i++) {
+      if (myToken !== _allVehiclesFipeToken) return;
+      const v = list[i];
+      const safeKey = (v.brand + '-' + v.model).replace(/[^a-zA-Z0-9-]/g, '_');
+      const el = document.getElementById('fipe-card-' + safeKey);
+      if (!el) continue;
+      try {
+        const result = await loadFipePriceForVehicle({ brand: v.brand, name: v.model, emoji: typeEmoji(v.type) });
+        if (myToken !== _allVehiclesFipeToken) return;
+        el.className = 'price-val';
+        el.textContent = result
+          ? (result.isRange ? ('De ' + result.price + ' até ' + result.priceMax) : (result.price || '—'))
+          : '—';
+      } catch(e) {
+        if (myToken !== _allVehiclesFipeToken) return;
+        el.className = 'price-val';
+        el.textContent = '—';
+      }
+      if (i < list.length - 1) await new Promise(r => setTimeout(r, 200));
+    }
+  })();
 }
 
 function applyVehicleFilters() {
