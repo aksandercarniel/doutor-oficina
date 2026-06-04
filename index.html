@@ -561,15 +561,22 @@ header{
 .mfr-card-foot{margin-top:auto;width:100%}
 .mfr-card-stats{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left}
 .mfr-stat{color:var(--muted);font-size:11px;font-weight:500;line-height:1.4}
-/* Carrossel mobile do bloco Marcas: quando não cabem ao menos 2 cards inteiros,
-   o grid vira uma trilha de rolagem horizontal com snap + "espiada" no próximo
-   card. Resolve o card solitário que ficava estranho no celular. */
+/* Carrossel mobile do bloco Marcas (center mode): quando não cabem 2 cards
+   inteiros, o grid vira uma trilha com snap CENTRAL. O card em foco fica
+   grande e centralizado; anterior e próximo aparecem menores e esmaecidos
+   dos dois lados. Padding lateral = (100-74)/2 = 13% pra 1º/último centrarem. */
 #marcas-grid.mfr-rail{
   display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;
-  -webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:4px;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;
+  padding:6px 13% 10px;scroll-padding:0 13%;
 }
 #marcas-grid.mfr-rail::-webkit-scrollbar{display:none}
-#marcas-grid.mfr-rail>.mfr-card{flex:0 0 80%;max-width:300px;scroll-snap-align:start}
+#marcas-grid.mfr-rail>.mfr-card{
+  flex:0 0 74%;scroll-snap-align:center;transform-origin:center center;
+  transform:scale(.85);opacity:.55;
+  transition:transform .28s ease,opacity .28s ease;
+}
+#marcas-grid.mfr-rail>.mfr-card.is-center{transform:scale(1);opacity:1}
 .mfr-stat-emph{color:var(--text2);font-weight:600}
 
 /* ── COMPLAINTS ── */
@@ -4035,6 +4042,32 @@ function _paintMarcas() {
     </div>`;
   }).join('');
   grid.querySelectorAll('.mfr-wheel').forEach(el => renderDoxcareWheel(el, parseFloat(el.dataset.nps)));
+
+  // Center mode: na trilha, marca o card cujo centro está mais perto do centro
+  // do scroller → ele fica em escala 1 (foco); os vizinhos ficam menores.
+  if (rail) {
+    const cards = Array.from(grid.children);
+    const updateCenter = () => {
+      const gr = grid.getBoundingClientRect();
+      const mid = gr.left + gr.width / 2;
+      let best = null, bestD = Infinity;
+      for (const card of cards) {
+        const r = card.getBoundingClientRect();
+        const d = Math.abs((r.left + r.width / 2) - mid);
+        if (d < bestD) { bestD = d; best = card; }
+      }
+      for (const card of cards) card.classList.toggle('is-center', card === best);
+    };
+    let ticking = false;
+    grid.onscroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => { updateCenter(); ticking = false; });
+    };
+    requestAnimationFrame(updateCenter);
+  } else {
+    grid.onscroll = null;
+  }
 }
 
 // Recalcula quantos cards cabem quando a janela muda de tamanho.
