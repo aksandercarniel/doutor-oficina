@@ -1136,6 +1136,7 @@ button[data-side="no"][data-on]{border-color:var(--red)!important;background:#ff
 .doxcore-velocimetro{display:inline-flex;flex-direction:column;align-items:center;line-height:1;flex-shrink:0}
 .doxcore-velocimetro svg{display:block}
 .doxcore-velocimetro-score{font-family:var(--font);font-weight:600;color:var(--navy);margin-top:4px;line-height:1}
+.doxcore-velocimetro-word{font-family:var(--font);font-weight:700;line-height:1;margin-bottom:3px;letter-spacing:.2px}
 .vc-rating-velocimetro{display:flex;justify-content:center;margin:8px 0}
 /* ── Cards de geração (lista "Escolha a geração") ── */
 .gen-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
@@ -10204,9 +10205,18 @@ const FACE_LABELS = { 1:'Péssimo', 2:'Ruim', 3:'Regular', 4:'Bom', 5:'Excelente
 function renderDoxcoreVelocimetro(rating, size){
   const sizes = { large: 200, medium: 140, compact: 80 };
   const widthPx = sizes[size] || sizes.large;
-  const showScore = (size !== 'compact');
+  const showExtras = (size !== 'compact');
   const scoreSizes = { large: 44, medium: 28, compact: 0 };
+  const wordSizes  = { large: 18, medium: 14, compact: 0 };
   const scoreSize = scoreSizes[size] || 44;
+  const wordSize  = wordSizes[size] || 18;
+  const STATES = [
+    { w:'Péssimo', d:'#b03537' },
+    { w:'Ruim',    d:'#b86d0d' },
+    { w:'Regular', d:'#8a5d12' },
+    { w:'Bom',     d:'#5e8a2d' },
+    { w:'Ótimo',   d:'#4f7c1b' }
+  ];
   // Paths das 5 fatias (pré-calculados — vermelho→laranja→amarelo→verde-claro→verde-forte)
   const slices = [
     {d:'M 15.0,110.0 A 95,95 0 0 1 33.14,54.16 L 69.55,80.61 A 50,50 0 0 0 60.0,110.0 Z', fill:'#E24B4A'},
@@ -10217,28 +10227,33 @@ function renderDoxcoreVelocimetro(rating, size){
   ];
   let pathsHtml = '';
   slices.forEach(s => { pathsHtml += '<path d="' + s.d + '" fill="' + s.fill + '"/>'; });
-  // Agulha: ângulo proporcional ao rating (rating 1 → 162°, rating 5 → 18°, varrendo 180°→0°)
-  // Mapeamento: angle = 180 - (rating - 0.5) * 36, com rating clamp [1,5]
-  let needleHtml = '';
-  if (rating && rating > 0){
-    const r = Math.max(1, Math.min(5, rating));
-    const angle = 180 - (r - 0.5) * 36;
+  // Agulha: nota inteira N no centro da fatia N (r=5 → 18°). A nota 0 (ou < 0,5)
+  // NÃO some — cai no extremo esquerdo (180°). Sem nota (null) → só o pivô central.
+  const hasR = (rating != null && !isNaN(rating));
+  let needleHtml = '', state = null;
+  if (hasR){
+    const rc = Math.max(0.5, Math.min(5, rating));
+    const angle = 180 - (rc - 0.5) * 36;
     const rad = angle * Math.PI / 180;
     const tipX = (110 + 80 * Math.cos(rad)).toFixed(2);
     const tipY = (110 - 80 * Math.sin(rad)).toFixed(2);
     needleHtml = '<line x1="110" y1="110" x2="' + tipX + '" y2="' + tipY + '" stroke="#042C53" stroke-width="3.5" stroke-linecap="round"/>'
       + '<circle cx="110" cy="110" r="7" fill="#042C53"/>'
       + '<circle cx="110" cy="110" r="3" fill="#fff"/>';
+    state = STATES[Math.min(5, Math.max(1, Math.floor(rc - 0.5) + 1)) - 1];
   } else {
     // Sem agulha: só o pivô central pra fechar visualmente
     needleHtml = '<circle cx="110" cy="110" r="7" fill="#042C53"/>';
   }
-  const svg = '<svg viewBox="0 0 220 130" width="' + widthPx + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Doxcore ' + (rating ? rating.toFixed(1) : 'sem nota') + '">'
+  const svg = '<svg viewBox="0 0 220 130" width="' + widthPx + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Doxcore ' + (hasR ? (rating.toFixed(1) + ' de 5 — ' + state.w) : 'sem nota') + '">'
     + pathsHtml + needleHtml + '</svg>';
-  const scoreHtml = (showScore && rating > 0)
-    ? '<div class="doxcore-velocimetro-score" style="font-size:' + scoreSize + 'px">' + rating.toFixed(1) + '</div>'
+  const wordHtml = (showExtras && hasR)
+    ? '<div class="doxcore-velocimetro-word" style="font-size:' + wordSize + 'px;color:' + state.d + '">' + state.w + '</div>'
     : '';
-  return '<div class="doxcore-velocimetro doxcore-velocimetro-' + (size || 'large') + '">' + svg + scoreHtml + '</div>';
+  const scoreHtml = (showExtras && hasR)
+    ? '<div class="doxcore-velocimetro-score" style="font-size:' + scoreSize + 'px">' + rating.toFixed(1).replace('.', ',') + '</div>'
+    : '';
+  return '<div class="doxcore-velocimetro doxcore-velocimetro-' + (size || 'large') + '">' + wordHtml + svg + scoreHtml + '</div>';
 }
 
 // Gera o SVG inline de uma carinha (n = 1..5, active = se está colorida ou cinza).
