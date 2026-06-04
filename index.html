@@ -535,12 +535,10 @@ header{
    pílula+avaliações em posição constante no meio (não desloca com nome),
    stats alinhados à esquerda no rodapé. */
 .mfr-card{display:flex;flex-direction:column;height:100%;padding:18px 16px}
-.mfr-card-head{display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0;flex:1;overflow:hidden}
+.mfr-card-head{display:flex;flex-direction:column;gap:3px;width:100%;min-width:0;height:70px;overflow:hidden}
 .mfr-card-name{font-family:var(--font);font-weight:900;font-size:13px;color:var(--navy);line-height:1.25;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis}
 /* Avatar grande no centro — espaço reservado pro logo da montadora futuro */
-.mfr-card-id{display:flex;align-items:center;gap:12px;width:100%;padding:0 0 14px}
-.mfr-card .mfr-logo-circle{width:52px;height:52px;font-size:22px}
-.mfr-card .mfr-logo-circle .mfr-chip-verified{width:15px;height:15px;font-size:9px;bottom:0;right:0}
+.mfr-card-logo{display:flex;justify-content:center;padding:0 0 22px}
 .mfr-logo-circle{position:relative;width:80px;height:80px;border-radius:50%;background:var(--navy);color:#fff;font-family:var(--font);font-weight:700;font-size:34px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .mfr-logo-circle .mfr-chip-verified{width:20px;height:20px;font-size:11px;bottom:3px;right:3px;border-width:2px}
 /* Nota Doxcare abaixo do logo, centralizada, reduzida ~50% (só no card de marca) */
@@ -558,6 +556,7 @@ header{
 .mfr-doxword{font-family:var(--font);font-weight:800;font-size:16px;line-height:1}
 .mfr-doxbox{width:100%;box-sizing:border-box;border-radius:12px;padding:14px 12px;text-align:center}
 .mfr-doxnum{font-family:var(--font);font-weight:800;font-size:26px;line-height:1}
+.mfr-wheel{width:100%;max-width:152px;margin:2px auto 0}
 .mfr-doxslash{font-weight:800;font-size:15px}
 .mfr-card-foot{margin-top:auto;width:100%}
 .mfr-card-stats{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left}
@@ -3883,6 +3882,83 @@ async function renderMarcas() {
 // quantos cards cabem inteiros na largura atual (teto de 5): se só
 // couber 4, mostra 4; se 3, mostra 3. Recalculado no resize, sem novo
 // acesso ao banco (usa _marcasCache).
+// ══ RODA DOXCARE (5 estados + régua de progresso 0–10) ══
+// Constrói por DOM (refs locais, sem id) p/ repetir em vários cards.
+// Estática: estaciona a faixa da nota no topo e enche a régua até nps/10.
+function renderDoxcareWheel(el, nps) {
+  if (el == null || isNaN(parseFloat(nps))) return;
+  const NS = 'http://www.w3.org/2000/svg';
+  const Cx = 340, Cy = 230, Ro = 180, Ri = 96, Rface = 138, TOP = -90, Rdial = 80, A0 = 135, SWEEP = 270;
+  const LV = [
+    { w:'Péssimo', fb:'#E24B4A', d:'#b03537' },
+    { w:'Ruim',    fb:'#EF9F27', d:'#b86d0d' },
+    { w:'Regular', fb:'#FAC775', d:'#8a5d12' },
+    { w:'Bom',     fb:'#97C459', d:'#5e8a2d' },
+    { w:'Ótimo',   fb:'#639922', d:'#4f7c1b' }
+  ];
+  const MOUTH = ['M -7 7 Q 0 0 7 7','M -7 6 Q 0 1.5 7 6','M -7 5 L 7 5','M -7 4 Q 0 9 7 4','M -7 3 Q 0 11 7 3'];
+  const rad = a => a * Math.PI / 180;
+  const pt = (R, a) => [Cx + R * Math.cos(rad(a)), Cy + R * Math.sin(rad(a))];
+  const f2 = n => n.toFixed(2);
+  const whole = v => Number.isInteger(v);
+  const fmt = v => whole(v) ? String(v) : v.toFixed(1).replace('.', ',');
+  const base = k => TOP + k * 72;
+  const level = v => v >= 8.1 ? 5 : v >= 6.1 ? 4 : v >= 4.1 ? 3 : v >= 2.1 ? 2 : 1;
+  const mk = (t, attrs) => { const e = document.createElementNS(NS, t); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
+  function sector(a0, a1) {
+    const [ox0,oy0]=pt(Ro,a0),[ox1,oy1]=pt(Ro,a1),[ix1,iy1]=pt(Ri,a1),[ix0,iy0]=pt(Ri,a0);
+    return `M ${f2(ox0)} ${f2(oy0)} A ${Ro} ${Ro} 0 0 1 ${f2(ox1)} ${f2(oy1)} L ${f2(ix1)} ${f2(iy1)} A ${Ri} ${Ri} 0 0 0 ${f2(ix0)} ${f2(iy0)} Z`;
+  }
+  function arcD(r, a0, a1) {
+    const lg = Math.abs(a1 - a0) > 180 ? 1 : 0;
+    const [x0,y0]=pt(r,a0),[x1,y1]=pt(r,a1);
+    return `M ${f2(x0)} ${f2(y0)} A ${r} ${r} 0 ${lg} 1 ${f2(x1)} ${f2(y1)}`;
+  }
+  const v = parseFloat(nps), L = level(v), d = LV[L-1].d, rot = -(L-1) * 72;
+
+  const svg = mk('svg', { viewBox:'120 -20 440 455', width:'100%', role:'img', 'aria-label':'Doxcare ' + fmt(v) + ' de 10 — ' + LV[L-1].w });
+
+  const word = mk('text', { x:340, y:18, 'text-anchor':'middle', 'font-size':42, 'font-weight':700, fill:d });
+  word.textContent = LV[L-1].w; word.style.fontFamily = 'var(--font)'; word.style.letterSpacing = '.5px';
+  svg.appendChild(word);
+
+  const g = mk('g', { transform:`rotate(${f2(rot)} ${Cx} ${Cy})` });
+  for (let k = 0; k < 5; k++) g.appendChild(mk('path', { d:sector(base(k)-36, base(k)+36), fill:LV[k].fb }));
+  for (let k = 0; k < 5; k++) { const b=base(k)+36,[x0,y0]=pt(Ri,b),[x1,y1]=pt(Ro,b);
+    g.appendChild(mk('line', { x1:f2(x0), y1:f2(y0), x2:f2(x1), y2:f2(y1), stroke:'#fff', 'stroke-width':3 })); }
+  svg.appendChild(g);
+
+  const fg = mk('g', {});
+  for (let k = 0; k < 5; k++) {
+    const ang=base(k)+rot,[x,y]=pt(Rface,ang), foc=Math.max(0,Math.cos(rad(ang-TOP))), s=1.5+0.6*foc;
+    const face = mk('g', { transform:`translate(${f2(x)} ${f2(y)}) scale(${f2(s)})` });
+    face.appendChild(mk('circle', { r:17, fill:'none', stroke:'#fff', 'stroke-width':2 }));
+    face.appendChild(mk('circle', { cx:-6, cy:-4, r:1.6, fill:'#fff' }));
+    face.appendChild(mk('circle', { cx:6,  cy:-4, r:1.6, fill:'#fff' }));
+    face.appendChild(mk('path', { d:MOUTH[k], stroke:'#fff', 'stroke-width':2.5, fill:'none', 'stroke-linecap':'round' }));
+    fg.appendChild(face);
+  }
+  svg.appendChild(fg);
+
+  svg.appendChild(mk('path', { d:'M 224.87 82.64 A 187 187 0 0 1 455.13 82.64 L 394.79 159.87 A 89 89 0 0 0 285.21 159.87 Z', fill:'none', stroke:d, 'stroke-width':4.5, 'stroke-linejoin':'round' }));
+
+  svg.appendChild(mk('path', { d:arcD(Rdial, A0, A0+SWEEP), fill:'none', stroke:'var(--border)', 'stroke-width':5, 'stroke-linecap':'round' }));
+  if (v >= 0.05) svg.appendChild(mk('path', { d:arcD(Rdial, A0, A0+(v/10)*SWEEP), fill:'none', stroke:d, 'stroke-width':5, 'stroke-linecap':'round' }));
+  const [l0x,l0y]=pt(90,A0),[l1x,l1y]=pt(90,A0+SWEEP);
+  const lab0 = mk('text', { x:f2(l0x), y:f2(l0y+4), 'text-anchor':'middle', 'font-size':12, 'font-weight':600, fill:'var(--muted2)' });
+  lab0.textContent = '0'; lab0.style.fontFamily = 'var(--font)';
+  const lab10 = mk('text', { x:f2(l1x), y:f2(l1y+4), 'text-anchor':'middle', 'font-size':12, 'font-weight':600, fill:'var(--muted2)' });
+  lab10.textContent = '10'; lab10.style.fontFamily = 'var(--font)';
+  svg.appendChild(lab0); svg.appendChild(lab10);
+
+  const num = mk('text', { x:340, y:226, 'text-anchor':'middle', 'dominant-baseline':'central', 'font-size': whole(v) ? 76 : 58, 'font-weight':800, fill:'var(--navy)' });
+  num.textContent = fmt(v); num.style.fontFamily = 'var(--font)';
+  svg.appendChild(num);
+
+  el.innerHTML = '';
+  el.appendChild(svg);
+}
+
 function _paintMarcas() {
   const section = document.getElementById('marcas-section');
   const grid = document.getElementById('marcas-grid');
@@ -3921,17 +3997,15 @@ function _paintMarcas() {
     const _numHtml = _hasNps ? (_npsTxt + '<span class="mfr-doxslash" style="color:' + _dox.s + '">/10</span>') : '—';
     return `
     <div class="vehicle-card mfr-card" onclick="openCompanyProfile('${safeName}')">
-      <div class="mfr-card-id">
+      <div class="mfr-card-logo">
         <span class="mfr-logo-circle">${initial}${verified}</span>
-        <div class="mfr-card-head">
-          <div class="mfr-card-name" title="${c.name}">${c.name}</div>
-          <div class="vc-brand">MONTADORA</div>
-        </div>
+      </div>
+      <div class="mfr-card-head">
+        <div class="mfr-card-name" title="${c.name}">${c.name}</div>
+        <div class="vc-brand">MONTADORA</div>
       </div>
       <div class="mfr-card-score">
-        ${_hasNps
-          ? '<div class="mfr-doxroda" style="width:100%;max-width:150px;margin:0 auto 2px">' + renderDoxcareRoda(_npsNum) + '</div>'
-          : '<div class="mfr-doxbox" style="background:' + _dox.p + '"><div class="mfr-doxnum" style="color:' + _dox.d + '">—</div></div>'}
+        ${_hasNps ? `<div class="mfr-wheel" data-nps="${_npsNum}"></div>` : `<div class="mfr-doxbox"><div class="mfr-doxnum" style="color:var(--muted)">—</div></div>`}
         <div class="mfr-stat mfr-stat-emph mfr-card-votos">${c.votos} ${c.votos === 1 ? 'avaliação' : 'avaliações'}</div>
       </div>
       <div class="mfr-card-foot">
@@ -3943,6 +4017,7 @@ function _paintMarcas() {
       </div>
     </div>`;
   }).join('');
+  grid.querySelectorAll('.mfr-wheel').forEach(el => renderDoxcareWheel(el, parseFloat(el.dataset.nps)));
 }
 
 // Recalcula quantos cards cabem quando a janela muda de tamanho.
@@ -7685,88 +7760,6 @@ function renderDoxcareMiniPill(score) {
     + '</span>';
 }
 
-// ── RODA DOXCARE (SVG estático): círculo de 5 estados girado pra trazer a nota ao topo ──
-// score: número 0–10 (ou null/NaN => estado vazio). Retorna string SVG responsiva (width:100%).
-function renderDoxcareRoda(score) {
-  var Cx = 340, Cy = 230, Ro = 180, Ri = 96, Rface = 138, TOP = -90, NAVY = '#0d1f3c';
-  var LV = [
-    { w: 'Péssimo', fb: '#E24B4A', d: '#b03537' },
-    { w: 'Ruim',    fb: '#EF9F27', d: '#b86d0d' },
-    { w: 'Regular', fb: '#FAC775', d: '#8a5d12' },
-    { w: 'Bom',     fb: '#97C459', d: '#5e8a2d' },
-    { w: 'Ótimo',   fb: '#639922', d: '#4f7c1b' }
-  ];
-  var MOUTH = [
-    'M -7 7 Q 0 0 7 7',
-    'M -7 6 Q 0 1.5 7 6',
-    'M -7 5 L 7 5',
-    'M -7 4 Q 0 9 7 4',
-    'M -7 3 Q 0 11 7 3'
-  ];
-  var rad = function (d) { return d * Math.PI / 180; };
-  var px = function (R, d) { return [Cx + R * Math.cos(rad(d)), Cy + R * Math.sin(rad(d))]; };
-  var f2 = function (n) { return n.toFixed(2); };
-  var base = function (k) { return TOP + k * 72; };
-  function sector(a0, a1) {
-    var o0 = px(Ro, a0), o1 = px(Ro, a1), i1 = px(Ri, a1), i0 = px(Ri, a0);
-    return 'M ' + f2(o0[0]) + ' ' + f2(o0[1]) + ' A ' + Ro + ' ' + Ro + ' 0 0 1 ' + f2(o1[0]) + ' ' + f2(o1[1]) +
-           ' L ' + f2(i1[0]) + ' ' + f2(i1[1]) + ' A ' + Ri + ' ' + Ri + ' 0 0 0 ' + f2(i0[0]) + ' ' + f2(i0[1]) + ' Z';
-  }
-  function faceG(k, ang, color) {
-    var p = px(Rface, ang), x = p[0], y = p[1];
-    var foc = Math.max(0, Math.cos(rad(ang - TOP)));
-    var s = 1.5 + 0.6 * foc;
-    return '<g transform="translate(' + f2(x) + ' ' + f2(y) + ') scale(' + f2(s) + ')">' +
-      '<circle r="17" fill="none" stroke="' + color + '" stroke-width="2"/>' +
-      '<circle cx="-6" cy="-4" r="1.6" fill="' + color + '"/>' +
-      '<circle cx="6" cy="-4" r="1.6" fill="' + color + '"/>' +
-      '<path d="' + MOUTH[k] + '" stroke="' + color + '" stroke-width="2.5" fill="none" stroke-linecap="round"/>' +
-      '</g>';
-  }
-
-  var hasScore = score != null && !isNaN(parseFloat(score));
-  var v = hasScore ? Math.max(0, Math.min(10, parseFloat(score))) : null;
-  var L = !hasScore ? 0 : (v >= 8.1 ? 5 : v >= 6.1 ? 4 : v >= 4.1 ? 3 : v >= 2.1 ? 2 : 1);
-  var rot = hasScore ? -(L - 1) * 72 : 0;
-
-  // fatias (giram juntas; sem divisórias — coladas)
-  var wedges = '';
-  for (var k = 0; k < 5; k++) {
-    var fill = hasScore ? LV[k].fb : '#e5e7eb';
-    wedges += '<path d="' + sector(base(k) - 36, base(k) + 36) + '" fill="' + fill + '"/>';
-  }
-  // carinhas (em pé, fora do giro)
-  var faces = '';
-  var faceColor = hasScore ? '#ffffff' : '#c2c9d6';
-  for (var j = 0; j < 5; j++) faces += faceG(j, base(j) + rot, faceColor);
-
-  var d = hasScore ? LV[L - 1].d : '#9aa5be';
-  var word = hasScore ? LV[L - 1].w : '';
-  var whole = hasScore && Number.isInteger(v);
-  var nstr = !hasScore ? '—' : (whole ? String(v) : v.toFixed(1).replace('.', ','));
-  var numSize = whole ? 84 : (hasScore ? 60 : 64);
-
-  var selector = hasScore
-    ? '<path d="M 224.87 82.64 A 187 187 0 0 1 455.13 82.64 L 394.79 159.87 A 89 89 0 0 0 285.21 159.87 Z" fill="none" stroke="' + d + '" stroke-width="4.5" stroke-linejoin="round"/>'
-    : '';
-
-  // wordmark Doxcare reto, centralizado abaixo da roda (Dox cinza + care azul bold)
-  var brand =
-    '<text x="340" y="433" text-anchor="middle" font-family="var(--font),sans-serif" font-size="19" letter-spacing="0.2">' +
-      '<tspan fill="#4b5563" font-weight="400">Dox</tspan><tspan fill="#185fa5" font-weight="800">care</tspan>' +
-    '</text>';
-
-  return '<svg viewBox="120 -5 440 452" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" role="img" aria-label="Avaliação Doxcare: ' +
-      (hasScore ? word + ', nota ' + nstr : 'sem avaliações') + '" style="width:100%;height:auto;display:block">' +
-    (word ? '<text x="340" y="32" text-anchor="middle" font-family="var(--font),sans-serif" font-size="42" font-weight="700" fill="' + d + '">' + word + '</text>' : '') +
-    '<g transform="rotate(' + f2(rot) + ' ' + Cx + ' ' + Cy + ')">' + wedges + '</g>' +
-    '<g>' + faces + '</g>' +
-    selector +
-    '<text x="340" y="230" text-anchor="middle" dominant-baseline="central" font-family="var(--font),sans-serif" font-size="' + numSize + '" font-weight="800" fill="' + (hasScore ? NAVY : '#9aa5be') + '">' + nstr + '</text>' +
-    brand +
-    '</svg>';
-}
-
 async function openCompanyProfile(companyName) {
   showPage('company-profile', {name: encodeURIComponent(companyName)});
   const el = document.getElementById('company-profile-content');
@@ -7851,7 +7844,7 @@ async function openCompanyProfile(companyName) {
               ${_doxcareLabel({ size: 13 })}
             </div>
             <div style="max-width:180px;width:100%;margin:0 auto">
-              ${renderDoxcareRoda(doxcareAvg)}
+              ${renderDoxcareBar(doxcareAvg, true)}
             </div>
             <div style="text-align:center;margin-top:4px;font-size:11px;color:var(--text2);font-weight:600${doxcareAvg===null?';font-style:italic;color:var(--muted)':''}">
               ${doxcareAvg===null?'Seja o 1º a avaliar →':(doxcareScores.length===1?'1 avaliação':doxcareScores.length+' avaliações')}
