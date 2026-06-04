@@ -153,6 +153,18 @@ header{
   .section-title{font-size:18px}
   .vehicles-grid{grid-template-columns:1fr 1fr;gap:10px}
   .ranking-grid{grid-template-columns:1fr}
+  /* Vitrines da home (Veículos e Marcas) viram rail horizontal no mobile:
+     card quase cheio, alinhado à esquerda, com peek pequeno e fixo do próximo
+     (padrão App Store/Netflix). Desliza de lado; o resto do app segue em grid. */
+  #ranking-grid,#marcas-grid{
+    display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none;
+    padding:4px 4px 10px;scroll-padding-left:4px;
+  }
+  #ranking-grid::-webkit-scrollbar,#marcas-grid::-webkit-scrollbar{display:none}
+  #ranking-grid>.vehicle-card,#marcas-grid>.mfr-card{
+    flex:0 0 86%;scroll-snap-align:start;
+  }
 }
 /* Landscape mobile */
 @media(max-width:900px) and (orientation:landscape){
@@ -561,22 +573,6 @@ header{
 .mfr-card-foot{margin-top:auto;width:100%}
 .mfr-card-stats{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left}
 .mfr-stat{color:var(--muted);font-size:11px;font-weight:500;line-height:1.4}
-/* Carrossel mobile do bloco Marcas (center mode): quando não cabem 2 cards
-   inteiros, o grid vira uma trilha com snap CENTRAL. O card em foco fica
-   grande e centralizado; anterior e próximo aparecem menores e esmaecidos
-   dos dois lados. Padding lateral = (100-80)/2 = 10% pra 1º/último centrarem. */
-#marcas-grid.mfr-rail{
-  display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;
-  -webkit-overflow-scrolling:touch;scrollbar-width:none;
-  padding:6px 10% 10px;scroll-padding:0 10%;
-}
-#marcas-grid.mfr-rail::-webkit-scrollbar{display:none}
-#marcas-grid.mfr-rail>.mfr-card{
-  flex:0 0 80%;scroll-snap-align:center;transform-origin:center center;
-  transform:scale(.88);opacity:.55;
-  transition:transform .28s ease,opacity .28s ease;
-}
-#marcas-grid.mfr-rail>.mfr-card.is-center{transform:scale(1);opacity:1}
 .mfr-stat-emph{color:var(--text2);font-weight:600}
 
 /* ── COMPLAINTS ── */
@@ -3983,24 +3979,23 @@ function _paintMarcas() {
   const ascending = _marcasMode === 'worst';
   const sorted = [..._marcasCache].sort((a, b) => ascending ? a.nps - b.nps : b.nps - a.nps);
 
-  // Quantos cabem: largura disponível ÷ (largura mínima do card + espaço entre eles).
-  const GAP = 14, CARD_MIN = 190;
-  const W = grid.clientWidth || (grid.parentElement && grid.parentElement.clientWidth) || window.innerWidth;
-  const fit = Math.floor((W + GAP) / (CARD_MIN + GAP));
+  // Mobile (≤640px): o CSS transforma o grid em rail horizontal (App Store).
+  // Aqui só renderizamos até 5 cards pra deslizar e limpamos colunas inline.
+  // Desktop: linha única que reduz a quantidade conforme a largura disponível.
+  const isMobile = window.matchMedia('(max-width:640px)').matches;
+  let list;
+  if (isMobile) {
+    grid.style.gridTemplateColumns = '';
+    list = sorted.slice(0, 5);
+  } else {
+    const GAP = 14, CARD_MIN = 190;
+    const W = grid.clientWidth || (grid.parentElement && grid.parentElement.clientWidth) || window.innerWidth;
+    const fit = Math.floor((W + GAP) / (CARD_MIN + GAP));
+    const n = Math.max(1, Math.min(5, fit, sorted.length));
+    grid.style.gridTemplateColumns = 'repeat(' + n + ', 1fr)';
+    list = sorted.slice(0, n);
+  }
 
-  // Modo trilha (mobile): quando não cabem 2 cards inteiros, em vez de mostrar
-  // 1 card solitário (que ficava estranho), vira carrossel horizontal com snap
-  // e "espiada" no próximo — preserva o sentido de ranking comparável.
-  const rail = fit < 2 && sorted.length > 1;
-  const n = rail
-    ? Math.min(5, sorted.length)
-    : Math.max(1, Math.min(5, fit, sorted.length));
-
-  grid.classList.toggle('mfr-rail', rail);
-  // Grid: força n colunas iguais numa linha. Trilha: limpa pra não conflitar.
-  grid.style.gridTemplateColumns = rail ? '' : 'repeat(' + n + ', 1fr)';
-
-  const list = sorted.slice(0, n);
   grid.innerHTML = list.map(c => {
     const initial = (c.name || '?')[0].toUpperCase();
     const verified = c.is_claimed
@@ -4042,32 +4037,6 @@ function _paintMarcas() {
     </div>`;
   }).join('');
   grid.querySelectorAll('.mfr-wheel').forEach(el => renderDoxcareWheel(el, parseFloat(el.dataset.nps)));
-
-  // Center mode: na trilha, marca o card cujo centro está mais perto do centro
-  // do scroller → ele fica em escala 1 (foco); os vizinhos ficam menores.
-  if (rail) {
-    const cards = Array.from(grid.children);
-    const updateCenter = () => {
-      const gr = grid.getBoundingClientRect();
-      const mid = gr.left + gr.width / 2;
-      let best = null, bestD = Infinity;
-      for (const card of cards) {
-        const r = card.getBoundingClientRect();
-        const d = Math.abs((r.left + r.width / 2) - mid);
-        if (d < bestD) { bestD = d; best = card; }
-      }
-      for (const card of cards) card.classList.toggle('is-center', card === best);
-    };
-    let ticking = false;
-    grid.onscroll = () => {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(() => { updateCenter(); ticking = false; });
-    };
-    requestAnimationFrame(updateCenter);
-  } else {
-    grid.onscroll = null;
-  }
 }
 
 // Recalcula quantos cards cabem quando a janela muda de tamanho.
