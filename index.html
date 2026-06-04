@@ -512,10 +512,11 @@ header{
   padding:20px;cursor:pointer;transition:border-color .2s,transform .2s,box-shadow .2s;
 }
 .vehicle-card:hover{border-color:var(--navy);transform:translateY(-4px);box-shadow:var(--shadow-md)}
-.vc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.vc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:10px}
+.vc-top > div{min-width:0}
 .vc-emoji{font-size:28px}
 .vc-emoji .vehicle-icon-svg{width:28px;height:28px;color:var(--muted);display:block}
-.vc-badge{font-family:var(--font);font-size:10px;font-weight:700;letter-spacing:.8px;padding:3px 10px;border-radius:20px;text-transform:uppercase}
+.vc-badge{font-family:var(--font);font-size:10px;font-weight:700;letter-spacing:.8px;padding:3px 10px;border-radius:20px;text-transform:uppercase;white-space:nowrap;flex-shrink:0}
 .badge-green{background:var(--green-light);color:var(--green)}
 .ptag.badge-green{background:var(--green-light);color:var(--green);border-color:#a8e0c8}
 .badge-yellow{background:var(--yellow-light);color:var(--yellow)}
