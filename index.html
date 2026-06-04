@@ -681,6 +681,11 @@ header{
 #marcas-section.mode-best .rank-tab.active{background:var(--green)}
 #ranking-section.mode-worst .rank-tab.active,
 #marcas-section.mode-worst .rank-tab.active{background:var(--red)}
+/* Mesmo padrão na página dedicada "Ranking de Empresas" */
+#company-ranking-panel.mode-best{background:var(--green-light)}
+#company-ranking-panel.mode-worst{background:var(--red-light)}
+#company-ranking-panel.mode-best .rank-tab.active{background:var(--green)}
+#company-ranking-panel.mode-worst .rank-tab.active{background:var(--red)}
 .ranking-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media(max-width:700px){.ranking-grid{grid-template-columns:1fr}.rank-tabs{width:100%;display:flex}.rank-tab{flex:1;text-align:center}}
 .rank-item{
@@ -1607,8 +1612,14 @@ button[data-side="no"][data-on]{border-color:var(--red)!important;background:#ff
     <h2 style="font-family:var(--font);font-size:26px;font-weight:900;color:var(--navy);margin:0 0 8px"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>Ranking de Empresas</h2>
     <p style="color:var(--muted);font-size:14px;margin:0">Baseado no <span style="font-family:var(--font);line-height:1"><span style="font-weight:400;color:var(--navy)">Dox</span><span style="font-weight:800;color:#185fa5">care</span></span> — a nota de cuidado e atendimento dada pelos clientes após cada reclamação.</p>
   </div>
-  <div id="company-ranking-list" style="display:flex;flex-direction:column;gap:14px">
-    <div style="text-align:center;padding:40px;color:var(--muted)">Carregando ranking…</div>
+  <div id="company-ranking-panel" class="mode-best" style="border-radius:18px;padding:20px 22px;transition:background-color .25s ease">
+    <div class="rank-tabs" role="tablist" style="margin-bottom:18px">
+      <button class="rank-tab active" role="tab" id="crank-tab-best" onclick="setCompanyRankMode('best')">Melhores</button>
+      <button class="rank-tab" role="tab" id="crank-tab-worst" onclick="setCompanyRankMode('worst')">Piores</button>
+    </div>
+    <div id="company-ranking-list" style="display:flex;flex-direction:column;gap:14px">
+      <div style="text-align:center;padding:40px;color:var(--muted)">Carregando ranking…</div>
+    </div>
   </div>
 </div>
 
@@ -8460,6 +8471,10 @@ function rankMedalSvg(place){
     + '</svg>';
 }
 
+let _companyRankData = null;     // ranking computado (desc por avg = melhores primeiro)
+let _companyRankCompMap = null;  // dados das empresas (logo/selo/tipo) por nome
+let _companyRankMode = 'best';   // 'best' | 'worst'
+
 async function loadCompanyRanking() {
   const list = document.getElementById('company-ranking-list');
   if (!list) return;
@@ -8471,6 +8486,7 @@ async function loadCompanyRanking() {
       sb.from('companies').select('name, logo_url, is_claimed, type')
     ]);
     if (!data?.length) {
+      _companyRankData = null;
       list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Nenhuma avaliação registrada ainda.</div>';
       return;
     }
@@ -8484,44 +8500,68 @@ async function loadCompanyRanking() {
       map[r.company_name].total += r.score;
       map[r.company_name].count++;
     });
-    const ranking = Object.entries(map)
+    _companyRankData = Object.entries(map)
       .map(([name, d]) => ({ name, avg: (d.total/d.count).toFixed(1), count: d.count }))
-      .sort((a,b) => b.avg - a.avg);
-
-    const tipoLabel = { montadora:'Montadora', oficina:'Oficina', revenda:'Revenda', outro:'Empresa' };
-
-    list.innerHTML = ranking.map((c, i) => {
-      const avg = parseFloat(c.avg);
-      const st = doxcareState(avg);
-      const posCell = i < 3
-        ? ''
-        : '<span style="font-family:var(--font);font-weight:900;font-size:19px;color:var(--navy)">' + (i + 1) + '</span><span style="font-size:12px;color:var(--muted2);font-weight:800">/' + ranking.length + '</span>';
-      const medal = i < 3
-        ? '<div style="position:absolute;top:-16px;left:-16px;transform:rotate(-8deg);filter:drop-shadow(0 3px 5px rgba(0,0,0,.22));z-index:2">' + rankMedalSvg(i + 1) + '</div>'
-        : '';
-      const safeName = encodeURIComponent(c.name);
-      const co = compMap[c.name.toLowerCase()] || null;
-      const sub = (tipoLabel[co?.type] || 'Empresa') + ' · ' + c.count + (c.count===1 ? ' avaliação' : ' avaliações');
-      const verified = (co && co.is_claimed)
-        ? '<span title="Conta verificada" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;background:#2563eb;color:#fff;border-radius:50%;font-size:10px;font-weight:700;vertical-align:middle;margin-left:6px;line-height:1">✓</span>'
-        : '';
-      return '<div onclick="openCompanyProfile(decodeURIComponent(this.dataset.name))" data-name="' + safeName + '" style="position:relative;background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:16px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:border-color .2s,box-shadow .2s" class="ranking-card">'
-        + medal
-        + '<div style="width:48px;display:flex;align-items:center;justify-content:center;flex-shrink:0">' + posCell + '</div>'
-        + companyAvatar({ name: c.name, logo_url: co && co.logo_url }, 44)
-        + '<div style="flex:1;min-width:0">'
-        + '<div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy);line-height:1.2">' + c.name + verified + '</div>'
-        + '<div style="font-size:12px;color:var(--muted);margin-top:3px">' + sub + '</div>'
-        + '</div>'
-        + '<div style="text-align:right;flex-shrink:0">'
-        + '<div style="font-family:var(--font);font-weight:900;font-size:26px;color:' + st.d + ';line-height:1">' + c.avg.replace('.', ',') + '<span style="font-size:13px;color:var(--muted2);font-weight:800">/10</span></div>'
-        + '<div style="display:inline-flex;align-items:center;gap:5px;background:' + st.p + ';color:' + st.d + ';font-size:11px;font-weight:700;padding:3px 10px 3px 4px;border-radius:20px;margin-top:5px">' + _doxcareFace(st, 15) + st.w + '</div>'
-        + '</div>'
-        + '</div>';
-    }).join('');
+      .sort((a,b) => b.avg - a.avg);   // melhores primeiro
+    _companyRankCompMap = compMap;
+    _renderCompanyRanking();
   } catch(e) {
     list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)">Erro ao carregar ranking.</div>';
   }
+}
+
+// Alterna Melhores/Piores: troca o fundo do painel (verde/vermelho), a aba ativa e re-renderiza.
+function setCompanyRankMode(mode) {
+  if (mode !== 'best' && mode !== 'worst') return;
+  _companyRankMode = mode;
+  const panel = document.getElementById('company-ranking-panel');
+  if (panel) { panel.classList.toggle('mode-best', mode === 'best'); panel.classList.toggle('mode-worst', mode === 'worst'); }
+  const tb = document.getElementById('crank-tab-best'), tw = document.getElementById('crank-tab-worst');
+  if (tb) tb.classList.toggle('active', mode === 'best');
+  if (tw) tw.classList.toggle('active', mode === 'worst');
+  _renderCompanyRanking();
+}
+
+// Renderiza a lista conforme o modo. best = melhores primeiro; worst = piores primeiro.
+// As medalhas do pódio só aparecem em "Melhores" (é premiação); em "Piores" todos usam N/total.
+function _renderCompanyRanking() {
+  const list = document.getElementById('company-ranking-list');
+  if (!list || !_companyRankData) return;
+  const compMap = _companyRankCompMap || {};
+  const best = _companyRankMode !== 'worst';
+  const ranking = best ? _companyRankData : [..._companyRankData].reverse();
+  const tipoLabel = { montadora:'Montadora', oficina:'Oficina', revenda:'Revenda', outro:'Empresa' };
+
+  list.innerHTML = ranking.map((c, i) => {
+    const avg = parseFloat(c.avg);
+    const st = doxcareState(avg);
+    const topMedal = best && i < 3;
+    const posCell = topMedal
+      ? ''
+      : '<span style="font-family:var(--font);font-weight:900;font-size:19px;color:var(--navy)">' + (i + 1) + '</span><span style="font-size:12px;color:var(--muted2);font-weight:800">/' + ranking.length + '</span>';
+    const medal = topMedal
+      ? '<div style="position:absolute;top:-16px;left:-16px;transform:rotate(-8deg);filter:drop-shadow(0 3px 5px rgba(0,0,0,.22));z-index:2">' + rankMedalSvg(i + 1) + '</div>'
+      : '';
+    const safeName = encodeURIComponent(c.name);
+    const co = compMap[c.name.toLowerCase()] || null;
+    const sub = (tipoLabel[co?.type] || 'Empresa') + ' · ' + c.count + (c.count===1 ? ' avaliação' : ' avaliações');
+    const verified = (co && co.is_claimed)
+      ? '<span title="Conta verificada" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;background:#2563eb;color:#fff;border-radius:50%;font-size:10px;font-weight:700;vertical-align:middle;margin-left:6px;line-height:1">✓</span>'
+      : '';
+    return '<div onclick="openCompanyProfile(decodeURIComponent(this.dataset.name))" data-name="' + safeName + '" style="position:relative;background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:16px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:border-color .2s,box-shadow .2s" class="ranking-card">'
+      + medal
+      + '<div style="width:48px;display:flex;align-items:center;justify-content:center;flex-shrink:0">' + posCell + '</div>'
+      + companyAvatar({ name: c.name, logo_url: co && co.logo_url }, 44)
+      + '<div style="flex:1;min-width:0">'
+      + '<div style="font-family:var(--font);font-weight:800;font-size:15px;color:var(--navy);line-height:1.2">' + c.name + verified + '</div>'
+      + '<div style="font-size:12px;color:var(--muted);margin-top:3px">' + sub + '</div>'
+      + '</div>'
+      + '<div style="text-align:right;flex-shrink:0">'
+      + '<div style="font-family:var(--font);font-weight:900;font-size:26px;color:' + st.d + ';line-height:1">' + c.avg.replace('.', ',') + '<span style="font-size:13px;color:var(--muted2);font-weight:800">/10</span></div>'
+      + '<div style="display:inline-flex;align-items:center;gap:5px;background:' + st.p + ';color:' + st.d + ';font-size:11px;font-weight:700;padding:3px 10px 3px 4px;border-radius:20px;margin-top:5px">' + _doxcareFace(st, 15) + st.w + '</div>'
+      + '</div>'
+      + '</div>';
+  }).join('');
 }
 
 // ══════════════════════════════════════════
