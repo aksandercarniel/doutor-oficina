@@ -3924,14 +3924,12 @@ function renderDoxcareWheel(el, nps) {
 
   const g = mk('g', { transform:`rotate(${f2(rot)} ${Cx} ${Cy})` });
   for (let k = 0; k < 5; k++) g.appendChild(mk('path', { d:sector(base(k)-36, base(k)+36), fill:LV[k].fb }));
-  for (let k = 0; k < 5; k++) { const b=base(k)+36,[x0,y0]=pt(Ri,b),[x1,y1]=pt(Ro,b);
-    g.appendChild(mk('line', { x1:f2(x0), y1:f2(y0), x2:f2(x1), y2:f2(y1), stroke:'#fff', 'stroke-width':3 })); }
   svg.appendChild(g);
 
   const fg = mk('g', {});
   for (let k = 0; k < 5; k++) {
     const ang=base(k)+rot,[x,y]=pt(Rface,ang), foc=Math.max(0,Math.cos(rad(ang-TOP))), s=1.5+0.6*foc;
-    const face = mk('g', { transform:`translate(${f2(x)} ${f2(y)}) scale(${f2(s)})` });
+    const face = mk('g', { transform:`translate(${f2(x)} ${f2(y)}) rotate(${f2(ang+90)}) scale(${f2(s)})`, opacity:f2(0.3+0.7*foc) });
     face.appendChild(mk('circle', { r:17, fill:'none', stroke:'#fff', 'stroke-width':2 }));
     face.appendChild(mk('circle', { cx:-6, cy:-4, r:1.6, fill:'#fff' }));
     face.appendChild(mk('circle', { cx:6,  cy:-4, r:1.6, fill:'#fff' }));
