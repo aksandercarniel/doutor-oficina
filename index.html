@@ -1628,14 +1628,14 @@ button[data-side="no"][data-on]{border-color:var(--red)!important;background:#ff
 </div>
 
 <!-- ══ PÁGINA: TODOS OS VEÍCULOS (com filtros e ordenação) ══ -->
-<div id="page-vehicles" style="display:none;max-width:1280px;margin:0 auto;padding:32px 24px">
+<div id="page-vehicles" style="display:none;padding:32px 24px">
   <button class="filters-toggle" id="veh-filters-toggle" onclick="toggleVehicleFiltersMobile()" type="button">
     <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>Filtros<span class="filters-toggle-badge" id="veh-filters-toggle-badge" style="display:none"></span></span>
     <svg class="filters-toggle-arrow" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 4.5 6 7.5 9 4.5"/></svg>
   </button>
 
   <div class="filters-bar" id="veh-filters-bar">
-    <h2 style="font-family:var(--font);font-size:22px;font-weight:900;color:var(--navy);margin:0;margin-right:auto">Todos os <span style="color:var(--red)">veículos</span> <span id="veh-count" style="color:var(--muted2);font-weight:800;font-size:20px">(0)</span></h2>
+    <h2 style="font-family:var(--font);font-size:22px;font-weight:900;color:var(--navy);margin:0;margin-right:auto">Todos os <span style="color:var(--red)">veículos</span> <span id="veh-count" style="color:var(--muted2);font-weight:400;font-size:18px">(0)</span></h2>
     <div class="veh-filter-controls">
       <span class="filter-label">Filtrar:</span>
       <select class="filter-select" id="veh-filter-brand" onchange="applyVehicleFilters()">
