@@ -517,6 +517,7 @@ header{
 .vc-emoji{font-size:28px}
 .vc-emoji .vehicle-icon-svg{width:28px;height:28px;color:var(--muted);display:block}
 .vc-badge{font-family:var(--font);font-size:10px;font-weight:700;letter-spacing:.8px;padding:3px 10px;border-radius:20px;text-transform:uppercase;white-space:nowrap;flex-shrink:0}
+.raiox-x{flex-shrink:0;display:inline-block;vertical-align:middle}
 .badge-green{background:var(--green-light);color:var(--green)}
 .ptag.badge-green{background:var(--green-light);color:var(--green);border-color:#a8e0c8}
 .badge-yellow{background:var(--yellow-light);color:var(--yellow)}
@@ -3642,6 +3643,9 @@ function cardHighlight(v, rating){
            text:(worst ? worst.issue_title : 'Verificar manual') };
 }
 
+// Mark "Raio-X" usado nos cards: só o X, bicolor (haste navy "\" + haste vermelha "/" do logo).
+const RAIOX_MARK = '<svg class="raiox-x" width="20" height="20" viewBox="0 0 24 24" stroke-linecap="round" role="img" aria-label="Raio-X"><title>Raio-X</title><line x1="5" y1="5" x2="19" y2="19" stroke="#0d1f3c" stroke-width="3.6"/><line x1="19" y1="5" x2="5" y2="19" stroke="#FC0047" stroke-width="3.6"/></svg>';
+
 // Card de veículo compartilhado (ranking + lista de versões), pra nunca descolar.
 // opts: onClick, name, showVerdict (def true), showHighlight (def true), fipeElId.
 function vehicleCardHtml(v, opts) {
@@ -3656,7 +3660,7 @@ function vehicleCardHtml(v, opts) {
   const safeKey = (v.brand + '-' + v.model).replace(/[^a-zA-Z0-9-]/g, '_');
   const fipeElId = opts.fipeElId || ('fipe-card-' + safeKey);
   let h = '<div class="vehicle-card" onclick="' + onClick + '">';
-  h += '<div class="vc-top"><div style="display:flex;align-items:center;gap:8px"><span class="vc-emoji">' + vehicleIcon(emoji, v.model) + '</span><div class="vc-name">' + name + '</div></div><span class="vc-badge badge-blue">✓ Raio-X</span></div>';
+  h += '<div class="vc-top"><div style="display:flex;align-items:center;gap:8px"><span class="vc-emoji">' + vehicleIcon(emoji, v.model) + '</span><div class="vc-name">' + name + '</div></div>' + RAIOX_MARK + '</div>';
   h += '<div class="vc-brand">' + v.brand + '</div>';
   if (showVerdict) h += '<div class="vc-version">' + (s.verdict || '').slice(0, 160) + '</div>';
   h += '<div class="vc-rating-velocimetro">' + renderDoxcoreVelocimetro(rating, 'medium') + '</div>';
@@ -3728,7 +3732,7 @@ async function renderRanking(){
           <span class="vc-emoji">${vehicleIcon(emoji, v.model)}</span>
           <div class="vc-name">${v.model}</div>
         </div>
-        <span class="vc-badge badge-blue">✓ Raio-X</span>
+        ${RAIOX_MARK}
       </div>
       <div class="vc-brand">${v.brand}</div>
       <div class="vc-version">${verdict}</div>
@@ -4265,7 +4269,7 @@ function renderRoot() {
       const range = [g.year_start, g.year_end].filter(Boolean).join('–');
       const stG = (dox == null) ? null : doxcoreState(dox);
       h += '<button class="gen-card" onclick="showRootGeneration(' + i + ')">' +
-        (dox != null ? '<span class="gen-card-badge">✓ Raio-X</span>' : '') +
+        (dox != null ? '<span class="gen-card-badge" style="background:transparent;padding:0;top:12px;right:12px">' + RAIOX_MARK + '</span>' : '') +
         '<div class="gen-card-name">' + label + '</div>' +
         (range ? '<div class="gen-card-years">' + _rootEsc(range) + '</div>' : '') +
         (dox != null
@@ -6598,7 +6602,7 @@ function showSmartSuggestions(val) {
             <div class="sug-item-name">${v.brand} ${v.model}</div>
             <div class="sug-item-sub">⭐ ${v.rating.toFixed(1)} · Raio-X disponível</div>
           </div>
-          <span class="sug-item-badge badge-blue">✓ Raio-X</span>
+          ${RAIOX_MARK}
         </div>`;
       });
     } else {
@@ -6639,7 +6643,7 @@ function showSmartSuggestions(val) {
           <div class="sug-item-name">${highlightMatch(`${v.brand} ${v.model}`, val)}</div>
           <div class="sug-item-sub">⭐ ${v.rating.toFixed(1)} · Raio-X disponível</div>
         </div>
-        <span class="sug-item-badge badge-blue">✓ Raio-X</span>
+        ${RAIOX_MARK}
       </div>`;
     });
   }
@@ -6995,7 +6999,7 @@ function renderSearchList(tab) {
       });
       const name = r.model||r.name||r.brand;
       const type = r._mock?(r.emoji==='🏍️'?'Moto':r.emoji==='🚚'?'Caminhão':'Carro'):(r.type==='carros'?'Carro':r.type==='motos'?'Moto':'Caminhão');
-      const dataBadge = (r._hasData || r._mock) ? '<span style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;margin-left:6px">✓ Raio-X</span>' : '';
+      const dataBadge = (r._hasData || r._mock) ? '<span style="margin-left:6px;display:inline-flex;vertical-align:middle">' + RAIOX_MARK + '</span>' : '';
       const yearLabel = r._yearRange || (r._yearFromName ? String(r._yearFromName) : (r._yearLoading ? 'carregando ano…' : ''));
       const fipeLine = r._mock ? `${r.version||''} · ${r.year||''}` : (yearLabel ? `Tabela FIPE · ${yearLabel}` : 'Tabela FIPE');
       html += `<div onclick="selectSuggestion(${idx})" style="padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer;display:flex;gap:14px;align-items:flex-start" onmouseover="this.querySelector('.sr-title').style.textDecoration='underline'" onmouseout="this.querySelector('.sr-title').style.textDecoration='none'">
