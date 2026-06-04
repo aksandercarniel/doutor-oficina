@@ -1581,6 +1581,10 @@ button[data-side="no"][data-on]{border-color:var(--red)!important;background:#ff
     <div>
       <h2 style="font-family:var(--font);font-size:24px;font-weight:900;color:var(--navy);margin:0">🏢 Painel da Empresa</h2>
     </div>
+    <button onclick="manageMyCompany()" style="display:inline-flex;align-items:center;gap:8px;background:var(--navy);color:#fff;border:none;border-radius:10px;padding:10px 18px;cursor:pointer;font-family:var(--font);font-weight:700;font-size:14px">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+      Gerenciar empresa
+    </button>
   </div>
   <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
     <button class="qf-btn qf-btn-status-open" onclick="companyFilterComplaints(this,'open')"><span class="face-slot" data-status="open"></span> <span class="qf-btn-label">Não respondidas</span></button>
@@ -7928,6 +7932,12 @@ function _ceField(label, id, value, placeholder){
     + '</label>';
 }
 function _ceVal(id){ const el = document.getElementById(id); return el ? (el.value.trim() || null) : null; }
+
+// Atalho do Painel: gerencia a empresa do próprio usuário logado.
+function manageMyCompany(){
+  if (!currentUser || !currentUser.company_name) { alert('Nenhuma empresa vinculada ao seu perfil.'); return; }
+  openCompanyEdit(currentUser.company_name);
+}
 
 async function openCompanyEdit(companyName){
   if (!currentUser) { openAuth('login'); return; }
