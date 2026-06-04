@@ -517,7 +517,8 @@ header{
 .vc-emoji{font-size:28px}
 .vc-emoji .vehicle-icon-svg{width:28px;height:28px;color:var(--muted);display:block}
 .vc-badge{font-family:var(--font);font-size:10px;font-weight:700;letter-spacing:.8px;padding:3px 10px;border-radius:20px;text-transform:uppercase;white-space:nowrap;flex-shrink:0}
-.raiox-x{flex-shrink:0;display:inline-block;vertical-align:middle}
+.raiox-word{font-family:var(--font);font-weight:800;font-size:13px;color:var(--navy);white-space:nowrap;flex-shrink:0;letter-spacing:.2px}
+.raiox-x{vertical-align:baseline;margin-left:.5px}
 .badge-green{background:var(--green-light);color:var(--green)}
 .ptag.badge-green{background:var(--green-light);color:var(--green);border-color:#a8e0c8}
 .badge-yellow{background:var(--yellow-light);color:var(--yellow)}
@@ -3644,7 +3645,7 @@ function cardHighlight(v, rating){
 }
 
 // Mark "Raio-X" usado nos cards: só o X, bicolor (haste navy "\" + haste vermelha "/" do logo).
-const RAIOX_MARK = '<svg class="raiox-x" width="20" height="20" viewBox="0 0 24 24" stroke-linecap="round" role="img" aria-label="Raio-X"><title>Raio-X</title><line x1="5" y1="5" x2="19" y2="19" stroke="#0d1f3c" stroke-width="3.6"/><line x1="19" y1="5" x2="5" y2="19" stroke="#FC0047" stroke-width="3.6"/></svg>';
+const RAIOX_MARK = '<span class="raiox-word">Raio-<svg class="raiox-x" height="8" width="6.9" viewBox="7.7 9 8.6 10" aria-hidden="true"><polygon points="7.7,9 10.3,9 16.3,19 13.7,19" fill="#0d1f3c"/><polygon points="13.7,9 16.3,9 10.3,19 7.7,19" fill="#FC0047"/></svg></span>';
 
 // Card de veículo compartilhado (ranking + lista de versões), pra nunca descolar.
 // opts: onClick, name, showVerdict (def true), showHighlight (def true), fipeElId.
