@@ -1162,9 +1162,6 @@ button[data-side="no"][data-on]{border-color:var(--red)!important;background:#ff
 .gen-dox{display:inline-flex;align-items:baseline;gap:4px;margin-top:14px;padding:4px 11px;border-radius:20px}
 .gen-dox-num{font-family:var(--font);font-size:15px;font-weight:800}
 .gen-dox-lbl{font-size:10px;font-weight:700}
-.gen-dox-good{background:#EAF3DE}.gen-dox-good .gen-dox-num{color:#15643F}.gen-dox-good .gen-dox-lbl{color:#2a9d6a}
-.gen-dox-mid{background:#FAEEDA}.gen-dox-mid .gen-dox-num{color:#854f0b}.gen-dox-mid .gen-dox-lbl{color:#b45309}
-.gen-dox-bad{background:#FCEBEB}.gen-dox-bad .gen-dox-num{color:#A32D2D}.gen-dox-bad .gen-dox-lbl{color:#c0392b}
 .gen-card-empty{color:var(--muted);font-size:13px;margin-top:12px}
 .rank-velocimetro{display:flex;align-items:center;justify-content:center;flex:1;min-width:0}
 /* Card de avaliação (D89 — bloco separado pra dar protagonismo ao voto) */
@@ -4246,13 +4243,13 @@ function renderRoot() {
       const dox = _rootDox(vers);
       const label = _rootEsc(g.generation_label || g.generation_name || 'Geração');
       const range = [g.year_start, g.year_end].filter(Boolean).join('–');
-      const tier = (dox == null) ? '' : (dox >= 4 ? 'gen-dox-good' : (dox >= 3 ? 'gen-dox-mid' : 'gen-dox-bad'));
+      const stG = (dox == null) ? null : doxcoreState(dox);
       h += '<button class="gen-card" onclick="showRootGeneration(' + i + ')">' +
         (dox != null ? '<span class="gen-card-badge">✓ Raio-X</span>' : '') +
         '<div class="gen-card-name">' + label + '</div>' +
         (range ? '<div class="gen-card-years">' + _rootEsc(range) + '</div>' : '') +
         (dox != null
-          ? '<div class="gen-dox ' + tier + '"><span class="gen-dox-num">' + dox.toFixed(1) + '</span><span class="gen-dox-lbl">Doxcore</span></div>'
+          ? '<div class="gen-dox" style="background:' + stG.p + '"><span class="gen-dox-num" style="color:' + stG.d + '">' + dox.toFixed(1) + '</span><span class="gen-dox-lbl" style="color:' + stG.d + '">Doxcore</span></div>'
           : '<div class="gen-card-empty">sem nota ainda</div>') +
         '</button>';
     });
@@ -5092,17 +5089,6 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
   const isModelFallback = modelFallbackRating != null;
   const shownRating = hasOwnRating ? displayRating : modelFallbackRating; // o que vai no velocímetro
 
-  // -- Badge baseado na nota curada
-  const getBadge = (r) => {
-    if (!r) return { label: 'Sem avaliação', cls: 'badge-yellow' };
-    if (r >= 4.0) return { label: 'Confiável', cls: 'badge-green' };
-    if (r >= 3.0) return { label: 'Moderado', cls: 'badge-yellow' };
-    return { label: 'Atenção', cls: 'badge-red' };
-  };
-  const badge = isModelFallback
-    ? { label: 'Média do modelo', cls: getBadge(shownRating).cls }
-    : getBadge(displayRating);
-
   // -- Doxcore (texto curado da curadoria; renderizado no header)
   const verdictText = summary?.verdict
     || (isModelFallback ? 'Esta versão ainda não tem análise própria. A nota acima é a média das versões já avaliadas do modelo, não um veredito desta versão.' : null);
@@ -5419,13 +5405,12 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
     + ((v.version || v.year) ? ('<div class="profile-sub">' + [v.version, v.year].filter(x => x && x !== '—').join(' · ') + '</div>') : '')
     + '<div class="profile-rating">'
     + (function(){
-        // Cor da pílula Doxcore pela nota: verde≥4 (bom), amarelo≥3 (moderado), vermelho<3 (ruim).
+        // Cor da pílula Doxcore pela nota: estado (5 níveis) da tabela única.
         var r = shownRating;
         var style = '';
         if (r) {
-          var c = (r >= 4.0) ? 'var(--green)' : (r >= 3.0) ? 'var(--orange)' : 'var(--red)';
-          var bg = (r >= 4.0) ? 'var(--green-light)' : (r >= 3.0) ? '#fff7ed' : '#fff0f3';
-          style = ' style="background:' + bg + ';color:' + c + '"';
+          var st = doxcoreState(r);
+          style = ' style="background:' + st.p + ';color:' + st.d + '"';
         }
         return '<span class="doxcore-badge"' + style + '>' + _doxcoreLabel() + '</span>';
       })()
@@ -7539,7 +7524,7 @@ async function openComplaintDetail(complaintId) {
               ${complaint.category ? `<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Categoria</span><span style="font-weight:600">${complaint.category}</span></div>` : ''}
               ${complaint.km ? `<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Quilometragem</span><span style="font-weight:600">${Number(complaint.km).toLocaleString('pt-BR')} km</span></div>` : ''}
               ${doxcore !== null ? (() => {
-                const dxColor = doxcore >= 4 ? '#2a9d6a' : doxcore >= 3 ? '#EF9F27' : '#E24B4A';
+                const dxColor = doxcoreState(doxcore).d;
                 return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
                   ${_doxcoreLabel()}
                   <span style="font-family:var(--font);font-weight:800;font-size:14px;color:${dxColor}">${doxcore.toFixed(1).replace('.',',')}</span>
@@ -7547,20 +7532,20 @@ async function openComplaintDetail(complaintId) {
               })() : ''}
               ${complaint.rating ? (() => {
                 const r = complaint.rating;
-                const label = r >= 5 ? 'Ótimo' : r >= 4 ? 'Bom' : r >= 3 ? 'Regular' : r >= 2 ? 'Ruim' : 'Péssimo';
-                const color = r >= 4 ? '#2a9d6a' : r >= 3 ? '#EF9F27' : '#E24B4A';
+                const st = doxcoreState(r);
+                const label = st.w;
                 let mouth;
                 if (r === 1)      mouth = '<path d="M 13 27 Q 20 20 27 27" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
                 else if (r === 2) mouth = '<path d="M 13 26 Q 20 23 27 26" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
                 else if (r === 3) mouth = '<line x1="13" y1="25" x2="27" y2="25" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>';
                 else if (r === 4) mouth = '<path d="M 13 24 Q 20 27 27 24" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
                 else              mouth = '<path d="M 13 23 Q 20 29 27 23" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>';
-                const faceSvgColored = `<svg width="22" height="22" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="18" fill="${color}"/><circle cx="14" cy="16" r="1.8" fill="#fff"/><circle cx="26" cy="16" r="1.8" fill="#fff"/>${mouth}</svg>`;
+                const faceSvgColored = `<svg width="22" height="22" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="18" fill="${st.fb}"/><circle cx="14" cy="16" r="1.8" fill="#fff"/><circle cx="26" cy="16" r="1.8" fill="#fff"/>${mouth}</svg>`;
                 return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
                   <span style="color:var(--muted)">Nota do cliente</span>
                   <span style="display:inline-flex;align-items:center;gap:8px">
                     ${faceSvgColored}
-                    <span style="font-family:var(--font);font-weight:700;font-size:13px;color:${color}">${label}</span>
+                    <span style="font-family:var(--font);font-weight:700;font-size:13px;color:${st.d}">${label}</span>
                   </span>
                 </div>`;
               })() : ''}
@@ -7633,18 +7618,27 @@ function normalizeCompanyName(name) {
   return n || null;
 }
 
-// FONTE DE VERDADE Doxcare: nota 0-10 → estado (5 níveis), mesma escala e
-// paleta da roda (renderDoxcareWheel) e dos cards de marca. TODO consumidor
-// Doxcare — com ou sem roda — passa por aqui pra cor/rótulo/corte.
+// ── FONTE DE VERDADE da escala de notas (compartilhada Doxcare + Doxcore) ──
+// 5 estados (nível 1-5), paleta única da roda e do velocímetro.
 //   fb = preenchimento forte · d = tom escuro p/ texto · p = pastel de fundo
 //   mid = tom intermediário (traço das carinhas)
+const DOX_STATES = {
+  1: { level:1, w:'Péssimo', fb:'#E24B4A', d:'#b03537', p:'#FBE5E5', mid:'#d68f8f' },
+  2: { level:2, w:'Ruim',    fb:'#EF9F27', d:'#b86d0d', p:'#FDEBD2', mid:'#e2b06e' },
+  3: { level:3, w:'Regular', fb:'#FAC775', d:'#8a5d12', p:'#FEF3DC', mid:'#c79f5e' },
+  4: { level:4, w:'Bom',     fb:'#97C459', d:'#5e8a2d', p:'#E5F2D2', mid:'#a5c478' },
+  5: { level:5, w:'Ótimo',   fb:'#639922', d:'#4f7c1b', p:'#DCE7C2', mid:'#9ab373' }
+};
+// Doxcare: nota 0-10 → estado. Cortes da roda (8,1/6,1/4,1/2,1).
 function doxcareState(score){
   const s = Math.max(0, Math.min(10, parseFloat(score)));
-  if (s >= 8.1) return { level:5, w:'Ótimo',   fb:'#639922', d:'#4f7c1b', p:'#DCE7C2', mid:'#9ab373' };
-  if (s >= 6.1) return { level:4, w:'Bom',     fb:'#97C459', d:'#5e8a2d', p:'#E5F2D2', mid:'#a5c478' };
-  if (s >= 4.1) return { level:3, w:'Regular', fb:'#FAC775', d:'#8a5d12', p:'#FEF3DC', mid:'#c79f5e' };
-  if (s >= 2.1) return { level:2, w:'Ruim',    fb:'#EF9F27', d:'#b86d0d', p:'#FDEBD2', mid:'#e2b06e' };
-  return              { level:1, w:'Péssimo', fb:'#E24B4A', d:'#b03537', p:'#FBE5E5', mid:'#d68f8f' };
+  return DOX_STATES[s >= 8.1 ? 5 : s >= 6.1 ? 4 : s >= 4.1 ? 3 : s >= 2.1 ? 2 : 1];
+}
+// Doxcore: nota 0-5 → estado. Mesmo arredondamento do velocímetro (cortes 1,5/2,5/3,5/4,5).
+function doxcoreState(rating){
+  let rc = parseFloat(rating);
+  rc = isNaN(rc) ? 0.5 : Math.max(0.5, Math.min(5, rc));
+  return DOX_STATES[Math.min(5, Math.max(1, Math.floor(rc - 0.5) + 1))];
 }
 
 // Boca da carinha por nível: 4-5 feliz, 3 neutra, 1-2 triste.
@@ -10207,23 +10201,16 @@ function renderDoxcoreVelocimetro(rating, size){
   const wordSizes  = { large: 18, medium: 14, compact: 0 };
   const scoreSize = scoreSizes[size] || 44;
   const wordSize  = wordSizes[size] || 18;
-  const STATES = [
-    { w:'Péssimo', d:'#b03537' },
-    { w:'Ruim',    d:'#b86d0d' },
-    { w:'Regular', d:'#8a5d12' },
-    { w:'Bom',     d:'#5e8a2d' },
-    { w:'Ótimo',   d:'#4f7c1b' }
-  ];
-  // Paths das 5 fatias (pré-calculados — vermelho→laranja→amarelo→verde-claro→verde-forte)
-  const slices = [
-    {d:'M 15.0,110.0 A 95,95 0 0 1 33.14,54.16 L 69.55,80.61 A 50,50 0 0 0 60.0,110.0 Z', fill:'#E24B4A'},
-    {d:'M 33.14,54.16 A 95,95 0 0 1 80.64,19.65 L 94.55,62.45 A 50,50 0 0 0 69.55,80.61 Z', fill:'#EF9F27'},
-    {d:'M 80.64,19.65 A 95,95 0 0 1 139.36,19.65 L 125.45,62.45 A 50,50 0 0 0 94.55,62.45 Z', fill:'#FAC775'},
-    {d:'M 139.36,19.65 A 95,95 0 0 1 186.86,54.16 L 150.45,80.61 A 50,50 0 0 0 125.45,62.45 Z', fill:'#97C459'},
-    {d:'M 186.86,54.16 A 95,95 0 0 1 205.0,110.0 L 160.0,110.0 A 50,50 0 0 0 150.45,80.61 Z', fill:'#639922'}
+  // Geometria das 5 fatias (pré-calculada). Cores vêm da tabela única DOX_STATES.
+  const slicePaths = [
+    'M 15.0,110.0 A 95,95 0 0 1 33.14,54.16 L 69.55,80.61 A 50,50 0 0 0 60.0,110.0 Z',
+    'M 33.14,54.16 A 95,95 0 0 1 80.64,19.65 L 94.55,62.45 A 50,50 0 0 0 69.55,80.61 Z',
+    'M 80.64,19.65 A 95,95 0 0 1 139.36,19.65 L 125.45,62.45 A 50,50 0 0 0 94.55,62.45 Z',
+    'M 139.36,19.65 A 95,95 0 0 1 186.86,54.16 L 150.45,80.61 A 50,50 0 0 0 125.45,62.45 Z',
+    'M 186.86,54.16 A 95,95 0 0 1 205.0,110.0 L 160.0,110.0 A 50,50 0 0 0 150.45,80.61 Z'
   ];
   let pathsHtml = '';
-  slices.forEach(s => { pathsHtml += '<path d="' + s.d + '" fill="' + s.fill + '"/>'; });
+  slicePaths.forEach((d, i) => { pathsHtml += '<path d="' + d + '" fill="' + DOX_STATES[i + 1].fb + '"/>'; });
   // Agulha: nota inteira N no centro da fatia N (r=5 → 18°). A nota 0 (ou < 0,5)
   // NÃO some — cai no extremo esquerdo (180°). Sem nota (null) → só o pivô central.
   const hasR = (rating != null && !isNaN(rating));
@@ -10237,7 +10224,7 @@ function renderDoxcoreVelocimetro(rating, size){
     needleHtml = '<line x1="110" y1="110" x2="' + tipX + '" y2="' + tipY + '" stroke="#042C53" stroke-width="3.5" stroke-linecap="round"/>'
       + '<circle cx="110" cy="110" r="7" fill="#042C53"/>'
       + '<circle cx="110" cy="110" r="3" fill="#fff"/>';
-    state = STATES[Math.min(5, Math.max(1, Math.floor(rc - 0.5) + 1)) - 1];
+    state = doxcoreState(rc);
   } else {
     // Sem agulha: só o pivô central pra fechar visualmente
     needleHtml = '<circle cx="110" cy="110" r="7" fill="#042C53"/>';
@@ -11443,7 +11430,7 @@ function renderComparison() {
   const v2 = dynamicVehicles.find(v => v.id === id2);
   const winner = v1.rating >= v2.rating ? v1 : v2;
 
-  function ratingClass(v) { return v >= 4 ? 'good' : v >= 3 ? 'mid' : 'bad'; }
+  function ratingClass(v) { const l = doxcoreState(v).level; return l >= 4 ? 'good' : l === 3 ? 'mid' : 'bad'; }
   function countClass(a, b, val) { return val === Math.min(a,b) ? 'good' : 'bad'; }
 
   res.innerHTML = `
