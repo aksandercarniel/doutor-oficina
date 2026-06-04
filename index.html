@@ -1607,16 +1607,15 @@ button[data-side="no"][data-on]{border-color:var(--red)!important;background:#ff
 </div>
 
 <!-- Página Ranking de Empresas -->
-<div id="page-ranking-companies" style="display:none;max-width:1280px;margin:0 auto;padding:32px 24px">
-  <div id="company-ranking-panel" class="mode-best" style="border-radius:18px;padding:24px 26px;transition:background-color .25s ease">
-    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:10px">
-      <h2 style="font-family:var(--font);font-size:24px;font-weight:900;color:var(--navy);margin:0"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>Ranking de Empresas</h2>
+<div id="page-ranking-companies" style="display:none;padding:32px 24px">
+  <div id="company-ranking-panel" class="mode-best" style="max-width:1280px;margin:0 auto;border-radius:18px;padding:24px 26px;transition:background-color .25s ease">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px">
       <div class="rank-tabs" role="tablist">
         <button class="rank-tab active" role="tab" id="crank-tab-best" onclick="setCompanyRankMode('best')">Melhores</button>
         <button class="rank-tab" role="tab" id="crank-tab-worst" onclick="setCompanyRankMode('worst')">Piores</button>
       </div>
+      <p style="color:var(--muted);font-size:14px;margin:0">Baseado no <span style="font-family:var(--font);line-height:1"><span style="font-weight:400;color:var(--navy)">Dox</span><span style="font-weight:800;color:#185fa5">care</span></span></p>
     </div>
-    <p style="color:var(--muted);font-size:14px;margin:0 0 18px">Baseado no <span style="font-family:var(--font);line-height:1"><span style="font-weight:400;color:var(--navy)">Dox</span><span style="font-weight:800;color:#185fa5">care</span></span></p>
     <div id="company-ranking-list" style="display:flex;flex-direction:column;gap:14px">
       <div style="text-align:center;padding:40px;color:var(--muted)">Carregando ranking…</div>
     </div>
