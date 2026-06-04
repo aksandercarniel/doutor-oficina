@@ -564,16 +564,16 @@ header{
 /* Carrossel mobile do bloco Marcas (center mode): quando não cabem 2 cards
    inteiros, o grid vira uma trilha com snap CENTRAL. O card em foco fica
    grande e centralizado; anterior e próximo aparecem menores e esmaecidos
-   dos dois lados. Padding lateral = (100-74)/2 = 13% pra 1º/último centrarem. */
+   dos dois lados. Padding lateral = (100-80)/2 = 10% pra 1º/último centrarem. */
 #marcas-grid.mfr-rail{
   display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;
   -webkit-overflow-scrolling:touch;scrollbar-width:none;
-  padding:6px 13% 10px;scroll-padding:0 13%;
+  padding:6px 10% 10px;scroll-padding:0 10%;
 }
 #marcas-grid.mfr-rail::-webkit-scrollbar{display:none}
 #marcas-grid.mfr-rail>.mfr-card{
-  flex:0 0 74%;scroll-snap-align:center;transform-origin:center center;
-  transform:scale(.85);opacity:.55;
+  flex:0 0 80%;scroll-snap-align:center;transform-origin:center center;
+  transform:scale(.88);opacity:.55;
   transition:transform .28s ease,opacity .28s ease;
 }
 #marcas-grid.mfr-rail>.mfr-card.is-center{transform:scale(1);opacity:1}
