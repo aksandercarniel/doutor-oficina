@@ -518,7 +518,8 @@ header{
 .vc-emoji .vehicle-icon-svg{width:28px;height:28px;color:var(--muted);display:block}
 .vc-badge{font-family:var(--font);font-size:10px;font-weight:700;letter-spacing:.8px;padding:3px 10px;border-radius:20px;text-transform:uppercase;white-space:nowrap;flex-shrink:0}
 .raiox-word{font-family:var(--font);font-weight:800;font-size:13px;color:var(--navy);white-space:nowrap;flex-shrink:0;letter-spacing:.2px}
-.raiox-x{vertical-align:baseline;margin-left:-.33px}
+.raiox-x{vertical-align:baseline;margin-left:-.025em;height:.746em;width:.642em}
+.pc-title .raiox-word{font-size:inherit}
 .raiox-seal{width:28px;height:28px;flex-shrink:0;display:block}
 .sug-item .raiox-seal,.seal-sm-wrap .raiox-seal{width:20px;height:20px}
 .badge-green{background:var(--green-light);color:var(--green)}
@@ -3647,7 +3648,7 @@ function cardHighlight(v, rating){
 }
 
 // Mark "Raio-X" usado nos cards: só o X, bicolor (haste navy "\" + haste vermelha "/" do logo).
-const RAIOX_MARK = '<span class="raiox-word">Raio-<svg class="raiox-x" height="9.7" width="8.34" viewBox="7.7 9 8.6 10" aria-hidden="true"><polygon points="7.7,9 10.3,9 16.3,19 13.7,19" fill="#0d1f3c"/><polygon points="13.7,9 16.3,9 10.3,19 7.7,19" fill="#FC0047"/></svg></span>';
+const RAIOX_MARK = '<span class="raiox-word">Raio-<svg class="raiox-x" viewBox="7.7 9 8.6 10" aria-hidden="true"><polygon points="7.7,9 10.3,9 16.3,19 13.7,19" fill="#0d1f3c"/><polygon points="13.7,9 16.3,9 10.3,19 7.7,19" fill="#FC0047"/></svg></span>';
 // Selo circular (cards): anel navy + X bicolor (\=navy /=vermelho). Tamanho via .raiox-seal.
 const RAIOX_SEAL = '<svg class="raiox-seal" viewBox="0 0 24 24" role="img" aria-label="Raio-x"><circle cx="12" cy="12" r="11" fill="#fff" stroke="#0d1f3c" stroke-width="0.8"/><polygon points="6.9,6.07 9.98,6.07 17.1,17.93 14.02,17.93" fill="#0d1f3c"/><polygon points="14.02,6.07 17.1,6.07 9.98,17.93 6.9,17.93" fill="#FC0047"/></svg>';
 
@@ -4274,7 +4275,7 @@ function renderRoot() {
       const range = [g.year_start, g.year_end].filter(Boolean).join('–');
       const stG = (dox == null) ? null : doxcoreState(dox);
       h += '<button class="gen-card" onclick="showRootGeneration(' + i + ')">' +
-        (dox != null ? '<span class="gen-card-badge" style="background:transparent;padding:0;top:12px;right:12px">' + RAIOX_MARK + '</span>' : '') +
+        (dox != null ? '<span class="gen-card-badge" style="background:transparent;padding:0;top:12px;right:12px">' + RAIOX_SEAL + '</span>' : '') +
         '<div class="gen-card-name">' + label + '</div>' +
         (range ? '<div class="gen-card-years">' + _rootEsc(range) + '</div>' : '') +
         (dox != null
@@ -5487,7 +5488,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
 
     // ═══ Bloco Raio-X (D78): card-pai com 2 sub-blocos ═══
     + '<div class="profile-card">'
-    + '<div class="pc-title"><span class="pc-emoji">👨‍🔧</span> Raio-X</div>'
+    + '<div class="pc-title"><span class="pc-emoji">👨‍🔧</span>' + RAIOX_MARK + '</div>'
 
     // ── Sub-bloco 1: Curadoria ──
     + '<div class="raiox-subtitle">Curadoria</div>'
