@@ -10247,8 +10247,8 @@ function renderDoxcoreVelocimetro(rating, size){
     needleHtml = '<circle cx="110" cy="110" r="7" fill="#042C53"/>';
   }
   const scaleHtml = showExtras
-    ? '<text x="66" y="110" text-anchor="middle" font-size="14" font-weight="700" fill="#9aa5be" style="font-family:var(--font)">0</text>'
-      + '<text x="154" y="110" text-anchor="middle" font-size="14" font-weight="700" fill="#9aa5be" style="font-family:var(--font)">5</text>'
+    ? '<text x="69" y="110" text-anchor="middle" font-size="14" font-weight="700" fill="#9aa5be" style="font-family:var(--font)">0</text>'
+      + '<text x="151" y="110" text-anchor="middle" font-size="14" font-weight="700" fill="#9aa5be" style="font-family:var(--font)">5</text>'
     : '';
   const svg = '<svg viewBox="0 6 220 124" width="' + widthPx + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Doxcore ' + (hasR ? (rating.toFixed(1) + ' de 5 — ' + state.w) : 'sem nota') + '">'
     + pathsHtml + scaleHtml + needleHtml + '</svg>';
