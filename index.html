@@ -519,6 +519,8 @@ header{
 .vc-badge{font-family:var(--font);font-size:10px;font-weight:700;letter-spacing:.8px;padding:3px 10px;border-radius:20px;text-transform:uppercase;white-space:nowrap;flex-shrink:0}
 .raiox-word{font-family:var(--font);font-weight:800;font-size:13px;color:var(--navy);white-space:nowrap;flex-shrink:0;letter-spacing:.2px}
 .raiox-x{vertical-align:baseline;margin-left:-.33px}
+.raiox-seal{width:28px;height:28px;flex-shrink:0;display:block}
+.sug-item .raiox-seal,.seal-sm-wrap .raiox-seal{width:20px;height:20px}
 .badge-green{background:var(--green-light);color:var(--green)}
 .ptag.badge-green{background:var(--green-light);color:var(--green);border-color:#a8e0c8}
 .badge-yellow{background:var(--yellow-light);color:var(--yellow)}
@@ -3646,6 +3648,8 @@ function cardHighlight(v, rating){
 
 // Mark "Raio-X" usado nos cards: só o X, bicolor (haste navy "\" + haste vermelha "/" do logo).
 const RAIOX_MARK = '<span class="raiox-word">Raio-<svg class="raiox-x" height="9.7" width="8.34" viewBox="7.7 9 8.6 10" aria-hidden="true"><polygon points="7.7,9 10.3,9 16.3,19 13.7,19" fill="#0d1f3c"/><polygon points="13.7,9 16.3,9 10.3,19 7.7,19" fill="#FC0047"/></svg></span>';
+// Selo circular (cards): anel navy + X bicolor (\=navy /=vermelho). Tamanho via .raiox-seal.
+const RAIOX_SEAL = '<svg class="raiox-seal" viewBox="0 0 24 24" role="img" aria-label="Raio-x"><circle cx="12" cy="12" r="11" fill="#fff" stroke="#0d1f3c" stroke-width="0.8"/><polygon points="6.9,6.07 9.98,6.07 17.1,17.93 14.02,17.93" fill="#0d1f3c"/><polygon points="14.02,6.07 17.1,6.07 9.98,17.93 6.9,17.93" fill="#FC0047"/></svg>';
 
 // Card de veículo compartilhado (ranking + lista de versões), pra nunca descolar.
 // opts: onClick, name, showVerdict (def true), showHighlight (def true), fipeElId.
@@ -3661,7 +3665,7 @@ function vehicleCardHtml(v, opts) {
   const safeKey = (v.brand + '-' + v.model).replace(/[^a-zA-Z0-9-]/g, '_');
   const fipeElId = opts.fipeElId || ('fipe-card-' + safeKey);
   let h = '<div class="vehicle-card" onclick="' + onClick + '">';
-  h += '<div class="vc-top"><div style="display:flex;align-items:center;gap:8px"><span class="vc-emoji">' + vehicleIcon(emoji, v.model) + '</span><div class="vc-name">' + name + '</div></div>' + RAIOX_MARK + '</div>';
+  h += '<div class="vc-top"><div style="display:flex;align-items:center;gap:8px"><span class="vc-emoji">' + vehicleIcon(emoji, v.model) + '</span><div class="vc-name">' + name + '</div></div>' + RAIOX_SEAL + '</div>';
   h += '<div class="vc-brand">' + v.brand + '</div>';
   if (showVerdict) h += '<div class="vc-version">' + (s.verdict || '').slice(0, 160) + '</div>';
   h += '<div class="vc-rating-velocimetro">' + renderDoxcoreVelocimetro(rating, 'medium') + '</div>';
@@ -3733,7 +3737,7 @@ async function renderRanking(){
           <span class="vc-emoji">${vehicleIcon(emoji, v.model)}</span>
           <div class="vc-name">${v.model}</div>
         </div>
-        ${RAIOX_MARK}
+        ${RAIOX_SEAL}
       </div>
       <div class="vc-brand">${v.brand}</div>
       <div class="vc-version">${verdict}</div>
@@ -6603,7 +6607,7 @@ function showSmartSuggestions(val) {
             <div class="sug-item-name">${v.brand} ${v.model}</div>
             <div class="sug-item-sub">⭐ ${v.rating.toFixed(1)} · Raio-X disponível</div>
           </div>
-          ${RAIOX_MARK}
+          ${RAIOX_SEAL}
         </div>`;
       });
     } else {
@@ -6644,7 +6648,7 @@ function showSmartSuggestions(val) {
           <div class="sug-item-name">${highlightMatch(`${v.brand} ${v.model}`, val)}</div>
           <div class="sug-item-sub">⭐ ${v.rating.toFixed(1)} · Raio-X disponível</div>
         </div>
-        ${RAIOX_MARK}
+        ${RAIOX_SEAL}
       </div>`;
     });
   }
@@ -7000,17 +7004,17 @@ function renderSearchList(tab) {
       });
       const name = r.model||r.name||r.brand;
       const type = r._mock?(r.emoji==='🏍️'?'Moto':r.emoji==='🚚'?'Caminhão':'Carro'):(r.type==='carros'?'Carro':r.type==='motos'?'Moto':'Caminhão');
-      const dataBadge = (r._hasData || r._mock) ? '<span style="margin-left:6px;display:inline-flex;vertical-align:middle">' + RAIOX_MARK + '</span>' : '';
+      const dataBadge = (r._hasData || r._mock) ? '<span class="seal-sm-wrap" style="flex-shrink:0;display:flex">' + RAIOX_SEAL + '</span>' : '';
       const yearLabel = r._yearRange || (r._yearFromName ? String(r._yearFromName) : (r._yearLoading ? 'carregando ano…' : ''));
       const fipeLine = r._mock ? `${r.version||''} · ${r.year||''}` : (yearLabel ? `Tabela FIPE · ${yearLabel}` : 'Tabela FIPE');
       html += `<div onclick="selectSuggestion(${idx})" style="padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer;display:flex;gap:14px;align-items:flex-start" onmouseover="this.querySelector('.sr-title').style.textDecoration='underline'" onmouseout="this.querySelector('.sr-title').style.textDecoration='none'">
         <div class="sr-icon-box" style="width:40px;height:40px;background:var(--bg2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${vehicleIcon(r.emoji||'🚗', name)}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${r.brand} · ${type}${dataBadge}</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${r.brand} · ${type}</div>
           <div class="sr-title" style="font-family:var(--font);font-weight:700;font-size:16px;color:var(--navy);margin-bottom:4px">${name}</div>
           <div style="font-size:13px;color:var(--muted)">${fipeLine}</div>
         </div>
-        <div style="font-size:12px;color:var(--muted);flex-shrink:0;padding-top:4px">Ver perfil →</div>
+        ${dataBadge}
       </div>`;
     });
     if (tab === 'vehicles' && !allVehicles.length) html += `<div style="text-align:center;padding:60px 0;color:var(--muted)">Nenhum veículo para "<strong>${val}</strong>"</div>`;
