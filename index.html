@@ -1136,7 +1136,7 @@ button[data-side="no"][data-on]{border-color:var(--red)!important;background:#ff
 .doxcore-velocimetro{display:inline-flex;flex-direction:column;align-items:center;line-height:1;flex-shrink:0}
 .doxcore-velocimetro svg{display:block}
 .doxcore-velocimetro-score{font-family:var(--font);font-weight:600;color:var(--navy);margin-top:4px;line-height:1}
-.doxcore-velocimetro-word{font-family:var(--font);font-weight:700;line-height:1;margin-bottom:3px;letter-spacing:.2px}
+.doxcore-velocimetro-word{font-family:var(--font);font-weight:700;line-height:1;margin-bottom:2px;letter-spacing:.2px}
 .vc-rating-velocimetro{display:flex;justify-content:center;margin:8px 0}
 /* ── Cards de geração (lista "Escolha a geração") ── */
 .gen-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
@@ -10245,8 +10245,12 @@ function renderDoxcoreVelocimetro(rating, size){
     // Sem agulha: só o pivô central pra fechar visualmente
     needleHtml = '<circle cx="110" cy="110" r="7" fill="#042C53"/>';
   }
-  const svg = '<svg viewBox="0 0 220 130" width="' + widthPx + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Doxcore ' + (hasR ? (rating.toFixed(1) + ' de 5 — ' + state.w) : 'sem nota') + '">'
-    + pathsHtml + needleHtml + '</svg>';
+  const scaleHtml = showExtras
+    ? '<text x="15" y="124" text-anchor="middle" font-size="14" font-weight="600" fill="#9aa5be" style="font-family:var(--font)">0</text>'
+      + '<text x="205" y="124" text-anchor="middle" font-size="14" font-weight="600" fill="#9aa5be" style="font-family:var(--font)">5</text>'
+    : '';
+  const svg = '<svg viewBox="0 6 220 124" width="' + widthPx + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Doxcore ' + (hasR ? (rating.toFixed(1) + ' de 5 — ' + state.w) : 'sem nota') + '">'
+    + pathsHtml + scaleHtml + needleHtml + '</svg>';
   const wordHtml = (showExtras && hasR)
     ? '<div class="doxcore-velocimetro-word" style="font-size:' + wordSize + 'px;color:' + state.d + '">' + state.w + '</div>'
     : '';
