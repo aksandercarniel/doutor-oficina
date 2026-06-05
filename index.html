@@ -5440,7 +5440,7 @@ function renderVehicleProfileFull(v, knownIssues, complaints, stats, fipePrice, 
         var style = '';
         if (r) {
           var st = doxcoreState(r);
-          style = ' style="background:' + st.p + ';color:' + st.d + '"';
+          style = ' style="background:#fff;color:' + st.d + ';border:1.5px solid ' + st.fb + '"';
         }
         return '<span class="doxcore-badge"' + style + '>' + _doxcoreLabel() + '</span>';
       })()
