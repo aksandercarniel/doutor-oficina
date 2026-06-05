@@ -10485,7 +10485,7 @@ function renderDoxcoreVelocimetro(rating, size){
   const svg = '<svg viewBox="0 6 220 124" width="' + widthPx + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Doxcore ' + (hasR ? (rating.toFixed(1) + ' de 5 — ' + state.w) : 'sem nota') + '">'
     + pathsHtml + scaleHtml + needleHtml + '</svg>';
   const wordHtml = (showExtras && hasR)
-    ? '<div class="doxcore-velocimetro-word" style="font-size:' + wordSize + 'px;color:' + state.d + '">' + state.w + '</div>'
+    ? '<div class="doxcore-velocimetro-word" style="font-size:' + wordSize + 'px;color:' + state.d + ';display:inline-flex;align-items:center;gap:5px">' + _doxcareFace(state, wordSize + 4) + state.w + '</div>'
     : '';
   const scoreHtml = (showExtras && hasR)
     ? '<div class="doxcore-velocimetro-score" style="font-size:' + scoreSize + 'px">' + rating.toFixed(1).replace('.', ',') + '</div>'
